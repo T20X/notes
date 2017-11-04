@@ -1,0 +1,16 @@
+--------------------------------------------------
+pow can be slow massively
+--------------------------------------------------
+std::function may allocate memory
+--------------------------------------------------
+no string optimization in gcc < 5.1 and redhat
+--------------------------------------------------
+placement new does null pointer check in GCC < 7.1 and without c++17
+--------------------------------------------------
+always_inline and noinline atrributes better then inline
+--------------------------------------------------
+__builtin_expect
+----------------------------
+cache L3 can be disabled
+----------------------------
+
