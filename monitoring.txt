@@ -1,0 +1,2 @@
+cat /proc/timer_list
+mpstat -I ALL -u -P 2

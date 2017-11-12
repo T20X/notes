@@ -1,0 +1,9 @@
+store buffer draining
+---------------------
+Generation of an Exception and/or Interrupt
+Execution of a serializing instruction (CPUID, IRET, and RSM are the only non-privileged serializing instructions)
+Execution of an I/O instruction
+Execution of a LOCK operation
+Execution of the BINIT operation (an external reset operation using the BINIT pin)
+Execution of an SFENCE instruction
+Execution of an MFENCE instruction

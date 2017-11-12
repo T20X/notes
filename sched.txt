@@ -1,0 +1,3 @@
+SCHED_FIFO runs indefinitely
+SCHED_RR runs for a time slice - 100ms defualt
+---------------------
