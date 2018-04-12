@@ -1,0 +1,45 @@
+The SYSENTER instruction is part of the "Fast System Call" facility introduced on the Pentium® II processor. The SYSENTER instruction is optimized to provide the maximum performance for transitions to protection ring 0 (CPL = 0). The SYSENTER instruction sets the following registers according to values specified by the operating system in certain model-specific registers.
+
+CS register set to the value of (SYSENTER_CS_MSR)
+
+EIP register set to the value of (SYSENTER_EIP_MSR)
+
+SS register set to the sum of (8 plus the value in SYSENTER_CS_MSR)
+
+ESP register set to the value of (SYSENTER_ESP_MSR)
+
+Looks like processor is trying to help us. Let's look at SYSEXIT also very quickly:
+
+The SYSEXIT instruction is part of the "Fast System Call" facility introduced on the Pentium® II processor. The SYSEXIT instruction is optimized to provide the maximum performance for transitions to protection ring 3 (CPL = 3) from protection ring 0 (CPL = 0). The SYSEXIT instruction sets the following registers according to values specified by the operating system in certain model-specific or general purpose registers.
+
+CS register set to the sum of (16 plus the value in SYSENTER_CS_MSR)
+
+EIP register set to the value contained in the EDX register
+
+SS register set to the sum of (24 plus the value in SYSENTER_CS_MSR)
+
+ESP register set to the value contained in the ECX register
+
+------------------
+
+Linux sets up these registers during initialization itself.
+
+/usr/src/linux/arch/i386/kernel/sysenter.c:
+     36         wrmsr(MSR_IA32_SYSENTER_CS, __KERNEL_CS, 0);
+     37         wrmsr(MSR_IA32_SYSENTER_ESP, tss->esp1, 0);
+     38         wrmsr(MSR_IA32_SYSENTER_EIP, (unsigned long) sysenter_entry, 0);
+Please note that 'tss' refers to the Task State Segment (TSS) and tss->esp1 thus points to the kernel mode stack. [4] explains the use of TSS in linux as:
+
+The x86 architecture includes a specific segment type called the Task State Segment (TSS), to store hardware contexts. Although Linux doesn't use hardware context switches, it is nonetheless forced to set up a TSS for each distinct CPU in the system. This is done for two main reasons:
+
+- When an 80 x 86 CPU switches from User Mode to Kernel Mode, it fetches the address of the Kernel Mode stack from the TSS.
+
+- When a User Mode process attempts to access an I/O port by means of an in or out instruction, the CPU may need to access an I/O Permission Bitmap stored in the TSS to verify whether the process is allowed to address the port.
+
+
+--------------------
+Userland processes (or C library on their behalf) call __kernel_vsyscall to execute system calls. Address of __kernel_vsyscall is not fixed. Kernel passes this address to userland processes using AT_SYSINFO elf parameter. AT_ elf parameters, a.k.a. elf auxiliary vectors, are loaded on the process stack at the time of startup, alongwith the process arguments and the environment variables. Look at [1] for more information on Elf auxiliary vectors.
+
+After moving to this address, registers %ecx, %edx and %ebp are saved on the user stack and %esp is copied to %ebp before executing sysenter. This %ebp later helps kernel in restoring userland stack back. After executing sysenter instruction, processor starts execution at sysenter_entry. sysenter_entry is defined in /usr/src/linux/arch/i386/kernel/entry.S as: (See my comments in [ ])
+
+

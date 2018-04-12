@@ -1,0 +1,61 @@
+physical page owners -> 
+User-space processes,
+Dynamically allocated kernel data,
+Static kernel code,
+Page cache.
+----------
+
+ By  default,  Linux  follows  an optimistic memory allocation strategy.
+       This means that when malloc() returns non-NULL there  is  no  guarantee
+       that  the  memory  really  is available.  This is a really bad bug.  In
+       case it turns out that the system is out of memory, one  or  more  pro-
+       cesses  will  be  killed  by the infamous OOM killer.  In case Linux is
+       employed under circumstances where it would be less desirable  to  sud-
+       denly lose some randomly picked processes, and moreover the kernel ver-
+       sion is sufficiently recent, one can  switch  off  this  overcommitting
+       behavior using a command like:
+
+
+           # echo 2 > /proc/sys/vm/overcommit_memory
+
+------------
+mbind
+mlock
+/proc/[pid]/pagemap
+
+------
+ZONE_DMA
+ZONE_NORMAL
+-------------
+The size of the per-process kernel stacks depends on both the architecture and a compile-time option. Historically, the kernel stack has been two pages per process
+ZONE_HIGH(no more on x64)
+--------------
+malloc provides access to a process's heap. The heap is a construct in the C core library (commonly libc) that allows objects to obtain exclusive access to some space on the process's heap.
+
+Each allocation on the heap is called a heap cell. This typically consists of a header that hold information on the size of the cell as well as a pointer to the next heap cell. This makes a heap effectively a linked list.
+
+When one starts a process, the heap contains a single cell that contains all the heap space assigned on startup. This cell exists on the heap's free list.
+
+When one calls malloc, memory is taken from the large heap cell, which is returned by malloc. The rest is formed into a new heap cell that consists of all the rest of the memory.
+
+When one frees memory, the heap cell is added to the end of the heap's free list. Subsequent mallocs walk the free list looking for a cell of suitable size.
+
+As can be expected the heap can get fragmented and the heap manager may from time to time, try to merge adjacent heap cells.
+
+When there is no memory left on the free list for a desired allocation, malloc calls brk or sbrk which are the system calls requesting more memory pages from the operating system.
+
+Now there are a few modification to optimize heap operations.
+
+For large memory allocations (typically > 512 bytes, the heap manager may go straight to the OS and allocate a full memory page.
+The heap may specify a minimum size of allocation to prevent large amounts of fragmentation.
+The heap may also divide itself into bins one for small allocations and one for larger allocations to make larger allocations quicker.
+There are also clever mechanisms for optimizing multi-threaded heap allocation.
+
+-------------
+the kernel developers implemented a new feature: interrupt stacks. Interrupt stacks provide a single per-processor stack used for interrupt handlers. With this option, interrupt handlers no longer share the kernel stack of the interrupted process. Instead, they use their own stacks. This consumes only a single page per processor.
+
+------------
+Processes may share their address spaces with their children via the CLONE_VM flag to clone(). The process is then called a thread. This is essentially the only difference between normal processes and so-called threads in Linux (Chapter 3); the Linux kernel does not otherwise differentiate between them. Threads are regular processes to the kernel that merely share certain resources.
+
+---------------------
+o answer another part of the question - the kernel is mapped into every processes address space partially for efficiency/performance reasons (there are others too, I'm sure). On most modern hardware, it is quicker to change the security level (thus allowing access to the pages that are otherwise protected, as mentioned in Alexey's answer) in order to perform system calls and other kernel provided functions than it is to change the security level and the entire virtual memory map, along with all the associated TLB cache flushes and everything else involved in a full context switch. Since system calls can be fairly frequent events, the design that has evolved in Linux and many other places is to try to minimize the overhead of utilizing kernel services, and mapping the kernel code and (at least some of the) data into each process is part of that.
