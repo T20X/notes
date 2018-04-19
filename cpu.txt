@@ -7,3 +7,49 @@ Execution of a LOCK operation
 Execution of the BINIT operation (an external reset operation using the BINIT pin)
 Execution of an SFENCE instruction
 Execution of an MFENCE instruction
+
+CPU cache
+--------------------
+https://lwn.net/Articles/252125/
+
+
+When an instruction modifies memory the processor still has to load a cache line first because no instruction modifies an entire cache line at once (exception to the rule: write-combining as explained in Section 6.1). The content of the cache line before the write operation therefore has to be loaded. It is not possible for a cache to hold partial cache lines. A cache line which has been written to and which has not been written back to main memory is said to be “dirty”. Once it is written the dirty flag is cleared
+
+More sophisticated cache implementations allow another possibility to happen. If the cache line which another processor wants to read from or write to is currently marked dirty in the first processor's cache a different course of action is needed. In this case the main memory is out-of-date and the requesting processor must, instead, get the cache line content from the first processor
+
+
+write-through cache implementation;
+write-back cache implementation.
+write-combining; and
+uncacheable.
+
+direct mapped cached
+fully associative cache
+set associative cache
+
+
+--------------
+Modified
+This cache has the only valid copy of the cache line, and has made changes to that copy.
+Owned
+This cache is one of several with a valid copy of the cache line, but has the exclusive right to make changes to it. It must broadcast those changes to all other caches sharing the line. The introduction of owned state allows dirty sharing of data, i.e., a modified cache block can be moved around various caches without updating main memory. The cache line may be changed to the Modified state after invalidating all shared copies, or changed to the Shared state by writing the modifications back to main memory. Owned cache lines must respond to a snoop request with data.
+Exclusive
+This cache has the only copy of the line, but the line is clean (unmodified).
+Shared
+
+IMPORTANT:!!!!!
+While MOESI can quickly share dirty cache lines from cache, it cannot quickly share clean lines from cache. If a cache line is clean with respect to memory and in the shared state, then any snoop request to that cache line will be filled from memory, rather than a cache.
+
+If a processor wishes to write to an Owned cache line, it must notify the other processors that are sharing that cache line. Depending on the implementation it may simply tell them to invalidate their copies (moving its own copy to the Modified state), or it may tell them to update their copies with the new contents (leaving its own copy in the Owned state)
+
+!!!!!!!!!!!!!!!!!!
+This line is one of several copies in the system. This cache does not have permission to modify the copy. Other processors in the system may hold copies of the data in the Shared state, as well. Unlike the MESI protocol, a shared cache line may be dirty with respect to memory; if it is, some cache has a copy in the Owned state, and that cache is responsible for eventually updating main memory. If no cache hold the line in the Owned state, the memory copy is up to date. The cache line may not be written, but may be changed to the Exclusive or Modified state after invalidating all shared copies. (If the cache line was Owned before, the invalidate response will indicate this, and the state will become Modified, so the obligation to eventually write the data back to memory is not forgotten.) It may also be discarded (changed to the Invalid state) at any time. Shared cache lines may not respond to a snoop request with data.
+Invalid
+This block is not valid; it must be fetched to satisfy any attempted access.
+
+--------------------------------
+Processor designers are currently using virtual address tagging for the first level caches. These caches are rather small and can be cleared without too much pain. At least partial clearing the cache is necessary if the page table tree of a process changes. It might be possible to avoid a complete flush if the processor has an instruction which specifies the virtual address range which has changed. Given the low latency of L1i and L1d caches (~3 cycles) using virtual addresses is almost mandatory.
+
+For larger caches including L2, L3, ... caches physical address tagging is needed
+
+
