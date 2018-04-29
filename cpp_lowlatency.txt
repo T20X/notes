@@ -16,4 +16,5 @@ cache L3 can be disabled
 gperf - perfect function generator
 ----------------------------
 _COARSE clock_gettime does not do a kernel mode switch
-
+------------------------------
+In order to effectively write your code to take advantage of these rules, when writing if-else or switch statements, check the most common cases first and work progressively down to the least common

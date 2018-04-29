@@ -92,3 +92,6 @@ Linux provides the sched_yield() system call as a mechanism for a process to exp
 sched_yield() removes the process from the active array (where it currently is, because it is running) and inserting it into the expired array. This has the effect of not only preempting the process and putting it at the end of its priority list, but also putting it on the expired list, which guarantees it will not run for a while.
 For real-time tasks, which never expire, sched_yield() merely move them to the end of their priority list (and not insert them into the expired array).
 
+------------------------------
+
+priority inversion is a problematic scenario in scheduling in which a high priority task is indirectly preempted by a lower priority task effectively "inverting" the relative priorities of the two tasks

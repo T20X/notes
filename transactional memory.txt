@@ -1,0 +1,9 @@
+(HTM). Once a transaction on a core is started, every load to the associated cache of the core
+is considered as part of the read-set of the transaction and every store to the cache is part of
+the write-set. Writes are stored in the cache (i.e. not written to main memory or published
+to other caches) until the transaction is finished. Whenever the cache coherency protocol
+detects a foreign modification of a cache line which is part of the read-set, the transaction
+is considered to be inconsistent and aborted. A transaction without conflicts is allowed to
+commit and publish its write-set as part of the new state of the shared data
+
+---------------------------------------------------------------------------------------------------

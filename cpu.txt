@@ -53,3 +53,10 @@ Processor designers are currently using virtual address tagging for the first le
 For larger caches including L2, L3, ... caches physical address tagging is needed
 
 
+-------------------------------
+The LOCK prefix originally stood for bus lock, which refers to a special signal
+issued at the front-side bus to suppress any attempt of memory transfer of other processors.
+Today it also refers to so-called cache locks, which lock one or more cache lines using the
+cache coherency protocol. Unlike bus locks cache locks allow concurrent locking of disjoint
+cache lines by different cores
+
