@@ -2,3 +2,30 @@ The overloads that do not use std::piecewise_construct_t assume that each tuple 
 ------------------------
 std::forward_as_tuple
 std::tie - Creates a tuple of lvalue references to its arguments or instances of std::ignore.
+
+----------
+ -ffast-math improves math ops performance by compromising precision. speeds up pow
+
+----------
+const Fred& operator[] (unsigned index) const;  // Subscript operators often come in pairs
+  Fred&       operator[] (unsigned index);        // Subscript operators often come in pai
+----------
+Sometimes it's safe to throw an exception even while std::uncaught_exception() == true. For example, if stack unwinding causes an object to be destructed, the destructor for that object could run code that throws an exception as long as the exception is caught by some catch block before escaping the destructor.
+
+----------
+template <typename... Args>
+void print_size(Args... args)
+{
+  cout << sizeof...(args) << endl;
+}
+
+int main(void)
+{
+  print_size(); // outputs 0
+  print_size("Is the answer", 42, true); // outputs 3
+}
+
+---------
+CERT coding standart
+https://wiki.sei.cmu.edu/confluence/display/cplusplus/2+Rules
+
