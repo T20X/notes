@@ -1,2 +1,50 @@
 The compiler does overload resolution before it even looks at specialisations
 ------------------------------------------------------------------
+
+---------------------------------
+can do specialization of a template template member!
+-------------------------
+
+template<class T> struct A { // enclosing class template
+  template<class T2>
+  struct B {}; // primary member template
+  template<class T2>
+  struct B<T2*> {}; // partial specialization of member template
+};
+ 
+template<>
+template<class T2>
+struct A<short>::B {}; // full specialization of primary member template
+                       // (will ignore the partial)
+-------------------
+
+---------------------------------
+in partial specialization, default arguments cannot appear in the argument list
+---------------------------------
+
+------------
+conditional
+-----------
+template<bool B, class T, class F>
+struct conditional { typedef T type; };
+ 
+template<class T, class F>
+struct conditional<false, T, F> { typedef F type; };
+
+
+-----------------
+SFINAE
+------------------
+
+(1) 
+
+template<typename T>
+class is_class {
+    typedef char yes[1];
+    typedef char no [2];
+    template<typename C> static yes& test(int C::*); // selected if C is a class type
+    template<typename C> static no&  test(...);      // selected otherwise
+  public:
+    static bool const value = sizeof(test<T>(0)) == sizeof(yes);
+};
+

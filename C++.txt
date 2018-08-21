@@ -29,3 +29,58 @@ int main(void)
 CERT coding standart
 https://wiki.sei.cmu.edu/confluence/display/cplusplus/2+Rules
 
+
+-------------
+lambdas diffrences between C++11 and C++14
+-------------
+In C++14 all of these possible.
+
+Move example:
+
+auto f1 = [v = std::move(v)](auto arg) { f(42, arg, std::move(v)); };
+Expression example:
+
+auto f1 = [sum = a + b](auto arg) { f(42, arg, sum); };
+See question
+
+Perfect forwarding: You can write
+
+auto f1 = [=](auto&& arg) { f(42, std::forward<decltype(arg)>(arg)); };
+
+----------------
+copy elision
+(RVO, no copy/move of thrown/catch objects if they have no-sideeffects)
+
+----------------
+move semantics
+--------------
+(1) const objects cannot be moved, copy construct will be called
+(2) only one of these functions can be declared
+    void f(Base other)
+    void f(Base&& other)
+(3) Remember that “&&” indicates a universal reference only where type deduction takes place
+
+universal ref: ->
+template<typename T>
+void f(T&& param); 
+
+not universal ref ->
+template<typename T>
+void f(vector<T>&& param); 
+
+Universal references can only occur in the form “T&&”!  Even the simple addition of a const qualifier is enough to disable the interpretation of “&&” as a universal referenc
+ 
+(4)  && has preference when taking a temporary Base() as input, then template<T>(T&&), then const Base&! coz overloading has a precedence over templates!
+    void f(const Base& other) 
+    void f(Base&& other) 
+    template <typename T> void f(T&& other) {}
+    void f(const Base&& other)
+
+(5) C++ does not guarantee any order for the evaluation of function arguments
+
+(6) exception is a virtual class
+
+
+(7) The lifetime of the temporary may be extended by binding a reference to it (in which case its lifetime is extended until the end of the lifetime of the reference), or by using it as an initializer in a constructor's initializer list (in which case its lifetime is extended until the object being constructed is fully constructed).
+
+Temporary objects are destroyed as the last step in evaluating the full-expression (1.9) that (lexically) contains the point where they were created. This is true even if that evaluation ends in throwing an exception

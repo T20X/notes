@@ -100,3 +100,41 @@ template<class... _Types> inline
 	return (_Ttype(_STD forward<_Types>(_Args)...));
 	}
 
+10. default template argument - typename = std::enable_if_t<std::is_integral<Integer>::value>
+     default template arguments are not part of function template's signature
+
+11. A substitution failure is any situation when the type or expression above would be ill-formed (with a required diagnostic), if written using the substituted argument
+
+12. The compiler does overload resolution before it even looks at specialisations
+
+Only the failures in the types and expressions in the immediate context of the function type or its template parameter types or its explicit specifier (since C++20) are SFINAE errors. If the evaluation of a substituted type/expression causes a side-effect such as instantiation of some template specialization, generation of an implicitly-defined member function, etc, errors in those side-effects are treated as hard errors
+
+13. decval - Converts any type T to a reference type, making it possible to use member functions in decltype expressions without the need to go through constructors
+
+14. 
+template <class C, class F>
+auto test(C c, F f) -> decltype((void)(c.*f)(), void())
+{ std::cout << "Reference overload called\n"; }
+
+template <class C, class F>
+auto test(C c, F f) -> decltype((void)((c->*f)()), void())
+{ std::cout << "Pointer overload called\n"; }
+
+auto enableIfSINAFE(Container& v) -> decltype(enable_if_t<is_same<Iter, random_access_iterator_tag>::value>(), void())
+auto enableIfSINAFE(Container& v) -> decltype(enable_if_t<is_same<Iter, bidirectional_iterator_tag>::value>(), void())
+
+16. 
+template< class... >
+using void_t = void;
+(since C++17)
+This metafunction is used in template metaprogramming to detect ill-formed types in SFINAE context
+
+// primary template handles types that have no nested ::type member:
+template< class, class = std::void_t<> >
+struct has_type_member : std::false_type { };
+ 
+// specialization recognizes types that do have a nested ::type member:
+template< class T >
+struct has_type_member<T, std::void_t<typename T::type>> : std::true_type { };
+
+
