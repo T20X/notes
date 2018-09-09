@@ -39,12 +39,47 @@ SFINAE
 (1) 
 
 template<typename T>
-class is_class {
-    typedef char yes[1];
-    typedef char no [2];
-    template<typename C> static yes& test(int C::*); // selected if C is a class type
-    template<typename C> static no&  test(...);      // selected otherwise
-  public:
-    static bool const value = sizeof(test<T>(0)) == sizeof(yes);
-};
+class is_class 
+{ 0, ( (void) bar(std::forward<Args>(args)), 0) ... };
+  |       |       |                        |     |
+  |       |       |                        |     --- pack expand the whole thing 
+  |       |       |                        |   
+  |       |       --perfect forwarding     --- comma operator
+  |       |
+  |       -- cast to void to ensure that regardless of bar()'s return type
+  |          the built-in comma operator is used rather than an overloaded one
+  |
+  ---ensure that the array has at least one element so that we don't try to make an
+     illegal 0-length array when args is empty
 
+(2)
+  template<class _FwdIt,
+        class _Ty> inline
+        typename _Fill_memset_is_safe_helper<_FwdIt, _Ty>::type
+        _Fill_memset_is_safe(const _FwdIt&, const _Ty&)
+    {	// type deduction for _Fill_memset_is_safe_helper
+        return {};
+    }
+
+trick is that {} will force default construction! but not for void in which case SFINAE kicks in!
+
+----------
+declval
+----------
+returns rvalue ref even for expression which don't have def constructor!
+std::remove_reference<decltype(declval<DeclvalStruct>())>::type
+
+--------
+eclipsis
+--------
+// this overload is always in the set of overloads
+// ellipsis parameter has the lowest ranking for overload resolution
+void test(...)
+
+-----
+decay
+----
+(1) remove reference
+(2) if array converts to pointer
+(3) if function converts to func pointer
+{4} removes const

@@ -84,3 +84,31 @@ Universal references can only occur in the form “T&&”!  Even the simple addition
 (7) The lifetime of the temporary may be extended by binding a reference to it (in which case its lifetime is extended until the end of the lifetime of the reference), or by using it as an initializer in a constructor's initializer list (in which case its lifetime is extended until the object being constructed is fully constructed).
 
 Temporary objects are destroyed as the last step in evaluating the full-expression (1.9) that (lexically) contains the point where they were created. This is true even if that evaluation ends in throwing an exception
+
+(8) TEMPLATE CANNOT BE COPY CONSTRUCTOR! That is why when declaring template copy and assinge operators, also need to declare default ones as well!
+
+(9) std::shared_ptr<int> sp( new int[10], std::default_delete<int[]>() );
+     std::shared_ptr<std::array<int,6>> ptr(std::make_shared<std::array<int, 6>>(std::array<int, 6>()));
+
+(10)
+std::string get_string() {
+    return std::string();
+}
+
+BOTH ARE NOT EQUAL
+std::string get_string() {
+    return {}; // an empty string is returned
+}
+
+If T is an aggregate, then each member is initialized from its brace-or-equal-initializer if it had one, otherwise as if by {} (so apply these steps recursively).
+If T is a class type with a user-provided default constructor, that constructor is called.
+If T is a class type with an implicitly-defined, or = defaulted default constructor, the object is zero-initialized and then the default constructor is called.
+If T is a std::initializer_list, the return value is an empty such list.
+Otherwise (i.e. T is a non-class type -- return types cannot be arrays), the return value is zero-initialized
+
+
+(11) constructors can be chained
+A(int)
+A(int,int):A(int)!
+  
+(12) if (this != _STD addressof(_Right))

@@ -123,6 +123,9 @@ auto test(C c, F f) -> decltype((void)((c->*f)()), void())
 auto enableIfSINAFE(Container& v) -> decltype(enable_if_t<is_same<Iter, random_access_iterator_tag>::value>(), void())
 auto enableIfSINAFE(Container& v) -> decltype(enable_if_t<is_same<Iter, bidirectional_iterator_tag>::value>(), void())
 
+template <class _Ty1>
+class = enable_if_t<_Is_swappable<_Ty1>::value && _Is_swappable<_Ty2>::value>>
+void f()
 16. 
 template< class... >
 using void_t = void;

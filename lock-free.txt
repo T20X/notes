@@ -1,1 +1,3 @@
 membarrier - issue memory barriers on a set of threads
+
+memory_order_relaxed - does not change atomicit of the variable, but impact compiler/cpu ordering

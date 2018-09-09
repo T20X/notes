@@ -1,0 +1,1 @@
+1. /proc/self/fd - can store tmp files binded to the lifetime of an application
