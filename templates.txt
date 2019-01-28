@@ -1,6 +1,13 @@
 The compiler does overload resolution before it even looks at specialisations
 ------------------------------------------------------------------
 
+----------------
+4 type of templates
+--------------
+function templates
+class templates
+variable templates (since C++14)
+alias templates
 ---------------------------------
 can do specialization of a template template member!
 -------------------------
@@ -83,3 +90,20 @@ decay
 (2) if array converts to pointer
 (3) if function converts to func pointer
 {4} removes const
+
+
+---
+basics
+---
+no type deduction for class, alias and variable templates
+no deduction, and specialization for alias templates
+no partial specialization for function templates
+
+---------
+class template shortcuts
+-----
+template <typename T>
+struct iterator
+{
+   iterator& oprerator++(); // here can just use iterator without putting T in here   
+}

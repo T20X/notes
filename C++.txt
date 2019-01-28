@@ -112,3 +112,38 @@ A(int)
 A(int,int):A(int)!
   
 (12) if (this != _STD addressof(_Right))
+
+(13) make_transform_iterator
+     make_filter_iterator
+
+(14) default parameters are re-evaluated on each call!
+     void f(const A& a = Time::now())
+     ....
+     f(Time::now())
+     f(Time::now())
+
+     for virtual functions default parameters are taken from the type it is bein syntactically 
+     called from.
+
+(15) Captureless lamba types are implicitly convertetable to function pointer type. However + is needed for it to happen
+     template <typename R, typename A>
+     void foo(R (*fptr)(A)) { puts(__PRETTY_FUNCTION); }
+     foo( [](double x) { return int(x); } // WRONG!
+     foo( +[](double x) { return int(x); } //CORRECT
+
+(16) declare stack variables as auto
+      auto a = type;
+      auto b = type_final { type}
+
+(17) in C++98 throw() would cause the stack to unwind for the caller of it, but from c++11
+     noexcept() does not require that and program can terminatate!
+
+(18) struct Point
+     {
+	constexpr Point(int x, int y):x_(x), y_(y) {}
+	constexpr getX() { return x_; }
+	constexpr getY() { return x_; }
+        constexpr setX(int x) noexcept { x_ = x; }
+        constexpr setY(int y) noexcept { y_ = y; }
+     };
+     }

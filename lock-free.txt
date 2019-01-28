@@ -1,3 +1,24 @@
 membarrier - issue memory barriers on a set of threads
 
 memory_order_relaxed - does not change atomicit of the variable, but impact compiler/cpu ordering
+
+In boost's implementation of shared_ptr, it uses relaxed memory ordering to increment its reference count. This appears safe as decrements use acquire/release to make sure that any previous decrements are visible to the thread before releasing memory
+
+----------------------
+https://gcc.gnu.org/wiki/Atomic/GCCMM/AtomicSync
+
+Release/acquire mode only requires the two threads involved to be synchronized. This means that synchronized values are not commutative to other threads. The assert in thread 2 must still be true since thread 1 and 2 synchronize with x.load(). Thread 3 is not involved in this synchronization, so when thread 2 and 3 synchronize with y.load(), thread 3's assert can fail. There has been no synchronization between threads 1 and 3, so no value can be assumed for 'x' there
+
+This code is not safe and both lines can be printed!
+
+T1: x = 1;
+T2: y = 1;
+T3: if( x == 1 && y == 0 ) puts("x first");
+T4: if( y == 1 && x == 0 ) puts("y first");
+
+-----------------------
+
+C++11 defines a happens-before relation on memory accesses in a program execution. It represents enforced ordering on those accesses. Access a happens before b if either a
+occurs before b in the same thread (a “is sequenced before”
+b), or if a and b are synchronization operations such that a
+synchronizes with b
