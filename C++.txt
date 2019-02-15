@@ -54,6 +54,8 @@ copy elision
 ----------------
 move semantics
 --------------
+std::vector has an overload for a const A & and a A &&, so the overload with const A & will get chosen and the const A && is implicitly casted to const A &
+
 (1) const objects cannot be moved, copy construct will be called
 (2) only one of these functions can be declared
     void f(Base other)
@@ -147,3 +149,13 @@ A(int,int):A(int)!
         constexpr setY(int y) noexcept { y_ = y; }
      };
      }
+
+(19) struct A {
+     A(int x) { }
+     private:
+     A(A const&); };
+
+
+    A f() {
+  return { 10 };
+}

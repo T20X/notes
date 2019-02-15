@@ -1,0 +1,9 @@
+------------------------
+Don't delete the move members
+
+*********************************
+Assuming your compiler is completely C++11 conforming, then explicitly deleting the move constructor will also implicitly declare the following:
+
+Foo(const Foo&) = delete;
+Foo& operator=(const Foo&) = delete;
+-------------------------
