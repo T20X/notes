@@ -1,0 +1,9 @@
+Bloom filter
+suffix tree
+fusion tree
+segment tree
+
+---------------------------------
+binary indexed tree (Fenwick tree)
+---------------------------------
+used to represent an array and prefix sum all together to have an element update and prefix sum update at (O*LogN)

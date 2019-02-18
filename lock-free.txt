@@ -1,6 +1,55 @@
+----------------------
+SUPER IMPORTANT
+https://stackoverflow.com/questions/21536846/is-memory-order-acquire-really-sufficient-for-locking-a-spinlock
+
+Atomic read-modify-write operations shall always read the last value (in the modification order) written before the write associated with the read-modify-write operation
+
+Read-Modify-Write operations are special. Per 29.3/12 "Atomic read-modify-write operations shall always read the last value (in the modification order) written before the write associated with the read-modify-write operation." The memory ordering you select for such an R-M-W op only affects how it is ordered with reads/writes to other memory locations and non R-M-W ops to the same atomic. As far as the atomic_flag itself is concerned, the test_and_set and clear could both be relaxed and provide mutual exclusion - but it wouldn't order accesses to other memory locations
+
+------------------------
+A part
+atomic_thread_fence(memory_order_release)
+B part
+
+A part cannot reorder with stores from B part (can with LOADS!), however B loads can appear in A part
+-------------------------
+A part
+atomic_thread_fence(memory_order_aqcuire)
+B part
+
+B part cannot re-order with loads from A part (can with STOREs!),however A part stores can apear in B part
+-------------------------
+A part
+atomic_thread_fence(memory_order_aqcuire_release)
+B part
+
+B part cannot re-order with A part UNLESS STORE from A apart can re-order with a load from B part!!!!
+
+Say this is possible
+a.store(relaxed);					 b.load(relaxed);a.store(relaxed);
+atomic_thread_fence(memory_order_aqcuire_release)    ->   atomic_thread_fencememory_order_aqcuire_release)
+b.load(relaxed);				        	
+
+-----------------------------
+memory_order_acquire - no reads or writes in the current thread can be reordered before this load. 
+A part
+x.load(acquire)
+B part
+B part cannot cross x load, however A part can be moved past X
+-------------------------------
+memory_order_release - no reads or writes in the current thread can be reordered after this store. 
+A part
+x.store(release)
+B part
+
+A part cannot be re-ordered past x, but B part operations can appear before x!
+
+------------------
+memory_order_acq_rel - No memory reads or writes in the current thread can be reordered before or after this store
+
 membarrier - issue memory barriers on a set of threads
 
-memory_order_relaxed - does not change atomicit of the variable, but impact compiler/cpu ordering
+memory_order_relaxed - does not change atomicit of the variable, but impacts compiler/cpu ordering.  It essentially guarantees that if you take all the operations affecting a specific address, a consistent ordering exists.In addition, it is legal to reorder non-atomic and Unordered loads around Monotonic loads.
 
 In boost's implementation of shared_ptr, it uses relaxed memory ordering to increment its reference count. This appears safe as decrements use acquire/release to make sure that any previous decrements are visible to the thread before releasing memory
 
@@ -16,9 +65,59 @@ T2: y = 1;
 T3: if( x == 1 && y == 0 ) puts("x first");
 T4: if( y == 1 && x == 0 ) puts("y first");
 
+****You absolutely need sequential consistency to guarantee that at most one line is printed****
+
 -----------------------
 
 C++11 defines a happens-before relation on memory accesses in a program execution. It represents enforced ordering on those accesses. Access a happens before b if either a
 occurs before b in the same thread (a “is sequenced before”
 b), or if a and b are synchronization operations such that a
 synchronizes with b
+
+---------
+r2 = x.load(std::memory_order_relaxed); // C 
+y.store(42, std::memory_order_relaxed); // D
+
+(D) CAN BE RE_ORDERED WITH (C) BY THE COMPILER!!! BECAUSE std::memory_order_relaxed ALLOWS IT!
+
+----------
+ack release are transitive but not commulative between many threads!
+
+GOOD! assert not fired
+thread 1
+=========
+a.store(1,relaxed)
+b.store(1,release)
+
+thread 2
+=========
+if (b.load(aqcuire))
+ c.store(1,release)
+
+thread 3
+if (c.load(aquire))
+  assert(1==a.load(relaxed));
+
+-----------
+
+Release sequence
+After a release operation A is performed on an atomic object M, the longest continuous subsequence of the modification order of M that consists of
+
+1) Writes performed by the same thread that performed A
+(until C++20)
+2) Atomic read-modify-write operations made to M by any thread
+is known as release sequence headed by 
+
+---------
+
+Pause prevents speculative execution, eliminating the branch misprediction penalty
+-------------
+
+compare_exchange_weak 
+
+Compares the contents of the atomic object's contained value withexpected:- if true, it replaces the contained value with val (like store). - if false, it replaces expected with the contained value .
+
+while(!latch.compare_exchange_weak(unlatched, true, std::memory_order_acquire)) {
+    unlatched = false;
+}
+--------------

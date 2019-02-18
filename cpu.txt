@@ -1,3 +1,5 @@
+On x86, all atomic loads generate a MOV. SequentiallyConsistent stores generate an XCHG, other stores generate a MOV. SequentiallyConsistent fences generate an MFENCE, other fences do not cause any code to be generated. cmpxchg uses the LOCK CMPXCHG instruction. atomicrmw xchg uses XCHG, atomicrmw add and atomicrmw sub use XADD, and all other atomicrmw operations generate a loop with LOCK CMPXCHG. Depending on the users of the result, some atomicrmw operations can be translated into operations like LOCK AND, but that does not work in general.
+-------------------------------
 store buffer draining
 ---------------------
 Generation of an Exception and/or Interrupt

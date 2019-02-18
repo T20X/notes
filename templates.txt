@@ -107,3 +107,28 @@ struct iterator
 {
    iterator& oprerator++(); // here can just use iterator without putting T in here   
 }
+
+------------------
+variadic functions
+-----------------
+int sum() { return 0; }
+template<typename T, typename... Args>
+T sum(T a, Args... args) { return a + sum(args...); }
+
+In C++14 you can also use auto sum(T a, Args... args) in order to get sum of mixed type
+
+
+-------
+std::less
+----
+template< class T = void >
+struct less;
+since C++14 for automatic template parameter deduction
+template<>
+	struct less<void>
+	{	// transparent functor for operator<
+	typedef int is_transparent;
+
+	template<class _Ty1,
+		class _Ty2>
+		constexpr auto operator()(_Ty1&& _Left, _Ty2&& _Right) const

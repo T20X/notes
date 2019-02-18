@@ -1,3 +1,5 @@
+concept based polymorphizm
+
 ------------------------
 Don't delete the move members
 
@@ -7,3 +9,10 @@ Assuming your compiler is completely C++11 conforming, then explicitly deleting 
 Foo(const Foo&) = delete;
 Foo& operator=(const Foo&) = delete;
 -------------------------
+
+
+---------
+auto for range loops
+---------
+
+I personally like to use auto&& in generic code where I need to modify the elements of the sequence. If I don't, I'll just stick to auto const&

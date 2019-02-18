@@ -159,3 +159,43 @@ A(int,int):A(int)!
     A f() {
   return { 10 };
 }
+
+(20) You can have UTF-8 strings, Raw strings and more. Here I want to show raw strings. We define a raw string as below:
+
+string s = R"(Hello, World!)"; // Stored: "Hello, World!"
+A raw string skips all escape characters like \n or \". e.g.
+
+string str = "Hello\tWorld\n";
+string r_str = R"(Hello\tWorld\n)";
+cout << str << r_str;
+Output:
+
+Hello	World
+Hello\tWorld\n
+You can also have multiple line raw string:
+
+string r_str =
+R"(Dear Programmers,
+I'm using C++11
+Regards, Swift!)";
+cout << r_str;
+
+(21) Use std::addressof instead of & to get an address in templated code since & operator can be overloaded and hence a proper address of an object may not be retrieved!
+
+(22)
+Padding aligns structure members to "natural" address boundaries - say, int members would have offsets, which are mod(4) == 0 on 32-bit platform. Padding is on by default. It inserts the following "gaps" into your first structure:
+
+struct mystruct_A {
+    char a;
+    char gap_0[3]; /* inserted by compiler: for alignment of b */
+    int b;
+    char c;
+    char gap_1[3]; /* -"-: for alignment of the whole struct in an array */
+} x;
+Packing, on the other hand prevents compiler from doing padding - this has to be explicitly requested - under GCC it's __attribute__((__packed__)), so the following:
+
+struct __attribute__((__packed__)) mystruct_A {
+    char a;
+    int b;
+    char c;
+};
