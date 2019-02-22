@@ -1,3 +1,5 @@
 NIC errros
 -------
 overruns - not enogh space in ring buffers
+
+OOB data - priority delivery

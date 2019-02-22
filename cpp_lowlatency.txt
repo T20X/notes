@@ -16,6 +16,8 @@ cache L3 can be disabled
 gperf - perfect function generator
 ----------------------------
 _COARSE clock_gettime does not do a kernel mode switch
+------------
+ -ffast-math improves math ops performance by compromising precision. speeds up pow
 ------------------------------
 In order to effectively write your code to take advantage of these rules, when writing if-else or switch statements, check the most common cases first and work progressively down to the least common
 --------------------
@@ -40,3 +42,4 @@ Every move assignment operator is trivial or deleted
 at least one copy constructor, move constructor, copy assignment operator, or move assignment operator is non-deleted
 Trivial non-deleted destructor
 This implies that the class has no virtual functions or virtual base classes.
+

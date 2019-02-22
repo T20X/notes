@@ -30,3 +30,47 @@ procedure bt(c)
   while s != NULL do
     bt(s)
     s ? next(P,s)
+
+-------------
+Dejkstra
+---------
+
+    // walktrhough helpers
+    std::priority_queue<DijkstraQItem> Q;
+    std::set<char> visited;  
+
+    // start from the source vertex
+    Q.push({ source, 0 }); 
+    p[index(source)] = 0;
+    d[index(source)] = 0;    
+
+    while (!Q.empty())
+    {
+        DijkstraQItem current = Q.top();
+        Q.pop();
+
+        unsigned y = index(current.vertex);        
+        
+        // discover(NOT visit!) all adjacent vertecies
+        for (unsigned x = 0; x < _N_; x++)
+        {   
+            // only consider if adjacent vertex was not visited before
+            if (graph[y][x] == _edge_missing_ || visited.find(vertex(x)) != visited.end())
+                continue;            
+
+            // make sure adjacent vertices got 
+            // shortest distance from the source vertex
+            unsigned dTx = d[y] + graph[y][x];
+            if (dTx < d[x])
+            {
+                d[x] = dTx; 
+                p[x] = current.vertex;
+            }
+
+            // add unvisited adjacent vertices to Q
+            Q.push({vertex(x), d[x]});
+        }
+
+        visited.insert(current.vertex);
+    }
+

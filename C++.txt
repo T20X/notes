@@ -4,7 +4,6 @@ std::forward_as_tuple
 std::tie - Creates a tuple of lvalue references to its arguments or instances of std::ignore.
 
 ----------
- -ffast-math improves math ops performance by compromising precision. speeds up pow
 
 ----------
 const Fred& operator[] (unsigned index) const;  // Subscript operators often come in pairs
@@ -198,4 +197,11 @@ struct __attribute__((__packed__)) mystruct_A {
     char a;
     int b;
     char c;
+
+
+(23) 
+
+vector::push_back
+If the new size() is greater than capacity() then all iterators and references (including the past-the-end iterator) are invalidated. Otherwise only the past-the-end iterator is invalidated
+
 };
