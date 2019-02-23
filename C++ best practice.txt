@@ -16,3 +16,10 @@ auto for range loops
 ---------
 
 I personally like to use auto&& in generic code where I need to modify the elements of the sequence. If I don't, I'll just stick to auto const&
+-----------
+So what do I recommend? Use '\n', and std::flush if you really do
+mean it. You may as well put the '\n' into the preceding string literal
+while you are at it.
+ std::cout << "foo\n";
+ std::cout << "Some int: " << i << '\n';
+ std::cout << "bar\n" << std::flush;

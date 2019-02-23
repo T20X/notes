@@ -26,6 +26,9 @@ In order to effectively write your code to take advantage of these rules, when w
       "kMaxCpus should be a power of two so modulo is fast")
 
 then module could be done like x & (b - 1)
+
+but carefull abotu sequence points! readPos = ++readPos & (N - 1); - BUG!
+shall be readPos++; readPos = readPos & (N - 1)
 ---------------------
 Pause prevents speculative execution, eliminating the branch misprediction penalty
 ---------------------------
