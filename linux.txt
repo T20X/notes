@@ -2,3 +2,12 @@ watch -n 1 grep 'bar' /proc/interrupt
 cat /proc/cmdline
 chrt -p <pid> - get scheduling process policy
 lstopo -c -v - numa diagram with devices
+-------------
+BUILD KERNEL
+
+apt-get install dctrl-tools
+bizon and flex packages are not installed ! whiule building linux kernek for 18.04 ubuntu
+
+fakeroot make-kpkg --initrd --revision=1.0.custom kernel_image
+ dpkg -i ../linux-image-4.18.0_1.0.custom_amd64.deb
+then select from the boot menu

@@ -4,10 +4,12 @@ concept based polymorphizm
 Don't delete the move members
 
 *********************************
-Assuming your compiler is completely C++11 conforming, then explicitly deleting the move constructor will also implicitly declare the following:
+Assuming your compiler is completely C++11 conforming,
+ then explicitly deleting the move constructor will also implicitly declare the following:
 
 Foo(const Foo&) = delete;
 Foo& operator=(const Foo&) = delete;
+AND YOU CANNOT ENABLE THEM BACK!
 -------------------------
 
 
@@ -15,7 +17,8 @@ Foo& operator=(const Foo&) = delete;
 auto for range loops
 ---------
 
-I personally like to use auto&& in generic code where I need to modify the elements of the sequence. If I don't, I'll just stick to auto const&
+I personally like to use auto&& in generic code where I need to modify 
+the elements of the sequence. If I don't, I'll just stick to auto const&
 -----------
 So what do I recommend? Use '\n', and std::flush if you really do
 mean it. You may as well put the '\n' into the preceding string literal

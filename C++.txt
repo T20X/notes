@@ -205,3 +205,20 @@ vector::push_back
 If the new size() is greater than capacity() then all iterators and references (including the past-the-end iterator) are invalidated. Otherwise only the past-the-end iterator is invalidated
 
 };
+
+(24)
+copy constructor that accepts const T& arguments, satisfy std::is_move_constructible
+copy assingment that accepts constT& argument satifsfy std::is_move_assingable!
+
+(25)
+The operands of the operators typeid, sizeof, noexcept, and decltype (since C++11) 
+are expressions that are not evaluated (unless they are polymorphic glvalues and
+ are the operands of typeid), since these operators only query the
+ compile-time properties of their operands.
+ Thus, std::size_t n = sizeof(std::cout << 42);
+ does not perform console output
+
+(26)
+variadic functions copy values!!!!
+drainByCopy(...)
+A a;drainByCopy(a) -> A MUST have a copy constructor!

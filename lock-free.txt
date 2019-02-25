@@ -2,9 +2,16 @@
 SUPER IMPORTANT
 https://stackoverflow.com/questions/21536846/is-memory-order-acquire-really-sufficient-for-locking-a-spinlock
 
-Atomic read-modify-write operations shall always read the last value (in the modification order) written before the write associated with the read-modify-write operation
+Atomic read-modify-write operations shall always read the last value (in the modification order)
+ written before the write associated with the read-modify-write operation
 
-Read-Modify-Write operations are special. Per 29.3/12 "Atomic read-modify-write operations shall always read the last value (in the modification order) written before the write associated with the read-modify-write operation." The memory ordering you select for such an R-M-W op only affects how it is ordered with reads/writes to other memory locations and non R-M-W ops to the same atomic. As far as the atomic_flag itself is concerned, the test_and_set and clear could both be relaxed and provide mutual exclusion - but it wouldn't order accesses to other memory locations
+Read-Modify-Write operations are special.
+ Per 29.3/12 "Atomic read-modify-write operations shall always read the last value (in the modification order)
+ written before the write associated with the read-modify-write operation." 
+The memory ordering you select for such an R-M-W op only affects how it is ordered with reads/writes to other
+ memory locations and non R-M-W ops to the same atomic. As far as the atomic_flag itself is concerned,
+ the test_and_set and clear could both be relaxed and provide mutual exclusion - 
+but it wouldn't order accesses to other memory locations
 
 ------------------------
 A part
@@ -69,7 +76,8 @@ T4: if( y == 1 && x == 0 ) puts("y first");
 
 -----------------------
 
-C++11 defines a happens-before relation on memory accesses in a program execution. It represents enforced ordering on those accesses. Access a happens before b if either a
+C++11 defines a happens-before relation on memory accesses in a program execution.
+ It represents enforced ordering on those accesses. Access a happens before b if either a
 occurs before b in the same thread (a “is sequenced before”
 b), or if a and b are synchronization operations such that a
 synchronizes with b
@@ -101,7 +109,8 @@ if (c.load(aquire))
 -----------
 
 Release sequence
-After a release operation A is performed on an atomic object M, the longest continuous subsequence of the modification order of M that consists of
+After a release operation A is performed on an atomic object M, 
+the longest continuous subsequence of the modification order of M that consists of
 
 1) Writes performed by the same thread that performed A
 (until C++20)

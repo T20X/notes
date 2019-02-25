@@ -1,0 +1,81 @@
+TEMPLATE SEQUENCE 
+------------
+instantiation -> deduction -> substitution -> evaluation!
+
+
+(1)  funtion() -> decltype based!
+
+Expression SFINAE
+------------------
+
+template <class C, class F>
+auto test(C c, F f) -> decltype((void)(c.*f)(), void())
+{ std::cout << "Reference overload called\n"; }
+
+template <class C, class F>
+auto test(C c, F f) -> decltype((void)((c->*f)()), void())
+{ std::cout << "Pointer overload called\n"; }
+
+auto enableIfSINAFE(Container& v) -> decltype(enable_if_t<is_same<Iter, random_access_iterator_tag>::value>(), void())
+auto enableIfSINAFE(Container& v) -> decltype(enable_if_t<is_same<Iter, bidirectional_iterator_tag>::value>(), void())
+
+
+(2) 
+
+void_t!
+template< class... >
+using void_t = void;
+(since C++17)
+This metafunction is used in template metaprogramming to detect ill-formed types in SFINAE context
+
+// primary template handles types that have no nested ::type member:
+template< class, class = std::void_t<> >
+struct has_type_member : std::false_type { };
+ 
+// specialization recognizes types that do have a nested ::type member:
+template< class T >
+struct has_type_member<T, std::void_t<typename T::type>> : std::true_type { };
+OR
+template< class T >
+struct has_type_member<T, std::void_t<decltype(T::member)> : std::true_type { };
+
+
+(3) 
+template<class _FwdIt,
+        class _Ty> inline
+        typename _Fill_memset_is_safe_helper<_FwdIt, _Ty>::type
+        _Fill_memset_is_safe(const _FwdIt&, const _Ty&)
+    {	// type deduction for _Fill_memset_is_safe_helper
+        return {};
+    }
+
+trick is that {} will force default construction! but not for void in which case SFINAE kicks in!
+
+(4)
+attempting to use a type that is not a class or enumeration on the left of a scope resolution operator ::
+template <class T> int f(typename T::B*);
+template <class T> int f(T);
+int i = f<int>(0); // uses second overload
+
+(5)
+attempting to create an array of void, array of reference, 
+array of function, array of negative size, array of non-integral size, or array of size zero.
+template <int I> void div(char(*)[I % 2 == 0] = 0) {
+    // this overload is selected when I is even
+}
+template <int I> void div(char(*)[I % 2 == 1] = 0) {
+    // this overload is selected when I is odd
+}
+
+(6) attempting to create a pointer to reference
+(7) attempting to create a reference to void
+(8) attempting to create pointer to member of T, where T is not a class type
+template<typename T>
+class is_class {
+    typedef char yes[1];
+    typedef char no [2];
+    template<typename C> static yes& test(int C::*); // selected if C is a class type
+    template<typename C> static no&  test(...);      // selected otherwise
+  public:
+    static bool const value = sizeof(test<T>(0)) == sizeof(yes);
+};

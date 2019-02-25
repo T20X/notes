@@ -36,8 +36,12 @@ Pause prevents speculative execution, eliminating the branch misprediction penal
 trivial classes/structs can be copied with memcpy which is an important optimization!
 pair and tuple are not trivial classes!
 
+A type that is trivial can be statically initialized
+
 standart layoout classes can be used in other programming languages!
 
+Trivial class req (can be statically initialized and memcpy optimized)
+--------------
 Every copy constructor is trivial or deleted
 Every move constructor is trivial or deleted
 Every copy assignment operator is trivial or deleted
@@ -46,3 +50,11 @@ at least one copy constructor, move constructor, copy assignment operator, or mo
 Trivial non-deleted destructor
 This implies that the class has no virtual functions or virtual base classes.
 
+Standart Layout class (can be used in C)
+---------
+It has no virtual functions
+It has no virtual base classes
+All its non-static data members have the same access control (public, private, protected)
+All its non-static data members, including any in its base classes, are in the same one class in the hierarchy
+The above rules also apply to all the base classes and to all non-static data members in the class hierarchy
+It has no base classes of the same type as the first defined non-static data member
