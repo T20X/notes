@@ -1,3 +1,7 @@
+-----------
+huge pages are blocks of memory that come in 2MB and 1GB sizes. 
+The page tables used by the 2MB pages are suitable for managing multiple gigabytes of memory-
+--------------
 physical page owners -> 
 User-space processes,
 Dynamically allocated kernel data,
@@ -52,10 +56,21 @@ The heap may also divide itself into bins one for small allocations and one for 
 There are also clever mechanisms for optimizing multi-threaded heap allocation.
 
 -------------
-the kernel developers implemented a new feature: interrupt stacks. Interrupt stacks provide a single per-processor stack used for interrupt handlers. With this option, interrupt handlers no longer share the kernel stack of the interrupted process. Instead, they use their own stacks. This consumes only a single page per processor.
+the kernel developers implemented a new feature: interrupt stacks. Interrupt stacks provide a single per-processor
+ stack used for interrupt handlers.
+ With this option, interrupt handlers no longer share the kernel stack of the interrupted process.
+ Instead, they use their own stacks. This consumes only a single page per processor.
 
 ------------
-Processes may share their address spaces with their children via the CLONE_VM flag to clone(). The process is then called a thread. This is essentially the only difference between normal processes and so-called threads in Linux (Chapter 3); the Linux kernel does not otherwise differentiate between them. Threads are regular processes to the kernel that merely share certain resources.
+Processes may share their address spaces with their children via the CLONE_VM flag to clone().
+ The process is then called a thread. This is essentially the only difference between normal processes
+ and so-called threads in Linux (Chapter 3); the Linux kernel does not otherwise differentiate 
+between them. Threads are regular processes to the kernel that merely share certain resources.
 
 ---------------------
-o answer another part of the question - the kernel is mapped into every processes address space partially for efficiency/performance reasons (there are others too, I'm sure). On most modern hardware, it is quicker to change the security level (thus allowing access to the pages that are otherwise protected, as mentioned in Alexey's answer) in order to perform system calls and other kernel provided functions than it is to change the security level and the entire virtual memory map, along with all the associated TLB cache flushes and everything else involved in a full context switch. Since system calls can be fairly frequent events, the design that has evolved in Linux and many other places is to try to minimize the overhead of utilizing kernel services, and mapping the kernel code and (at least some of the) data into each process is part of that.
+o answer another part of the question - the kernel is mapped into every processes address space
+ partially for efficiency/performance reasons (there are others too, I'm sure). On most modern hardware,
+ it is quicker to change the security level (thus allowing access to the pages that are otherwise protected,
+ as mentioned in Alexey's answer) in order to perform system calls and other kernel provided functions than
+ it is to change the security level and the entire virtual memory map, along with all the associated TLB cache flushes and everything else involved in a full context switch. Since system calls can be fairly frequent events, the design that has evolved in Linux and many other places is to try to minimize the overhead of utilizing kernel services, and mapping the kernel code and 
+(at least some of the) data into each process is part of that.

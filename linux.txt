@@ -11,3 +11,25 @@ bizon and flex packages are not installed ! whiule building linux kernek for 18.
 fakeroot make-kpkg --initrd --revision=1.0.custom kernel_image
  dpkg -i ../linux-image-4.18.0_1.0.custom_amd64.deb
 then select from the boot menu
+
+-----
+FIND WHO USES HUGE PAGES!
+------
+grep -B 11 'KernelPageSize: 2048 kB' /proc/[PID]/smaps \ | grep "^Size:" \ | awk 'BEGIN{sum=0}{sum+=$2}END{print sum/1024}'
+
+sudo grep huge /proc/*/numa_maps
+/proc/4131/numa_maps:80000000 default file=/anon_hugepage\040(deleted) huge anon=4 dirty=4 N0=3 N1=1
+/proc/4131/numa_maps:581a00000 default file=/anon_hugepage\040(deleted) huge anon=258 dirty=258 N0=150 N1=108
+/proc/4131/numa_maps:7f6c40400000 default file=/anon_hugepage\040(deleted) huge
+/proc/4131/numa_maps:7f6ce5000000 default file=/anon_hugepage\040(deleted) huge anon=1 dirty=1 N0=1
+/proc/4153/numa_maps:80000000 default file=/anon_hugepage\040(deleted) huge anon=7 dirty=7 N0=6 N1=1
+/proc/4153/numa_maps:581a00000 default file=/anon_hugepage\040(deleted) huge anon=265 dirty=265 N0=162 N1=103
+/proc/4153/numa_maps:7f3dc8400000 default file=/anon_hugepage\040(deleted) huge
+/proc/4153/numa_maps:7f3e00600000 default file=/anon_hugepage\040(deleted) huge anon=1 dirty=1 N0=1
+
+grep HugePages /proc/meminfo
+AnonHugePages:   1079296 kB
+HugePages_Total:    4096
+HugePages_Free:     3560
+HugePages_Rsvd:      234
+HugePages_Surp:        0

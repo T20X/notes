@@ -2,6 +2,7 @@ Bloom filter
 suffix tree
 fusion tree
 segment tree
+Radix tree
 
 ---------------------------------
 binary indexed tree (Fenwick tree)

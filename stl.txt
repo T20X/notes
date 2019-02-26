@@ -10,3 +10,38 @@ move_if_noexcept - can still move even move throwing move constructor,
 If the new size() is greater than capacity() then all 
 iterators and references (including the past-the-end iterator)
  are invalidated. Otherwise only the past-the-end iterator is invalidated
+
+(3) unordered_map
+If rehashing occurs due to the insertion, all iterators are invalidated.
+ Otherwise iterators are not affected. References are not invalidated. 
+Rehashing occurs only if the new number of elements is greater than max_load_factor()*bucket_count().
+
+(4)
+template <class M>
+pair<iterator, bool> insert_or_assign(const key_type& k, M&& obj); 
+If the insertion is successful, pointers and references to the element obtained while it is held 
+in the node handle are invalidated, and pointers and references obtained
+ to that element before it was extracted become valid.
+
+(5)
+template <class... Args>
+pair<iterator, bool> try_emplace(const key_type& k, Args&&... args);
+Unlike insert or emplace, these functions do not move from rvalue arguments
+ IF the insertion does not happen, which makes it easy to manipulate maps
+whose values are move-only types
+
+(6)
+node_type extract( const_iterator position );
+node_type extract( const key_type& x );
+
+ Unlinks the node that contains the element pointed to by position and
+ returns a node handle that owns i
+
+Extracting a node invalidates only the iterators to the extracted element, 
+and preserves the relative order of the elements that are not erased.
+ Pointers and references to the extracted element remain valid, 
+but cannot be used while element is owned by a node handle:
+ they become usable if the element is inserted into a container.
+
+That being said, the handle itself has member functions value()/key()/mapped() 
+that may be of value (!) to you.

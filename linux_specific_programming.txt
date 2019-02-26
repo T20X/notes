@@ -1,1 +1,12 @@
 1. /proc/self/fd - can store tmp files binded to the lifetime of an application
+
+(2)
+posix_memaling allocated memory from the heap given an alingment req!
+     malloc just gives the memory from heap. It alinges on 8 byte on 64 bit. It can revert back
+     to mmap if the size is too big. Also it may tranparently use huge pages!
+     mmap allocates from kernel! 
+
+(3) int madvise(void *addr, size_t length, int advice);
+   gives the kernel an advice on how the memory will be used!
+
+(4) mlock - page faults all the process addres spsace!

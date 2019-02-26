@@ -1,0 +1,36 @@
+1.
+---------------
+STRUCTUREDED BINDINGS
+----------------
+std::map myMap;    
+for (const auto & [k,v] : myMap) 
+{ // k - key   // v - value }
+}
+
+auto& [ refA, refB, refC, refD ] = myTuple;
+auto [a, b] = myPair;
+
+EVENT STRUCTS!
+struct S { int x1 : 2; volatile double y1; };
+S f();
+const auto [ x, y ] = f();
+
+---------------------
+2. NEW IF STATEMENT
+----------------
+if (auto val = GetValue(); condition(val))    
+    // on success  
+else   
+    // on false... 
+val is visible only inside the if and else statements, so it doesn't 'leak
+
+----------------
+3. INLINE VARIABLES
+----------------
+
+-----------
+4. THIS BY VALUE
+------
+This can now be copied instead of using this pointer! Note that class copy 
+constructor would be called
+  auto f1 = [*this](){}

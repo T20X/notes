@@ -1,0 +1,5 @@
+(1) negative integers are represented as two's complemented
+first normal ingteger is inverted! then + 1
+for example 
+1100 -> 0011 -> 0011 + 1 -> 0100
+

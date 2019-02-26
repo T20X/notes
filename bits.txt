@@ -1,0 +1,3 @@
+(1) The expression x & (-x) clears all but the least-significant 1 bit,
+(2) if N is power of 2! N & ( N - 1)
+(3) modulo! pos = ++pos; pos &= (N - 1)

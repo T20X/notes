@@ -1,6 +1,28 @@
-The overloads that do not use std::piecewise_construct_t assume that each tuple argument becomes the element of a pair. The overloads that use std::piecewise_construct_t assume that each tuple argument is used to construct, piecewise, a new object of specified type, which will become the element of the pair
+----------------
+Temporaries life until the end of the full expression in which they are created. 
+A "full expression" is an expression that's not a sub-expression of another expression.
+"Temporary objects are destroyed as the last step in evaluating the full-expression (1.9)
+ that (lexically) contains the point where they were created. 
+This is true even if that evaluation ends in throwing an exceptio
+baz( bar( foo().c_str() ) );
+string returned from c_str still lives!
+------------
+
+The overloads that do not use std::piecewise_construct_t assume that each 
+tuple argument becomes the element of a pair.
+ The overloads that use std::piecewise_construct_t
+ assume that each tuple argument is used to construct, 
+piecewise, a new object of specified type, which will become the element of the pair
+IT WORKS ONLY WITH TUPLES!
 ------------------------
 std::forward_as_tuple
+If the arguments are temporaries, forward_as_tuple does 
+not extend their lifetime; they have to be used before the
+ end of the full expression
+   std::map<int, std::string> m; 
+    m.emplace(std::piecewise_construct,
+              std::forward_as_tuple(10),
+              std::forward_as_tuple(20, 'a'))
 std::tie - Creates a tuple of lvalue references to its arguments or instances of std::ignore.
 
 ----------
@@ -9,7 +31,10 @@ std::tie - Creates a tuple of lvalue references to its arguments or instances of
 const Fred& operator[] (unsigned index) const;  // Subscript operators often come in pairs
   Fred&       operator[] (unsigned index);        // Subscript operators often come in pai
 ----------
-Sometimes it's safe to throw an exception even while std::uncaught_exception() == true. For example, if stack unwinding causes an object to be destructed, the destructor for that object could run code that throws an exception as long as the exception is caught by some catch block before escaping the destructor.
+Sometimes it's safe to throw an exception even while std::uncaught_exception() == true. For example,
+ if stack unwinding causes an object to be destructed,
+ the destructor for that object could run code that throws an exception as long as the exception 
+is caught by some catch block before escaping the destructor.
 
 ----------
 template <typename... Args>
@@ -53,13 +78,15 @@ copy elision
 ----------------
 move semantics
 --------------
-std::vector has an overload for a const A & and a A &&, so the overload with const A & will get chosen and the const A && is implicitly casted to const A &
+std::vector has an overload for a const A & and a A &&, so the overload with const A & will get chosen 
+and the const A && is implicitly casted to const A &
 
 (1) const objects cannot be moved, copy construct will be called
 (2) only one of these functions can be declared
     void f(Base other)
     void f(Base&& other)
-(3) Remember that “&&” indicates a universal reference only where type deduction takes place
+(3) Remember that “&&” indicates a universal reference only
+ where type deduction takes place
 
 universal ref: ->
 template<typename T>
@@ -69,9 +96,12 @@ not universal ref ->
 template<typename T>
 void f(vector<T>&& param); 
 
-Universal references can only occur in the form “T&&”!  Even the simple addition of a const qualifier is enough to disable the interpretation of “&&” as a universal referenc
+Universal references can only occur in the form “T&&”!  Even the simple addition of a const qualifier
+ is enough to disable the interpretation of “&&” as 
+a universal referenc
  
-(4)  && has preference when taking a temporary Base() as input, then template<T>(T&&), then const Base&! coz overloading has a precedence over templates!
+(4)  && has preference when taking a temporary Base() as input, 
+then template<T>(T&&), then const Base&! coz overloading has a precedence over templates!
     void f(const Base& other) 
     void f(Base&& other) 
     template <typename T> void f(T&& other) {}
@@ -82,11 +112,17 @@ Universal references can only occur in the form “T&&”!  Even the simple addition
 (6) exception is a virtual class
 
 
-(7) The lifetime of the temporary may be extended by binding a reference to it (in which case its lifetime is extended until the end of the lifetime of the reference), or by using it as an initializer in a constructor's initializer list (in which case its lifetime is extended until the object being constructed is fully constructed).
+(7) The lifetime of the temporary may be extended by binding a reference to it 
+(in which case its lifetime is extended until the end of the lifetime of the reference),
+ or by using it as an initializer in a constructor's initializer list
+ (in which case its lifetime is extended until the object being constructed is fully constructed).
 
-Temporary objects are destroyed as the last step in evaluating the full-expression (1.9) that (lexically) contains the point where they were created. This is true even if that evaluation ends in throwing an exception
+Temporary objects are destroyed as the last step in evaluating the full-expression (1.9) 
+that (lexically) contains the point where they were created. This is true even if that 
+evaluation ends in throwing an exception
 
-(8) TEMPLATE CANNOT BE COPY CONSTRUCTOR! That is why when declaring template copy and assinge operators, also need to declare default ones as well!
+(8) TEMPLATE CANNOT BE COPY CONSTRUCTOR! That is why when declaring template copy and assinge operators,
+ also need to declare default ones as well!
 
 (9) std::shared_ptr<int> sp( new int[10], std::default_delete<int[]>() );
      std::shared_ptr<std::array<int,6>> ptr(std::make_shared<std::array<int, 6>>(std::array<int, 6>()));
@@ -101,9 +137,11 @@ std::string get_string() {
     return {}; // an empty string is returned
 }
 
-If T is an aggregate, then each member is initialized from its brace-or-equal-initializer if it had one, otherwise as if by {} (so apply these steps recursively).
+If T is an aggregate, then each member is initialized from its brace-or-equal-initializer if it had one,
+ otherwise as if by {} (so apply these steps recursively).
 If T is a class type with a user-provided default constructor, that constructor is called.
-If T is a class type with an implicitly-defined, or = defaulted default constructor, the object is zero-initialized and then the default constructor is called.
+If T is a class type with an implicitly-defined, or = defaulted default constructor, the object is zero-initialized and then 
+the default constructor is called.
 If T is a std::initializer_list, the return value is an empty such list.
 Otherwise (i.e. T is a non-class type -- return types cannot be arrays), the return value is zero-initialized
 
@@ -179,7 +217,8 @@ I'm using C++11
 Regards, Swift!)";
 cout << r_str;
 
-(21) Use std::addressof instead of & to get an address in templated code since & operator can be overloaded and hence a proper address of an object may not be retrieved!
+(21) Use std::addressof instead of & to get an address in templated code since & operator
+ can be overloaded and hence a proper address of an object may not be retrieved!
 
 (22)
 Padding aligns structure members to "natural" address boundaries - say, int members would have offsets, which are mod(4) == 0 on 32-bit platform. Padding is on by default. It inserts the following "gaps" into your first structure:
@@ -191,7 +230,8 @@ struct mystruct_A {
     char c;
     char gap_1[3]; /* -"-: for alignment of the whole struct in an array */
 } x;
-Packing, on the other hand prevents compiler from doing padding - this has to be explicitly requested - under GCC it's __attribute__((__packed__)), so the following:
+Packing, on the other hand prevents compiler from doing padding - this has to be explicitly requested - 
+under GCC it's __attribute__((__packed__)), so the following:
 
 struct __attribute__((__packed__)) mystruct_A {
     char a;
@@ -222,3 +262,11 @@ are expressions that are not evaluated (unless they are polymorphic glvalues and
 variadic functions copy values!!!!
 drainByCopy(...)
 A a;drainByCopy(a) -> A MUST have a copy constructor!
+
+(27)
+be carefull how you define copy constructors! class members have to be copied manually if 
+the copy constructor is overriden!
+        Object t_;
+        TestThis(const TestThis& o):t_(o.t_) {}
+
+(28) 
