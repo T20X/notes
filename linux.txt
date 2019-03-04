@@ -2,6 +2,15 @@ watch -n 1 grep 'bar' /proc/interrupt
 cat /proc/cmdline
 chrt -p <pid> - get scheduling process policy
 lstopo -c -v - numa diagram with devices
+sysctl -A | grep "sched" | grep -v "domain"
+ ps -o min_flt,maj_flt,cmd,args,uid,gid 1 - track page faults
+The virtual memory statistics can be monitored by looking for the pgfault value in 
+the /proc/vmstat file
+For a particular process PID, use the cat command to view the /proc/PID/stat file. 
+The relevant entries in this file are:
+Field 2 - filename of the executable
+Field 10 - number of minor page faults
+Field 12 - number of major page faults
 -------------
 BUILD KERNEL
 
@@ -11,7 +20,9 @@ bizon and flex packages are not installed ! whiule building linux kernek for 18.
 fakeroot make-kpkg --initrd --revision=1.0.custom kernel_image
  dpkg -i ../linux-image-4.18.0_1.0.custom_amd64.deb
 then select from the boot menu
-
+-----
+A tickless kernel is an operating system kernel in which timer interrupts
+ do not occur at regular intervals, but are only delivered as required
 -----
 FIND WHO USES HUGE PAGES!
 ------

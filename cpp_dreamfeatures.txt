@@ -1,0 +1,6 @@
+(1) reverse for loops for STL containers
+(2) list to have reserve as well!
+(3) algorithms to accept reverse iterators
+(4) ability to set lambda in the class - Atm cannot do the below!
+MyClass o([](const auto& v) { std::cout << v << std::endl; })
+          

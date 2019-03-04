@@ -1,4 +1,37 @@
-----------------
+std::ios_base::sync_with_stdio(false) - turns off string synchronization with C! That is means streams are not longer thread-safe and C++ streams buffer their own I/O independetnly. Turned on my default and enables to mix C++ and C streams
+
+cin.tie(nullptr); - unties cin and cout streams which makes I/O faster! Basically by defualt (if tied) cin / cout would flush each other before proceeding.
+
+while (cin >> x) { // code } reads until no more data found!
+
+-----------------------------
+zero initialized objects would have their def constructor called
+---------------------
+if class has a user defined destructor then move operators will be implicitly deleted. Copy sitll can live!
+------------
+
+vector<bool> vec;
+auto ret = vec[4];
+auto will give you prob here as vec[4] returens a proxy object!
+
+----
+forwarding reference type deduction examples! DO REMEMBER THIS!
+
+template <typename T>
+void f(T&& param);
+
+int a = 27;
+int& b  = x;
+const int& c = b;
+int&& d = 0;
+
+f(a) -> T deduced to int& and param type to int&
+f(b) -> T deduced to int& and paramt type to int&
+f(c) -> T deduced to const int& and param type to const int&
+f(12) -> T deduced to int&& and param type to int&&
+f(d) -> T deduced to int&& and param type to int&&
+
+------------
 Temporaries life until the end of the full expression in which they are created. 
 A "full expression" is an expression that's not a sub-expression of another expression.
 "Temporary objects are destroyed as the last step in evaluating the full-expression (1.9)
@@ -263,10 +296,11 @@ variadic functions copy values!!!!
 drainByCopy(...)
 A a;drainByCopy(a) -> A MUST have a copy constructor!
 
+
 (27)
 be carefull how you define copy constructors! class members have to be copied manually if 
 the copy constructor is overriden!
         Object t_;
         TestThis(const TestThis& o):t_(o.t_) {}
 
-(28) 
+(28)  C-style operators can take away const & volation in conversion!

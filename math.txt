@@ -1,0 +1,26 @@
+312(numerator)/941(denominator)
+
+log x A = y; x = base, A - fixed number, y - exponent!
+log x(a * b) = log x (a) + log x (b)
+
+sum of arithmertic progression -> n*(a+b)/2 
+n - number ofelemetns to sum, a - start, b - end
+
+sum of geometric progression ->
+(bk - a) / (k -1)
+
+rational number a/b - where a and b are integers
+
+negatrion - ~
+conjunction - &
+disjunction - |
+equivalance - =
+
+polynomial time complexity - O(n^k) where k is CONSTANT!
+O(n!) - permutational time complexity!
+
+2^N - number of sets! (say {1,2,3} and {3,2,1} are the same } including empty set!
+ -  If we just want to select K subelemts then, it is n!/k!(n - k)!
+n! - numer of all permutations!
+ -  If we just want to select K subelemts then, it is n!/(n - k)!
+

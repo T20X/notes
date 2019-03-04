@@ -10,3 +10,32 @@ posix_memaling allocated memory from the heap given an alingment req!
    gives the kernel an advice on how the memory will be used!
 
 (4) mlock - page faults all the process addres spsace!
+
+
+(5) 
+his also means that if I manually change the clock (or the date) of my system, this change will
+ have repercussions on the value returned by clock_gettime(CLOCK_REALTIME, &ts).Note that this
+ is also true for time changes made by NTP. Thus, the time given by the CLOCK_REALTIME clock is not ~monotonic~, as it is not necessarily monotonically increasing in time,
+ and can go backwards and forwards.
+
+The elapsed time since boot is independent from the wall clock time. If I change the clock of my system, 
+the value given by the CLOCK_MONOTONIC clock is still relative to the boot time, which still hasn't changed.
+
+CLOCK_REALTIME (CAN MOVE FORWARD AND BAKCKWARDS)	Represents wall-clock time. Can be both stepped and slewed by time adjustment code (e.g., NTP, PTP).
+CLOCK_REALTIME_COARSE (CAN MOVE FORWARD AND BAKCKWARDS)	A lower-resolution version of CLOCK_REALTIME.
+
+CLOCK_MONOTONIC (ONLY FORWARD CAN MOVE)	Represents the interval from an abitrary time. Can be slewed but not stepped by time adjustment code. As such, it can only move forward, not backward.
+CLOCK_MONOTONIC_COARSE	A lower-resolution version of CLOCK_MONOTONIC.
+CLOCK_MONOTONIC_RAW	A version of CLOCK_MONOTONIC that can neither be slewed nor stepped by time adjustment code.
+CLOCK_BOOTTIME	A version of CLOCK_MONOTONIC that additionally reflects time spent in suspend mode. Only available in newer (2.6.39+) kernels.
+
+clocks.c
+                    clock	       res (ns)	           secs	          nsecs
+             gettimeofday	          1,000	  1,391,886,268	    904,379,000
+           CLOCK_REALTIME	              1	  1,391,886,268	    904,393,224
+    CLOCK_REALTIME_COARSE	        999,848	  1,391,886,268	    903,142,905
+          CLOCK_MONOTONIC	              1	        136,612	    254,536,227
+      CLOCK_MONOTONIC_RAW	    870,001,632	        136,612	    381,306,122
+   CLOCK_MONOTONIC_COARSE	        999,848	        136,612	    253,271,977
+
+CLOCK_MONOTONIC and CLOCK_MONOTONIC_COARSE shall be the fastest!

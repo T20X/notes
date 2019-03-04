@@ -1,7 +1,47 @@
+TLB caches are shared between all PROCESSES! That means context switch may not invalidate it!!
+For instance, modern Intel TLBs have a process context ID (PCID); each TLB entry is
+ tagged with the PCID of the process that the page mapping is for, and the 
+processor will only use that TLB entry if its PCID matches the ID of the 
+currently running process. The processor fills the PCID when it creates the
+ TLB entry from a register which the operating system must set to a unique 
+value for each process
+
+------------
+the hardware defines the page table structure, at least on x86 (including x86-64). 
+Every process has its own page table structure starting from the Page Global Directory,
+ which is pointed to by the CR3 register. When a context switch occurs,
+ that is, a new process is selected for execution, a new value for the
+ CR3 register is loaded from the new process' descriptor. In addition to
+ the process specific user level memory mappings, all processes share a
+ common mapping of the kernel address space. This area is accessible only when 
+the process is in kernel mode
+---------------------
+The Wikipedia article on page faults mentions the case were memory is shared by 
+different processes as an example which could lead to a soft page fault. 
+A soft page fault is a real page fault, and result in calling a 
+handler routine to fix the situation. The difference compared to a hard 
+page fault is that it is easier to handle, because the data is already in RAM, 
+and does not need to be loaded from disk. All that needs to be done is to fix the page 
+tables of the faulting process to point to the correct page frame
+-----------------------------
+This sounds like it's just the cost to traverse the page table,
+ right? ~300 cycles per raw memory lookup,
+----------------------
+A potential source of memory latency is called a minor page fault.
+ They are created when a process attempts to access a portion of memory before 
+it has been initialized. In this case, the system will need to perform some operations 
+to fill the memory maps or other management structures. The severity of a minor page 
+fault can depend on system load and other factors, but they are usually short and have 
+a negligable impact.
+These MAINOR PAGE FAULTS ARE HANDLED LIKE FAULTS!
 -----------
 huge pages are blocks of memory that come in 2MB and 1GB sizes. 
 The page tables used by the 2MB pages are suitable for managing multiple gigabytes of memory-
 --------------
+The virtual memory statistics can be monitored by looking for the pgfault value in 
+the /proc/vmstat file
+.
+----------
 physical page owners -> 
 User-space processes,
 Dynamically allocated kernel data,
@@ -56,7 +96,8 @@ The heap may also divide itself into bins one for small allocations and one for 
 There are also clever mechanisms for optimizing multi-threaded heap allocation.
 
 -------------
-the kernel developers implemented a new feature: interrupt stacks. Interrupt stacks provide a single per-processor
+the kernel developers implemented a new feature: interrupt stacks.
+ Interrupt stacks provide a single per-processor
  stack used for interrupt handlers.
  With this option, interrupt handlers no longer share the kernel stack of the interrupted process.
  Instead, they use their own stacks. This consumes only a single page per processor.
@@ -74,3 +115,32 @@ o answer another part of the question - the kernel is mapped into every processe
  as mentioned in Alexey's answer) in order to perform system calls and other kernel provided functions than
  it is to change the security level and the entire virtual memory map, along with all the associated TLB cache flushes and everything else involved in a full context switch. Since system calls can be fairly frequent events, the design that has evolved in Linux and many other places is to try to minimize the overhead of utilizing kernel services, and mapping the kernel code and 
 (at least some of the) data into each process is part of that.
+
+-----------
+When a process runs in kernel mode, it often has to access user
+mode memory whose address has been passed by an untrusted program.
+
+To overcome this situation, Linus decided to let the virtual memory
+hardware present in every Linux-capable CPU handle this test.
+
+How does this work?
+
+Whenever the kernel tries to access an address that is currently not
+accessible, the CPU generates a page fault exception and calls the
+page fault handler
+
+void do_page_fault(struct pt_regs *regs, unsigned long error_code)
+
+in arch/x86/mm/fault.c. The parameters on the stack are set up by
+the low level assembly glue in arch/x86/kernel/entry_32.S. The parameter
+regs is a pointer to the saved registers on the stack, error_code
+contains a reason code for the exception.
+
+do_page_fault first obtains the unaccessible address from the CPU
+control register CR2. If the address is within the virtual address
+space of the process, the fault probably occurred, because the page
+was not swapped in, write protected or something similar. However,
+we are interested in the other case: the address is not valid, there
+is no vma that contains this address. In this case, the kernel jumps
+to the bad_area label.
+

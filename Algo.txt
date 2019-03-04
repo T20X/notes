@@ -1,3 +1,36 @@
+--------------
+Greedy algorthim requrore local solution to be also globally optimal. It is always hard to prove that is the case.
+
+--------------
+Sliding Window
+--------------
+(1)Fast/Slow - fast pointers greedly is trying to get the window by moving the front pointer. once condition is satified then the back pointer is catching up with the fast pointer one step a type to remove potentially not required items!
+Minimum Window Substring problem for example.
+(2) Fast/Catchup pointer  - keep moving the fast pointer as window condition keeps filling up and then once it is not longer valid jump the slow pointer right to it to catch up - Max consecutive Sum problem
+(3) Fast/Lagging - fast pointer keep moving and there are many other pointer behing it tracking other possible states
+Problem : House Robber
+(4)  Front/Back - you have one pointer travelling from the front and other from the back
+Problem: Rainwater Problem
+
+
+
+
+---------------------
+Selection algorithm
+-------------------
+  function select(list, left, right, k)
+     if left = right        // If the list contains only one element,
+         return list[left]  // return that element
+     pivotIndex  := ...     // select a pivotIndex between left and right,
+                            // e.g., left + floor(rand() % (right - left + 1))
+     pivotIndex  := partition(list, left, right, pivotIndex)
+     // The pivot is in its final sorted position
+     if k = pivotIndex
+         return list[k]
+     else if k < pivotIndex
+         return select(list, left, pivotIndex - 1, k)
+     else
+         return select(list, pivotIndex + 1, right, k)
 ----
 Graphs
 ---
@@ -7,6 +40,27 @@ Graphs
 Backtracking
 -------
 
+    template <typename F>
+    void backtrack_(int k, int n, std::vector<int>& input, const F& f)
+    {
+        if (solution_found_(k, n, input))
+            f(input);
+        else
+        {
+            vector<Turn> c;
+            construct_candaidtes_(c, k, n, input);
+            if (!c.empty())
+            {
+                k = k + 1;
+                for (const auto& t : c)
+                {
+                    make_move(input, k - 1, t);
+                    backtrack_(k, n, input, f);
+                    unmake_move(input, k - 1, t);
+                }
+            }
+        }
+    }
 The backtracking algorithm enumerates a set of partial candidates that, in principle, could be completed in various ways to give all the possible solutions to the given problem. The completion is done incrementally, by a sequence of candidate extension steps.
 
 Conceptually, the partial candidates are represented as the nodes of a tree structure, the potential search tree. Each partial candidate is the parent of the candidates that differ from it by a single extension step; the leaves of the tree are the partial candidates that cannot be extended any further.

@@ -1,4 +1,78 @@
-On x86, all atomic loads generate a MOV. SequentiallyConsistent stores generate an XCHG, other stores generate a MOV. SequentiallyConsistent fences generate an MFENCE, other fences do not cause any code to be generated. cmpxchg uses the LOCK CMPXCHG instruction. atomicrmw xchg uses XCHG, atomicrmw add and atomicrmw sub use XADD, and all other atomicrmw operations generate a loop with LOCK CMPXCHG. Depending on the users of the result, some atomicrmw operations can be translated into operations like LOCK AND, but that does not work in general.
+-------
+
+-------
+For 64 set associative cache having 64 byte cacheline
+[Tag Physical][Index][Offset]
+[31........12][11...6][....]
+|Fully associative| caches have no index and the tag for the given physical address is 
+being compared with each tag at a give cache to find the perfect match. Very difficult
+and expensive to implement. Basically a given cache line can map to any physical address
+
+|Direct mapped| caches maps index to a tag! Very ineffcient if data is not uniformally
+distrbitued as too much data may be pointing to the same index!
+
+[Set Associative] Full associateive and Direct mapepd combined. basically the same 
+index can now map to N-way tags!
+-------
+
+--------
+L3 cache can be shared & sliced by APPLICATION!
+Modern Intel (and AMD, I assume) L3 aka LLC aka last-level caches use an indexing function that isn't just 
+a range of address bits.
+
+On Slylake L3 cache it's no longer inclusive. Due to the non-inclusive nature of LLC, 
+the absence of a cache line in LLC does not indicate that the line is not present in private caches of any of the cores
+ Therefore, a snoop filter is used to keep track of the location of cache lines in the
+ L1 or MLC of cores when it is not allocated in the LLC
+
+ It uses a mesh network instead of a ring bus to connect cores to each othe
+---
+Intel caches are physically tagged and virtually indexed
+ L1D caches in most designs take their index bits from below the page offset, and thus are also VIPT allowing TLB lookup to happen
+ in parallel with tag fetch, but without any aliasing problems. Thus, caches don't need to be flushed on context switches or anything.
+------------
+Aliasing: Multiple virtual addresses can map to a single physical address. Most processors guarantee that all updates to that single
+ physical address will happen in program order. To deliver on that guarantee, the processor must ensure that only one copy of a physical 
+address resides in the cache at any given time.
+------------
+for cache-able memory to work correctly with DMA on sepculative and prefetching hardware,
+ DMA h as to be cache coherent. Particularly, since the effects and conditions for prefetching 
+and speculative execution are largely left unsepcified, evicting data from the cache (for cache-able memory region) with explicit instructions is unreliable
+
+
+Intel Data Direct I/O can help with DMA to be coherent as it writes directly into caches!
+PCIe feature (exposed in the Linux kernel apparently) that turns on cache snooping for a DMA request
+IO hub connects to the caches, not to memory, via the QPI.
+I/O sees the data as the caches see it
+cache snooping is by default turned on in the PCI(e) spec
+
+Everything (including DMA) on 80x86 is cache coherent; except for the following cases
+ (where you have deliberately "weakened" cache coherency for performance reasons or broken cache
+ coherency):
+You're using the "write-combining" caching type in the MTRRs and/or PAT. In this case writes that are sitting in a CPU's write-combining buffer won't be seen by other hardware.
+You're using non-temporal stores. In this case writes that are sitting in a CPU's write-combining buffer won't be seen by other hardware.
+----------------------
+Intel uses MESIF protocol
+----------------
+*** Replacement policies *** To make room for the new entry on a cache miss, the cache may have to evict one of the existing entries. 
+The heuristic it uses to choose the entry to evict is called the replacement policy.
+LRU
+Adaptive (used in Intel)
+
+*** Write policies *** In a |write-through| cache, every write to the cache causes a write to main memory
+In a |write-back| or copy-back cache, writes are not immediately mirrored to the main memory, and the cache instead
+ tracks which locations have been written over, marking them as dirty
+|Write combining| memory stores are combined by using temoral stores and then commited
+in a burst!
+ 
+-----------------------
+On x86, all atomic loads generate a MOV. SequentiallyConsistent stores generate an XCHG, 
+other stores generate a MOV. SequentiallyConsistent fences generate an MFENCE, 
+other fences do not cause any code to be generated. cmpxchg uses the LOCK CMPXCHG instruction.
+ atomicrmw xchg uses XCHG, atomicrmw add and atomicrmw sub use XADD, 
+and all other atomicrmw operations generate
+ a loop with LOCK CMPXCHG. Depending on the users of the result, some atomicrmw operations
+ can be translated into operations like LOCK AND, but that does not work in general.
 -------------------------------
 store buffer draining
 ---------------------
@@ -15,9 +89,13 @@ CPU cache
 https://lwn.net/Articles/252125/
 
 
-When an instruction modifies memory the processor still has to load a cache line first because no instruction modifies an entire cache line at once (exception to the rule: write-combining as explained in Section 6.1). The content of the cache line before the write operation therefore has to be loaded. It is not possible for a cache to hold partial cache lines. A cache line which has been written to and which has not been written back to main memory is said to be “dirty”. Once it is written the dirty flag is cleared
+When an instruction modifies memory the processor still has to load a cache line first because no instruction modifies an entire cache line at once (exception to the rule: write-combining as explained in Section 6.1).
+ The content of the cache line before the write operation therefore has to be loaded. It is not possible for a cache to hold partial cache lines. 
+A cache line which has been written to and which has not been written back to main memory is said to be “dirty”. Once it is written the dirty flag is cleared
 
-More sophisticated cache implementations allow another possibility to happen. If the cache line which another processor wants to read from or write to is currently marked dirty in the first processor's cache a different course of action is needed. In this case the main memory is out-of-date and the requesting processor must, instead, get the cache line content from the first processor
+More sophisticated cache implementations allow another possibility to happen. If the cache line which another processor wants to read from or write to is currently marked dirty
+ in the first processor's cache a different course of action is needed. In this case the main memory is out-of-date and the requesting processor must,
+ instead, get the cache line content from the first processor
 
 
 write-through cache implementation;
@@ -40,17 +118,31 @@ This cache has the only copy of the line, but the line is clean (unmodified).
 Shared
 
 IMPORTANT:!!!!!
-While MOESI can quickly share dirty cache lines from cache, it cannot quickly share clean lines from cache. If a cache line is clean with respect to memory and in the shared state, then any snoop request to that cache line will be filled from memory, rather than a cache.
+While MOESI can quickly share dirty cache lines from cache, 
+it cannot quickly share clean lines from cache. If a cache line is clean with respect to memory 
+and in the shared state, then any snoop request to that cache line will be filled from memory,
+ rather than a cache.
 
-If a processor wishes to write to an Owned cache line, it must notify the other processors that are sharing that cache line. Depending on the implementation it may simply tell them to invalidate their copies (moving its own copy to the Modified state), or it may tell them to update their copies with the new contents (leaving its own copy in the Owned state)
+If a processor wishes to write to an Owned cache line, it must notify the other processors
+ that are sharing that cache line. Depending on the implementation it may simply tell them to
+ invalidate their copies (moving its own copy to the Modified state), 
+or it may tell them to update their copies with the new contents 
+(leaving its own copy in the Owned state)
 
 !!!!!!!!!!!!!!!!!!
-This line is one of several copies in the system. This cache does not have permission to modify the copy. Other processors in the system may hold copies of the data in the Shared state, as well. Unlike the MESI protocol, a shared cache line may be dirty with respect to memory; if it is, some cache has a copy in the Owned state, and that cache is responsible for eventually updating main memory. If no cache hold the line in the Owned state, the memory copy is up to date. The cache line may not be written, but may be changed to the Exclusive or Modified state after invalidating all shared copies. (If the cache line was Owned before, the invalidate response will indicate this, and the state will become Modified, so the obligation to eventually write the data back to memory is not forgotten.) It may also be discarded (changed to the Invalid state) at any time. Shared cache lines may not respond to a snoop request with data.
-Invalid
-This block is not valid; it must be fetched to satisfy any attempted access.
+This line is one of several copies in the system. 
+This cache does not have permission to modify the copy.
+ Other processors in the system may hold copies of the data in the Shared state,
+ as well. Unlike the MESI protocol, a shared cache line may be dirty with respect to memory; if it is, some cache has a copy in the Owned state, and that cache is responsible for eventually updating main memory. If no cache hold the line in the Owned state, the memory copy is up to date. The cache line may not be written, but may be changed to the Exclusive or Modified state after invalidating all shared copies. (If the cache line was Owned before, the invalidate response will indicate this, and the state will become Modified, so the obligation to eventually write the data back to memory is not forgotten.) It may also be discarded (changed to the Invalid state) at any time. Shared cache lines may not respond to a snoop request with data.
+Invalid This block is not valid; it must be fetched to satisfy any attempted access.
 
 --------------------------------
-Processor designers are currently using virtual address tagging for the first level caches. These caches are rather small and can be cleared without too much pain. At least partial clearing the cache is necessary if the page table tree of a process changes. It might be possible to avoid a complete flush if the processor has an instruction which specifies the virtual address range which has changed. Given the low latency of L1i and L1d caches (~3 cycles) using virtual addresses is almost mandatory.
+Processor designers are currently using virtual address tagging for the first level caches.
+ These caches are rather small and can be cleared without too much pain. 
+At least partial clearing the cache is necessary if the page table tree of a process changes.
+ It might be possible to avoid a complete flush if the processor has an instruction which 
+specifies the virtual address range which has changed. Given the low latency of L1i and L1d caches
+ (~3 cycles) using virtual addresses is almost mandatory.
 
 For larger caches including L2, L3, ... caches physical address tagging is needed
 
@@ -61,4 +153,6 @@ issued at the front-side bus to suppress any attempt of memory transfer of other
 Today it also refers to so-called cache locks, which lock one or more cache lines using the
 cache coherency protocol. Unlike bus locks cache locks allow concurrent locking of disjoint
 cache lines by different cores
+
+---------------
 

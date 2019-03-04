@@ -4,7 +4,10 @@ vector will use the throwing move constructor. If it throws,
 the guarantee is waived and the effects are unspecified."
 
 move_if_noexcept - can still move even move throwing move constructor,
- if copy constructor is not available!
+ if copy constructor is not available! That is were no-throw guarenatt is broken
+
+
+If T's move constructor is not noexcept and T is not CopyInsertable into *this, vector will use the throwing move constructor. If it throws, the guarantee is waived and the effects are unspecified
 
 (2)
 If the new size() is greater than capacity() then all 
@@ -22,6 +25,8 @@ pair<iterator, bool> insert_or_assign(const key_type& k, M&& obj);
 If the insertion is successful, pointers and references to the element obtained while it is held 
 in the node handle are invalidated, and pointers and references obtained
  to that element before it was extracted become valid.
+
+insert_or_assign returns more information than operator[] and does not require default-constructibility of the mapped type
 
 (5)
 template <class... Args>
@@ -45,3 +50,40 @@ but cannot be used while element is owned by a node handle:
 
 That being said, the handle itself has member functions value()/key()/mapped() 
 that may be of value (!) to you.
+
+(7) deque
+
+The complexity (efficiency) of common operations on deques is as follows:
+
+Random access - constant O(1)
+Insertion or removal of elements at the end or beginning - constant O(1)
+Insertion or removal of elements - linear O(n)
+
+In addition, insertion and deletion at either end of a deque never invalidates pointers or references to the rest of the elements. But iterators are invalidated!
+
+insert/emplace - Time complexity: Constant plus linear in the lesser of the distances between pos and either of the ends of the container.
+
+(8) emplaces moves from even it can fail! But not try_emplace!
+
+(9) unordered_map::insert
+If rehashing occurs due to the insertion, all iterators are invalidated. Otherwise iterators are not affected. References are not invalidated. Rehashing occurs only if the new number of elements is greater than max_load_factor()*bucket_count(). If the insertion is successful, pointers and references to the element obtained while it is held in the node handle are invalidated, and pointers and references obtained to that element before it was extracted become valid. (since C++17)
+
+(10) std::unordered_map::erase (worst case performance is N)
+References and iterators to the erased elements are invalidated. Other iterators and references are not invalidated
+The order of the elements that are not erased is preserved. (This makes it possible to erase individual elements while iterating through the container.)
+
+(11) std::basic_string_view::data
+Unlike std::basic_string::data() and string literals, data() may return a pointer to a buffer that is not null-terminated. Therefore it is typically a mistake to pass data() to a routine that takes just a const CharT* and expects a null-terminated strin
+
+(12) Writing to the character array accessed through c_str() is undefined behavior
+
+(13)        vector<int> v = { 1, 2, 3, 4,5, 9 };
+            int SIZE = v.end() - v.begin();  WORKS!!!
+
+(14) template< class InputIt >
+typename std::iterator_traits<InputIt>::difference_type 
+    distance( InputIt first, InputIt last );
+
+(15)             list<int> v = { 1, 2, 3, 4,5, 9 };
+            int n = std::distance(v.begin(), v.end()); 
+distance first arugment MUST be before the second one in the container order apart from std::vector! 

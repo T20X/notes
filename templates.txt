@@ -1,3 +1,7 @@
+--------------
+partial/full specializtion for templates must match EXACTLY, otherwise primary template
+is used
+-------------
 The compiler does overload resolution before it even looks at specialisations
 ------------------------------------------------------------------
 for explicit specializations, there is no argument deduction

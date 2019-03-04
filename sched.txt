@@ -17,44 +17,76 @@ wake_up() wakes up all the tasks waiting on the given wait queue. It does the fo
 
 Calls try_to_wake_up(), which sets the task's state to TASK_RUNNING
 Calls enqueue_task() to add the task to the red-black tree
-Sets need_resched if the awakened task's priority is higher than the priority of the current task. The code that causes the event to occur typically calls wake_up() itself.
-For example, when data arrives from the hard disk, the VFS calls wake_up() on the wait queue that holds the processes waiting for the data.
+Sets need_resched if the awakened task's priority is higher than the priority of the current task.
+ The code that causes the event to occur typically calls wake_up() itself.
+For example, when data arrives from the hard disk, the VFS calls wake_up() on the wait queue that holds
+ the processes waiting for the data.
 
 
 -----------------------------
 
-Linux's CFS scheduler does not directly assign timeslices to processes, but assigns processes a proportion of the processor.  The amount of processor time that a process receives is a function of the load of the system
+Linux's CFS scheduler does not directly assign timeslices to processes, but assigns processes a proportion of 
+the processor.  The amount of processor time that a process receives is a function of the load of the system
  The nice value acts as a weight, changing the proportion of the processor time each process receives. 
-With the CFS scheduler, whether the process runs immediately (preempting the currently running process) is a function of how much of a proportion of the processor the newly runnable processor has consumed. If it has consumed a smaller proportion of the processor than the currently executing process, it runs immediately
+With the CFS scheduler, whether the process runs immediately (preempting the currently running process) is a function of how
+ much of a proportion of the processor the newly runnable processor has consumed. 
+If it has consumed a smaller proportion of the processor than the currently executing process, it runs immediately
 
 The Completely Fair Scheduler (CFS) is the registered scheduler class for normal processes, called SCHED_NORMAL
 
-Each process runs for a "timeslice" proportional to its weight divided by the total weight of all runnable threads. CFS sets a target for its approximation of the "infinitely small" scheduling duration in perfect multitasking. This target is called the targeted latency
+Each process runs for a "timeslice" proportional to its weight divided by the total weight of all runnable threads.
+ CFS sets a target for its approximation of the "infinitely small" scheduling duration in perfect multitasking.
+ This target is called the targeted latency (sysctl_sched_latency)
 
- CFS imposes a floor on the timeslice assigned to each process, called the minimum granularity (by default 4 millisecond)
+ CFS imposes a floor on the timeslice assigned to each process, called the minimum granularity
+ (by default 4 millisecond - sched_min_granularity_ns)
+
+AND ANYWAY Because runtime task can preempt any Normally schedule task, there is a paramater which defines 
+how many percent
+runtime task can occupy CPU (sched_rt_runtime_us - 95% default)
 
 So, targeted latency is the period in which all run queue tasks are scheduled at least once
 
-Timeslice will be always between sysctl_sched_min_granularity and sysctl_sched_latency, which are defaults to 4 ms and 20 ms respectively and defined in kernel/sched/fair.c.
+Timeslice will be always between sysctl_sched_min_granularity and sysctl_sched_latency, 
+which are defaults to 4 ms and 20 ms respectively and defined in kernel/sched/fair.c.
 
-The vruntime variable stores the virtual runtime of a process, which is the actual runtime (the amount of time spent running) normalized (or weighted) by the number of runnable processes. The virtual runtime's units are nanosecond
+The vruntime variable stores the virtual runtime of a process, 
+which is the actual runtime (the amount of time spent running) normalized (or weighted)
+ by the number of runnable processes. The virtual runtime's units are nanosecond
 
+sched_wakeup_granularity_ns - say we tale the diffrence between the slice of the schedule to be task
+ and the currently running task. If it is bigger then this value then we allow the new task to schedule,
+otherwise let the current task keep running anyway, since it is nearly done!
+
+sched_tunable_scaling -  controls whether the CFS scheduler can adjust sched_latency_n.
+
+sched_migration_cost - Amount of time after the last execution that a task is considered to
+be “cache hot” in migration decisions. A “hot” task is less
+likely to be migrated, so increasing this variable reduces task
+migrations. The default value is 500000 (ns)
 -----------------------------
 
 The need_resched flag *
-The kernel must know when to call schedule(). If it called schedule() only when code explicitly did so, user-space programs could run indefinitely.
+The kernel must know when to call schedule(). If it called schedule() only when code explicitly did so, 
+user-space programs could run indefinitely.
 
 The kernel provides the need_resched flag to signify whether a reschedule should be performed.
 
-This flag is set by scheduler_tick() (in timer interrupt handler, see The Timer Interrupt Handler) when a process should be preempted.
-This flag is set by try_to_wake_up() when a process that has a higher priority than the currently running process is awakened.
-The kernel checks the flag, sees that it is set, and calls schedule() to switch to a new process. The flag is a message to the kernel that the scheduler should be invoked as soon as possible because another process deserves to run.
+This flag is set by scheduler_tick() (in timer interrupt handler, see The Timer Interrupt Handler) 
+when a process should be preempted.
+This flag is set by try_to_wake_up() when a process that has a higher priority than the currently running process
+ is awakened.The kernel checks the flag, sees that it is set, and calls schedule() to switch to a new process. 
+The flag is a message to the kernel that the scheduler should be invoked as soon as possible because another process 
+deserves to run.
 
-Upon returning to user-space or returning from an interrupt, the need_resched flag is checked. If it is set, the kernel invokes the scheduler before continuing.
-The flag is per-process
+Upon returning to user-space or returning from an interrupt, the need_resched flag is checked.
+ If it is set, the kernel invokes the scheduler before continuing. The flag is per-process
 
 --------------------------------------------
-User preemption occurs when the kernel is about to return to user-space, need_resched is set, and therefore, the scheduler is invoked. If the kernel is returning to user-space, it knows it is in a safe quiescent state. In other words, if it is safe to continue executing the current task, it is also safe to pick a new task to execute.
+User preemption occurs when the kernel is about to return to user-space, need_resched is set,
+ and therefore, the scheduler is invoked. If the kernel is returning to user-space,
+ it knows it is in a safe quiescent state. In other words, if it is safe to continue executing the current task, 
+it is also safe to pick a new task to execute.
 
 In conclusion, user preemption can occur:
 
@@ -62,7 +94,9 @@ When returning to user-space from a system call
 When returning to user-space from an interrupt handler
 
 -------------------
-The kernel can preempt a task running in the kernel so long as it does not hold a lock. Locks are used as markers of regions of non-preemptibility. Because the kernel is SMP-safe, if a lock is not held, the current code is reentrant and capable of being preempted
+The kernel can preempt a task running in the kernel so long as it does not hold a lock.
+ Locks are used as markers of regions of non-preemptibility. Because the kernel is SMP-safe, if a lock is not held,
+ the current code is reentrant and capable of being preempted
 
 ----------------
 In conclusion, kernel preemption can occur
@@ -87,11 +121,17 @@ When a SCHED_RR task exhausts its timeslice, any other real-time processes at it
 As with SCHED_FIFO, a higher-priority process always immediately preempts a lower-priority one, and a lower-priority process can never preempt a SCHED_RR task, even if its timeslice is exhausted.
 
 ---------------
-Linux provides the sched_yield() system call as a mechanism for a process to explicitly yield the processor to other waiting processes.
+Linux provides the sched_yield() system call as a mechanism for a process to explicitly yield
+ the processor to other waiting processes.
 
-sched_yield() removes the process from the active array (where it currently is, because it is running) and inserting it into the expired array. This has the effect of not only preempting the process and putting it at the end of its priority list, but also putting it on the expired list, which guarantees it will not run for a while.
-For real-time tasks, which never expire, sched_yield() merely move them to the end of their priority list (and not insert them into the expired array).
+sched_yield() removes the process from the active array (where it currently is, because it is running) 
+and inserting it into the expired array. This has the effect of not only preempting the process and putting 
+it at the end of its priority list, but also putting it on the expired list, 
+which guarantees it will not run for a while.
+For real-time tasks, which never expire, sched_yield() merely move them to the end of their priority list
+ (and not insert them into the expired array).
 
 ------------------------------
 
-priority inversion is a problematic scenario in scheduling in which a high priority task is indirectly preempted by a lower priority task effectively "inverting" the relative priorities of the two tasks
+priority inversion is a problematic scenario in scheduling in which a high priority task is 
+indirectly preempted by a lower priority task effectively "inverting" the relative priorities of the two tasks

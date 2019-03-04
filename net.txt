@@ -3,3 +3,9 @@ NIC errros
 overruns - not enogh space in ring buffers
 
 OOB data - priority delivery
+
+RoCE stands for RDMA over Converged Ethernet. It is a standard that enables
+ passing RDMA traffic over an Ethernet network.
+
+FCoE - Fibre Channel over Ethernet (FCoE) is a computer network technology that encapsulates Fibre Channel frames 
+over Ethernet network

@@ -79,3 +79,22 @@ class is_class {
   public:
     static bool const value = sizeof(test<T>(0)) == sizeof(yes);
 };
+
+(9)     template <typename Container, 
+        typename IterCategory = std::iterator_traits<Container::iterator>::iterator_category, 
+       std::enable_if_t<is_same<IterCategory, random_access_iterator_tag>::value, int> = 0>
+        void multiEnableIfs(Container& c)
+    {
+        std::cout << "randon container!" << endl;
+    }
+
+    template <typename Container,
+        typename IterCategory = std::iterator_traits<Container::iterator>::iterator_category,
+        std::enable_if_t<!is_same<IterCategory, random_access_iterator_tag>::value, int> = 0>
+        void multiEnableIfs(Container& c)
+    {
+        std::cout << "NOT randon container!" << endl;
+    }
+
+Note that it has to be int>= 0, just default template = void is not going to work because because default template arguments are
+ not part of function template's signature, and declaring two different function templates with the same signature is illegal.

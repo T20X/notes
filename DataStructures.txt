@@ -2,9 +2,34 @@ Bloom filter
 suffix tree
 fusion tree
 segment tree
+-----------
 Radix tree
-
+  PATRICIA 
+  HAT-trie
 ---------------------------------
 binary indexed tree (Fenwick tree)
 ---------------------------------
 used to represent an array and prefix sum all together to have an element update and prefix sum update at (O*LogN)
+-------------
+Hashtables
+-----------
+Collision resolution
+-->Separate chaining<---
+(1) separate chaining with linked lists
+(2) Separate chaining with list head cells
+(3) Separate chaining with other structures
+
+2-choice hashing employs two different hash functions, h1(x) and h2(x), for the hash table. Both hash functions are used to compute two table locations. When an object is inserted in the table, it is placed in the table location that contains fewer objects (with the default being the h1(x) table location if there is equality in bucket size). 2-choice hashing employs the principle of the power of two choices
+
+-->Open Addressing<---
+(1) coalesced hashing
+A hybrid of chaining and open addressing, coalesced hashing links together chains of nodes within the table itself.[18] Like open addressing, it achieves space usage and (somewhat diminished) cache advantages over chaining. Like chaining, it does not exhibit clustering effects; in fact, the table can be efficiently filled to a high density. Unlike chaining, it cannot have more elements than table slots.
+(2) Cuckoo hashing
+uses few hash functions in turns. if there is a collision still, it would move
+collided item at a free spot in the table!
+(3)  Hopscotch hashing
+combines the approaches of cuckoo hashing and linear probing
+search is limited to the number of entries in this neighborhood, 
+which is logarithmic in the worst case. If all the buckets in the neigbourhood are occupied
+it would find an empty slot using linear pobing and move it to our neibouhood!
+
