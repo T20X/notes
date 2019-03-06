@@ -1,0 +1,84 @@
+template< bool B, class T, class F >
+struct conditional;
+(since C++11)
+Provides member typedef type, which is defined as T if B is true at compile time, or as F if B is false.
+
+template<class _Ux,
+		enable_if_t<conjunction_v<conditional_t<is_array_v<_Ty>, _Can_array_delete<_Ux>, _Can_scalar_delete<_Ux>>,
+			_SP_convertible<_Ux, _Ty>>, int> = 0>
+		explicit shared_ptr(_Ux * _Px)
+
+template<class... B>
+struct conjunction;
+
+	shared_ptr(const shared_ptr& _Other) noexcept
+		{	// construct shared_ptr object that owns same resource as _Other
+		this->_Copy_construct_from(_Other);
+		}
+
+	template<class _Ty2>
+		void _Copy_construct_from(const shared_ptr<_Ty2>& _Other)
+		{	// implement shared_ptr's (converting) copy ctor
+		if (_Other._Rep)
+			{
+
+template<class _Ux>
+		void _Setp(_Ux * _Px, false_type)
+		{	// take ownership of _Px
+		_TRY_BEGIN	// allocate control block and set
+		_Set_ptr_rep_and_enable_shared(_Px, new _Ref_count<_Ux>(_Px));
+		_CATCH_ALL	// allocation failed, delete resource
+		delete _Px;
+		_RERAISE;
+
+template<class _Ty1,
+	class _Ty2>
+	_NODISCARD shared_ptr<_Ty1> static_pointer_cast(const shared_ptr<_Ty2>& _Other) noexcept
+	{	// static_cast for shared_ptr that properly respects the reference count control block
+	const auto _Ptr = static_cast<typename shared_ptr<_Ty1>::element_type *>(_Other.get());
+	return (shared_ptr<_Ty1>(_Other, _Ptr));
+	}
+
+
+template<class _Ty>
+	class _Ref_count
+		: public _Ref_count_base
+.....
+Ty* p; // NEEDS IT WHEN HE CLEARS THE OBJECT ON RELEASE!
+}
+
+template<class _Ty2>
+		shared_ptr& operator=(const shared_ptr<_Ty2>& _Right) noexcept
+		{	// assign shared ownership of resource owned by _Right
+		shared_ptr(_Right).swap(*this);
+		return (*this);
+		}
+
+T& operator*() const noexcept;
+T* get() const noexcept;
+
+
+	// FUNCTION TEMPLATE allocate_shared
+template<class _Ty,
+	class _Alloc,
+	class... _Types>
+	_NODISCARD inline shared_ptr<_Ty> allocate_shared(const _Alloc& _Al_arg, _Types&&... _Args)
+	{	// make a shared_ptr
+	using _Refoa = _Ref_count_obj_alloc<_Ty, _Alloc>;
+	using _Alref_alloc = _Rebind_alloc_t<_Alloc, _Refoa>;
+	using _Alref_traits = allocator_traits<_Alref_alloc>;
+	_Alref_alloc _Alref(_Al_arg);
+
+	const auto _Rx = _Alref_traits::allocate(_Alref, 1);
+
+	_TRY_BEGIN
+		_Alref_traits::construct(_Alref, _Unfancy(_Rx), _Al_arg, _STD forward<_Types>(_Args)...);
+	_CATCH_ALL
+		_Alref_traits::deallocate(_Alref, _Rx, 1);
+	_RERAISE;
+	_CATCH_END
+
+	shared_ptr<_Ty> _Ret;
+	_Ret._Set_ptr_rep_and_enable_shared(_Rx->_Getptr(), _Unfancy(_Rx));
+	return (_Ret);
+	}

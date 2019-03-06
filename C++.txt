@@ -1,3 +1,12 @@
+---------
+implicit default constructor
+struct B { explicit B() = default; };
+int main()
+{ 
+    // B b1 = {}; // Error, would use explicit default constructor
+    B b2 {};
+}
+-------------
 std::ios_base::sync_with_stdio(false) - turns off string synchronization with C! That is means streams are not longer thread-safe and C++ streams buffer their own I/O independetnly. Turned on my default and enables to mix C++ and C streams
 
 cin.tie(nullptr); - unties cin and cout streams which makes I/O faster! Basically by defualt (if tied) cin / cout would flush each other before proceeding.
@@ -159,7 +168,7 @@ evaluation ends in throwing an exception
 
 (9) std::shared_ptr<int> sp( new int[10], std::default_delete<int[]>() );
      std::shared_ptr<std::array<int,6>> ptr(std::make_shared<std::array<int, 6>>(std::array<int, 6>()));
-
+       make_shared cannot be used with a custom deleter
 (10)
 std::string get_string() {
     return std::string();
@@ -304,3 +313,29 @@ the copy constructor is overriden!
         TestThis(const TestThis& o):t_(o.t_) {}
 
 (28)  C-style operators can take away const & volation in conversion!
+
+(29) That is if we want to collaps lots of data into union!
+template< std::size_t Len, class... Types >
+struct aligned_union;
+(since C++11)
+Provides the nested type type, which is a trivial standard-layout type of a size and alignment suitable for use as uninitialized storage for an object of any of the types listed in Types. The size of the storage is at least Len. std::aligned_union also determines the strictest (largest) alignment requirement among all Types and makes it available as the constant alignment_value
+
+(30) 	void operator()(_Ty * _Ptr) const noexcept
+		{	// delete a pointer
+		static_assert(0 < sizeof (_Ty),
+			"can't delete an incomplete type");
+		delete _Ptr;
+		}
+
+(31) Because the default constructor is constexpr, static shared_ptrs are initialized as part of static non-local initialization, before any dynamic non-local initialization begins. This makes it safe to use a shared_ptr in a constructor of any static objec
+
+(32) atomics has constexpr constructor and constexpr function cannot have side effects such as aotmic semantics.
+
+(33) 
+ For example: given x = 1; f(++x, ++x);, you may expect a call to f(2, 3) but it's actually undefined behaviour. This behaviour is left undefined so the compiler's optimiser has more freedom to arrange operations with side effects to run in the most efficient order possible - perhaps even in parallel
+
+(34) A sequence point defines any point in a computer program's execution at which it is guaranteed that all side effects of previous evaluations will have been performed, and no side effects from subsequent evaluations have yet been performed
+WITHING SINGLE EXPRESSION!
+
+(35) for shared pointers constructor
+ std::bad_alloc if required additional memory could not be obtained. May throw implementation-defined exception for other errors. delete ptr if T is not an array type, delete[] ptr otherwise) (since C++17) is called if an exception occurs.

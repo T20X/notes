@@ -34,3 +34,7 @@ val is visible only inside the if and else statements, so it doesn't 'leak
 This can now be copied instead of using this pointer! Note that class copy 
 constructor would be called
   auto f1 = [*this](){}
+
+-----------
+5. std::raw_storage_iterator
+-------------

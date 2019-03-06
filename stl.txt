@@ -87,3 +87,20 @@ typename std::iterator_traits<InputIt>::difference_type
 (15)             list<int> v = { 1, 2, 3, 4,5, 9 };
             int n = std::distance(v.begin(), v.end()); 
 distance first arugment MUST be before the second one in the container order apart from std::vector! 
+
+(16) Like all other functions from <cctype>, the behavior of std::tolower is undefined if the argument's value is neither representable as unsigned char nor equal to EOF. To use these functions safely with plain chars (or signed chars), the argument should first be converted to unsigned char:
+
+char my_tolower(char ch)
+{
+    return static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
+}
+
+(17) things custom iterator shall have
+	using iterator_category = random_access_iterator_tag;
+	using value_type = typename _Myvec::value_type;
+	using difference_type = typename _Myvec::difference_type;
+	using pointer = typename _Myvec::const_pointer;
+	using reference = const value_type&;
+	using _Tptr = typename _Myvec::pointer;
+
+(18) The cost of the atomics, while not zero, is not overwhelming. The cost is mitigated by the use of move construction and move assignment which do not need to use atomic operations. Such operations are commonly used in vector<shared_ptr<T>> erase and insert

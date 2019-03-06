@@ -1,3 +1,31 @@
+std::atomic<int> a, b;
+b.store(1, std::memory_order_seq_cst); // can't be executed after LOAD
+a.load(std::memory_order_seq_cst); // can't be executed before STORE
+
+std::atomic<int> a, b;
+b.store(1, std::memory_order_release); // can be executed after LOAD
+a.load(std::memory_order_seq_cst); // can be executed before STORE
+
+-------------
+if you mix aqc-release oprations with seq_const operations then seq_const operations behave like ack-release operations!
+----------------
+I'd say, it's because a construction is never a thread communication operation: When you construct an object, you fill formerly uninitialized memory with sensible values. There is no way for another thread to tell whether that operation has finished unless it is explicitely communicated by the constructing thread. If you race with construction anyway, you immediately have undefined behavior.
+-------------
+So: making the constructor constexpr eliminates race conditions on static-lifetime objects, at the cost of a race in dynamic-lifetime objects that only occurs in fairly contrived situations, since for a race to occur the memory location of the dynamic-lifetime atomic object must be communicated to another thread in a way that does not result in the value of the atomic object being also synchronized to that thread
+
+SO IT IS NOT A PROBLEM FOR STATIC VARIABLES BECAUSE BETWEEN THREADS THE ADDRESS OF STATIC ATOMIC MAY HAVE LEAKED! BUT FOR ATOMIC VARIABLES DURING RUNTIME MEMORY ADDRESS HS TO BE SOMEHOW COMMUNICATED AND THAT WOULD INVOLVE SYNCHRONIZATOIN - AND YOU NEED IT BECAUSE IT HAS TO BE SYNCED BY READER AND WRITED!
+-------------------------------------------
+atomic() noexcept = default;
+(1)	(since C++11)
+constexpr atomic( T desired ) noexcept;
+(2)	(since C++11)
+atomic( const atomic& ) = delete;
+(3)	(since C++11)
+Constructs new atomic variable.
+
+1) The default constructor is trivial: no initialization takes place other than zero initialization of static and thread-local objects. std::atomic_init may be used to complete initialization.
+2) Initializes the underlying value with desired. The initialization is not atomic.
+
 ----------------------
 SUPER IMPORTANT
 https://stackoverflow.com/questions/21536846/is-memory-order-acquire-really-sufficient-for-locking-a-spinlock
@@ -13,12 +41,17 @@ The memory ordering you select for such an R-M-W op only affects how it is order
  the test_and_set and clear could both be relaxed and provide mutual exclusion - 
 but it wouldn't order accesses to other memory locations
 
+--------------------------------------------
+memory_order_seq_cst fences ensure a total order only for the fences themselves. Fences cannot, in general,
+be used to restore sequential consistency for atomic operations with weaker ordering specifications
+
 ------------------------
 A part
 atomic_thread_fence(memory_order_release)
 B part
 
-A part cannot reorder with stores from B part (can with LOADS!), however B loads can appear in A part
+A part cannot reorder with stores from B part (can with LOADS! Like a store from B can appear in A but before any store
+), however B loads can appear in A part
 -------------------------
 A part
 atomic_thread_fence(memory_order_aqcuire)
@@ -87,6 +120,20 @@ r2 = x.load(std::memory_order_relaxed); // C
 y.store(42, std::memory_order_relaxed); // D
 
 (D) CAN BE RE_ORDERED WITH (C) BY THE COMPILER!!! BECAUSE std::memory_order_relaxed ALLOWS IT!
+
+The only ordering imposed is that once a value for a variable from thread 1 is observed in thread 2, thread 2 can not see an “earlier” value for that variable from thread 1. ie, assuming 'x' is initially 0:
+Once the store of 2 is seen by thread 2, it can no longer see the value 1
+
+-Thread 1-
+x.store (1, memory_order_relaxed)
+x.store (2, memory_order_relaxed)
+
+-Thread 2-
+y = x.load (memory_order_relaxed)
+z = x.load (memory_order_relaxed)
+assert (y <= z)
+The assert cannot fail
+
 
 ----------
 ack release are transitive but not commulative between many threads!

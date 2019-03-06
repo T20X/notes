@@ -1,4 +1,7 @@
-    int root(sqrt(n)));
+A NaN never compares equal to itself. Copying a NaN may not preserve its bit representation
+--------------------------
+
+    int root = sqrt(n));
     return n == root * root
 This won't always work, due to floating-point error: if sqrt() or cbrt() happens to return epsilon less than the actual root, the cast to an integer will truncate that, and the check will fail. To be completely bullet-proof against that, you also need to check if n == (root + 1) * (root + 1) for the square root case or if n == (root + 1) * (root + 1) * (root + 1) for the cube root cas
 --------
