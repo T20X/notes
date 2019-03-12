@@ -38,3 +38,18 @@ for pattern 01010101, entries for 00 and 11 are not even used from pattern histo
 
 Any repetitive pattern with a period of n+1 or less can be predicted perfectly after a warm-up time no longer than three periods. A repetitive pattern with a period p higher than n+1 and less than or equal to 2n can be predicted perfectly if all the p n-bit subsequences are different.
 (Example : With n = 4, we can predict the repetitive pattern 000011-000011-000011 with period 6, because the six 4-bit subsequences: 0000, 0001, 0011, 0110, 1100, 1000, are all different.)
+
+Since the storage requirement for the two-level predictor grows exponentially with the number of history bits n, there is a practical limit to how big we can make n. One way of overcoming this limitation is to share the branch history register and the pattern history table among all the branches rather than having one set for each branch. If the innermost loop in a program contains m conditional jumps, then the prediction of a branch within this loop can rely on floor(n/m) occurrences of the same branch in the branch history register, while the rest of the entries come from other branches. The disadvantage of using global tables is that branches that behave differently may share the same entry in the global pattern history table.
+
+(7) A loop with a high period and several branches inside the loop body would require a very long history table and many entries in the pattern history table for making good predictions in a two-level predictor. The best solution to this problem is to use a different prediction method for loops, called a loop counter or switch counter. A counter counts the period n the first time the loop is executed. On subsequent executions, the repetition count is compared with n and the loop is predicted to exit when the count equals the period.
+(BECAUSE it would need to warm up to predict something like this perfectly 000000000001) that 1 is the compare to terminate the loop which would be activated once!
+
+(8) processors make only one BTB entry for an indirect jump or call. This means that it will always be predicted to go to the same target as it did last time.
+17
+As object oriented programming with polymorphous classes has become more common, there is a growing need for predicting indirect calls with multiple targets. This can be done by assigning a new BTB entry for every new jump target that is encountered. The history buffer and pattern history table must have space for more than one bit of information for each jump incident in order to distinguish more than two possible targets
+
+(9) Modern Intel CPUs
+The high throughput for taken branches of one per clock was observed for up to 128 branches with no more than one branch per 16 bytes of code. If there is more than one branch per 16 bytes of code then the throughput is reduced to one jump per two clock cycles. If there are more than 128 branches in the critical part of the code, and if they are spaced by at least 16 bytes, then apparently the first 128 branches have the high throughput and the remaining have the low throughput.
+These observations may indicate that there are two branch prediction methods: a fast method tied to the μop cache and the instruction cache, and a slower method using a branch target buffer.
+
+The branch misprediction penalty varies a lot. It was measured to 15 - 20 clock cycles.

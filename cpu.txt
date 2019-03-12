@@ -1,4 +1,13 @@
+In the Pentium 4, Intel Xeon, and P6 family processors, the locking operation is handled with either a cache lock
+or bus lock. If a memory access is cacheable and affects only a single cache line, a cache lock is invoked and
+the system bus and the actual memory location in system memory are not locked during the operation. Here,
+other Pentium 4, Intel Xeon, or P6 family processors on the bus write-back any modified data and invalidate
+their caches as necessary to maintain system memory coherency. If the memory access is not cacheable
+and/or it crosses a cache line boundary, the processor’s LOCK# signal is asserted and the processor does not
+respond to requests for bus control during the locked operation
+
 -------
+
 Reads are not reordered with other reads.
 Writes are not reordered with older reads.
 Writes to memory are not reordered with other writes, with the following exceptions:
