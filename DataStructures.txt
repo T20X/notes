@@ -6,9 +6,23 @@ segment tree
 Radix tree
   PATRICIA 
   HAT-trie
+--------------
+A tree is a connected, acyclic graph that consists of n nodes and n-1 edges.
+Dimater of the tree is the longest path ever through the tree!
+
+Another efficient way to calculate the diameter of a tree is based on two depthfirst
+searches. First, we choose an arbitrary node a in the tree and find the
+farthest node b from a. Then, we find the farthest node c from b. The diameter
+of the tree is the distance between b and c.
+-------------------------------------------------------
+A spanning tree of a graph consists of all nodes of the graph and some of the
+edges of the graph so that there is a path between any two nodes. Like trees
+in general, spanning trees are connected and acyclic.
+
+To find minimum spanning tree for undirected grapth, Kruskal or Prim algorithms can be used! To find minimum spanning tree for directed grapth Chu–Liu/Edmonds can be used.
+
 ---------------------------------
 binary indexed tree (Fenwick tree)
----------------------------------
 used to represent an array and prefix sum all together to have an element update and prefix sum update at (O*LogN)
 -------------
 Hashtables
