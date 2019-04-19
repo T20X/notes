@@ -1,3 +1,8 @@
+Remeber!
+template <template < class...> class A,   class B>
+struct test1;
+using test1_short = test1<std::tuple <- /*class tempalte*/, std::tuple<int,int,int> /*just class!*/>;
+
 1.
    // Variadic template for currying
     template<typename Func, typename... Args>
@@ -144,3 +149,49 @@ template< class T >
 struct has_type_member<T, std::void_t<decltype(T::member)> : std::true_type { };
 
 
+15. - Types are first-class values inside compile-time programs.
+    - Functions at compile time live in a world where no side effects can occur
+    - As per our first axiom, the only interesting values in metaprogramming are types. Thus, c    ompile-time functions are components that map types to other types.
+    - compile-time containers must be types that contain zero or more other types.
+    - Any template class accepting a variable number of type parameters can be considered a type container
+
+   -  A metafunction is a class template or a template alias whose parameters are all types
+   - A quoted metafunction is a class with a public metafunction member called fn, for example
+    struct Q1 { template<class...> using fn = void; }
+    - Dealing with compile-time containers requires no loops. Try to express your algorithm as much as possible as a direct manipulation of parameter packs.
+
+
+16. he first intuition we might have coming from our runtime experience is to find a way to “loop” over types as we repeatedly call push_back. Even if it’s a correct implementation, we need to fight this compulsion of thinking with loops. Loops over types will require a linear number of intermediate types to be computed, leading to unsustainable compilation times. The correct way of handling this use case is to find a natural way to exploit the variadic nature of our containers.
+
+17.
+
+    template <template <class...> class A, template <class...> class F, class... T>              
+    struct my_transform <A<T...>, F> { using r = A<typename F<T>::type...>;  };
+    using resutlt_of_transform = my_transform<std::tuple<int, int, int>, std::add_pointer>::r;
+
+    *VS*
+
+    template <template <class...> class F>
+    struct lambda
+    {         
+         template <class... Args>
+         struct apply
+         {
+            using type = typename F<Args...>::type;
+         };
+    };
+    
+    template <class A, class F>
+     struct my_transform2;
+
+     template <template <class...> class A,
+         class F, class... T>
+     struct my_transform2 <A<T...>, F>
+     {
+         using type = A< typename F::template apply<T>::type ... >;
+     };
+
+    using resutlt_of_transform2 = my_transform2<
+          std::tuple<int, int, int>,
+          lambda<std::add_pointer>
+        >::type;

@@ -38,3 +38,11 @@ constructor would be called
 -----------
 5. std::raw_storage_iterator
 -------------
+
+----------------
+6. pointers
+---------------
+integer represention of a pointer might not be the same but sequence  as the pointer itself
+
+ it is ok to convert a pointer to integer and then integer back to pointer. But modifying that integer in the middle is kind of on the endge according to c++ standarrt!
+---------------

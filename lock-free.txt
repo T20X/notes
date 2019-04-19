@@ -1,3 +1,9 @@
+While almost all programmers know that a volatile does not have the properties of an atomic variable, many code are still written with the idea that an atomic has the propertie of a volatile: "an atomic access is an observable behaviour". According to the standard it is no
+
+compilers optimize code as if atomics were also volatiless
+----------------------------------
+However - a lot of professional implementations of lockfree algorithms (such as Boost.Lockfree) don't actually use double-word CAS - instead they rely on single-word CAS and opt to use non-portable pointer-stuffing shenanigans. Since x86_64 architectures only use the first 48 bits of a pointer, you can use the hi 16-bits to stuff in a counte
+-----------------
 std::atomic<int> a, b;
 b.store(1, std::memory_order_seq_cst); // can't be executed after LOAD
 a.load(std::memory_order_seq_cst); // can't be executed before STORE
@@ -51,38 +57,53 @@ atomic_thread_fence(memory_order_release)
 B part
 
 A part cannot reorder with stores from B part (can with LOADS! Like a store from B can appear in A but before any store
-), however B loads can appear in A part
+), however B loads can appear in A part. A loads cannot re-order past the last store from A part.
 -------------------------
+An acquire fence prevents the memory reordering of any read which precedes it in program order with any read or write which follows it in program order.
+
 A part
 atomic_thread_fence(memory_order_aqcuire)
 B part
 
 B part cannot re-order with loads from A part (can with STOREs!),however A part stores can apear in B part
 -------------------------
+A release fence prevents the memory reordering of any read or write which precedes it in program order with any write which follows it in program order
+
 A part
 atomic_thread_fence(memory_order_aqcuire_release)
 B part
 
 B part cannot re-order with A part UNLESS STORE from A apart can re-order with a load from B part!!!!
+A release fence constrains stuff from moving below subsequent writes
+------------------------------------------
+A part
+atomic_thread_fence(memory_order_aqcuire_release)
+B part
+The same as release fence, but also prohibits load between load reordering, but sitll enables load between store reordering!
 
-Say this is possible
+(possible)
 a.store(relaxed);					 b.load(relaxed);a.store(relaxed);
 atomic_thread_fence(memory_order_aqcuire_release)    ->   atomic_thread_fencememory_order_aqcuire_release)
 b.load(relaxed);				        	
 
+A release fence A synchronizes with an acquire fence B if there exist atomic operations X and Y, both operating on some atomic object M, such that A is sequenced before X, X modifies M, Y is sequenced before B, and Y reads the value written by X or a value written by any side effect in the hypothetical release sequence X would head if it were a release operation
+
+
+-----------------
+NOW ATOMIC MEMORY OPERATION ARE DIFFRENT FROM FENCE IN THE SENSE THAT THEY WON'T ALLOW LATER LOADS TO RE-ORDER WITH EARLIER LOADS IN CASE OF *****READ_WRITE_MODIFY OPERATIONS****!!!!
 -----------------------------
 memory_order_acquire - no reads or writes in the current thread can be reordered before this load. 
 A part
 x.load(acquire)
 B part
-B part cannot cross x load, however A part can be moved past X
+B part cannot cross BEFORE x load, however A part can be moved past X
 -------------------------------
 memory_order_release - no reads or writes in the current thread can be reordered after this store. 
 A part
 x.store(release)
 B part
 
-A part cannot be re-ordered past x, but B part operations can appear before x!
+A part cannot be re-ordered AFTER store x, but B part operations can appear before x!
 
 ------------------
 memory_order_acq_rel - No memory reads or writes in the current thread can be reordered before or after this store

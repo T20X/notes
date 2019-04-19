@@ -43,6 +43,7 @@ then the switch to the interrupt stack. See
 TSS (Task State Segment) - hardware struct per process!
 Linux just uses it per CPU and all the processes share it (including kernel)!
 
+This containns!
 The stack pointer addresses for each privilege level.
 Pointer Addresses for the Interrupt Stack Table (The inner-level stack pointer section above, discusses the need for this).
 Offset Address of the IO permission bitmap

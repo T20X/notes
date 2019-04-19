@@ -1,4 +1,23 @@
+The most important insight is that the answer depends on the details of the base class’s contract. It is not enough to know that the public interfaces / method signatures are compatible; one also needs to know if the contracts / behaviors are compatible
+-------------
+The important part of the previous sentence are the words “contracts / behaviors.” That phrase goes well beyond the public interface = method signatures = method names and parameter types and constness. A method’s contract means its advertised behavior = advertised requirements and promises = advertised preconditions and postconditions. So if the base class has a method void insert(const Foo& x), the contract of that method includes the signature (meaning the name insert and the parameter const Foo&), but goes well beyond that to include the method’s advertised preconditions and postconditions
+------------------------
+in OO, a thing is defined by how it behaves, not by the label used to name it
+The derived class must do what the base class promises, not what it actually does.
+The key is that we’ve separated the advertised behavior (“specification”) from implemented behavior (“implementation”)
+-------------
+Next insight: inheritance means “is substitutable for.” It does not mean “is a” (since that is ill defined) and it does not mean “is a kind of” (also ill defined). Substitutability is well defined: to be substitutable, the derived class is allowed (not required) to add (not remove) public methods, and for each public method inherited from the base class, the derived class is allowed (not required) to weaken preconditions and/or strengthen postconditions (not the other way around). Further the derived class is allowed to have completely different constructors, static methods, and non-public methods
+-------------
+You should use inheritance (a) only if the derived class’s methods can abide by all the promises made in the base class, and (b) only if you don’t think you’ll confuse your users, and (c) only if there’s something to be gained by using the inheritance — some real, measurable improvement in time, money or risk
+
+Bad inheritances always have a base class with an extra capability (often an extra member function or two; sometimes an extra promise made by one or a combination of member functions) that a derived class can’t satisfy. You’ve either got to make the base class weaker, make the derived class stronger, or eliminate the proposed inheritance relationship. I’ve seen lots and lots and lots of these bad inheritance proposals, and believe me, they all boil down to the Circle/Ellipse example
+
+-------------
+you can make anything inherit from anything provided the methods in the derived class abide by the promises made in the base class
+------------
 concept based polymorphizm
+----------------------
+Note: decltype(auto) is primarily useful for deducing the return type of forwarding functions and similar wrappers, as shown above, where you want the type to exactly “track” some expression you’re invoking. However, decltype(auto) is not intended to be a widely used feature beyond that. In particular, although it can be used to declare local variables, doing that is probably just an antipattern since a local variable’s reference-ness should not depend on the initialization expression. Also, it is sensitive to how you write the return statement. These two functions have different return types
 
 ------------------------
 Don't delete the move members
@@ -26,3 +45,28 @@ while you are at it.
  std::cout << "foo\n";
  std::cout << "Some int: " << i << '\n';
  std::cout << "bar\n" << std::flush;
+
+-----------------------
+Do not use throw to indicate a coding error in usage of a function. Use assert or other mechanism to either send the process into a debugger or to crash the process and collect the crash dump for the developer to debug.
+Do not use throw if you discover unexpected violation of an invariant of your component, use assert or other mechanism to terminate the program. Throwing an exception will not cure memory corruption and may lead to further corruption of important user data.
+-----------------------
+Good example of using exceptions 
+
+void f()  // Using exceptions
+{
+  try {
+    GResult gg = g();
+    HResult hh = h();
+    IResult ii = i();
+    JResult jj = j();
+    // ...
+  }
+  catch (FooError& e) {
+    // ...code that handles "foo" errors...
+  }
+  catch (BarError& e) {
+    // ...code that handles "bar" errors...
+  }
+}
+IMAGINE NOW checking returns codes for each function instead???
+---------------------

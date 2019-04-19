@@ -1,0 +1,2 @@
+Ctrl-J - toggles panel
+Crtl-][ - intend right/left

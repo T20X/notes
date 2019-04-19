@@ -19,3 +19,4 @@ adopt_lock_t	assume the calling thread already has ownership of the mutex
 When a scoped_lock object is created, it attempts to take ownership of the mutexes it is given. When control leaves the scope in which the scoped_lock object was created, the scoped_lock is destructed and the mutexes are released, in reverse order. If several mutexes are given, deadlock avoidance algorithm is used as if by std::lock.
 4. std::lock (mutexes...)  locks given mutex using deadlock detection algo!
 5. for condition variables only unique_lock will work as it needs to unlock the mutex automatically.
+6. thread_local vairables can be static as well! When thread exits they are destoryed as well!

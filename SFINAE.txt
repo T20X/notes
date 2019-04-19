@@ -2,6 +2,29 @@ TEMPLATE SEQUENCE
 ------------
 instantiation -> deduction -> substitution -> evaluation!
 
+All the expressions won't lead to a SFINAE. A broad rule would be to say that all the substitutions out of the function/methods body are "safes"
+
+Substitution proceeds in lexical order and stops when a failure is encountered.
+
+template <typename A>
+struct B { using type = typename A::type; };
+ 
+template <
+  class T,
+  class   = typename T::type,      // SFINAE failure if T has no member type
+  class U = typename B<T>::type    // hard error if T has no member type
+                                   // (guaranteed to not occur as of C++14)
+> void foo (int);
+
+------
+not deduced contexts
+----
+ If a template parameter appears in a non-deduced context within a function signature, it can't be deduced from the actual argument
+
+ That said, it's important to understand what "sizeof doesn't evaluate its expression argument" means. It means the expression value isn't calculated, but the expression type is. In your example
+
+sizeof
+decltype
 
 (1)  funtion() -> decltype based!
 

@@ -1,3 +1,10 @@
+Hopcroft–Karp algorithm -  is an algorithm that takes as input a bipartite graph and produces as output a maximum cardinality matching
+Edmonds–Karp algorithm
+Dinic's algorithm
+------------------
+
+To transpose a graph, use Breadth Width Search! DFS not going to work!
+-------------
 bool operator<(const Solution::Position& left, const Solution::Position& right)
 {
     return left.x < right.x || ((left.x == right.x) && left.y < right.y);

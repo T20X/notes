@@ -32,12 +32,14 @@ Congestion control
 --------------------------
 The throughput of a communication is limited by two windows: the congestion window and the receive window. The congestion window tries not to exceed the capacity of the network (congestion control); the receive window tries not to exceed the capacity of the receiver to process data (flow control)
 ---------
- window scale - establishes during SYN packet(connection), factors the window size
+ window scale - MAX value establishes during SYN packet(connection)! reciever can advertises futher recive window size in ACKs. The maximum size is 65K, but it can be scaled up to 1GB! The settings is controled by /proc/sys/net/ipv4/tcp_window_scaling=0/1 in Linux to enable or disable it
+
+-----------------
 
 ------------
 n TCP, the congestion window is one of the factors that determines the number of bytes that can be outstanding at any time. The congestion window is maintained by the sender. Note that this is not to be confused with the sliding window size which is maintained by the receiver. The congestion window is a means of stopping a link between the sender and the receiver from becoming overloaded with too much traffic. It is calculated by estimating how much congestion there is on the link.
 
- The window keeps growing until a timeout occurs. On timeout:
+ The congestion (sender) window keeps growing dynamically until a timeout occurs. On timeout:
 
 Congestion window is reset to 1 MSS.
 ssthresh is set to half the congestion window size before the timeout.

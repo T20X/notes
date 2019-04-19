@@ -2,11 +2,14 @@ Bloom filter
 suffix tree
 fusion tree
 segment tree
+pairing heap
 -----------
 Radix tree
   PATRICIA 
   HAT-trie
 --------------
+In a simple case, the intervals do not overlap and they can be inserted into a simple binary search tree and queried in O(log n) time. However, with arbitrarily overlapping intervals, there is no way to compare two intervals for insertion into the tree since orderings sorted by the beginning points or the ending points may be different. A naive approach might be to build two parallel trees, one ordered by the beginning point, and one ordered by the ending point of each interval. This allows discarding half of each tree in O(log n) time, but the results must be merged, requiring O(n) time. This gives us queries in O(n + log n) = O(n), which is no better than brute-force
+---------------
 A tree is a connected, acyclic graph that consists of n nodes and n-1 edges.
 Dimater of the tree is the longest path ever through the tree!
 

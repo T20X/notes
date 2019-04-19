@@ -1,3 +1,131 @@
+ï»¿ For any object (other than a base-class subobject) of trivially copyable type T, whether or not the object
+holds a valid value of type T, the underlying bytes (6.6.1) making up the object can be copied into an array of
+Â§ 6.7 57
+Â©ISO/IEC N4713
+char, unsigned char, or std::byte (21.2.1).39 If the content of that array is copied back into the object,
+the object shall subsequently hold its original value. [ Example:
+#define N sizeof(T)
+char buf[N];
+T obj; // obj initialized to its original value
+std::memcpy(buf, &obj, N); // between these two calls to std::memcpy, obj might be modified
+std::memcpy(&obj, buf, N); // at this point, each subobject of obj of scalar type holds its original value
+ -------
+ Strict ALIASING Rules
+---------------------
+ If a program attempts to access the stored value of an object through a glvalue of other than one of the following types the behavior is undefined:
+
+the dynamic type of the object,
+
+a cv-qualified version of the dynamic type of the object,
+
+a type similar (as defined in [conv.qual]) to the dynamic type of the object,
+
+a type that is the signed or unsigned type corresponding to the dynamic type of the object,
+
+a type that is the signed or unsigned type corresponding to a cv-qualified version of the dynamic type of the object,
+
+an aggregate or union type that includes one of the aforementioned types among its elements or non-static data members (including, recursively, an element or non-static data member of a subaggregate or contained union),
+
+a type that is a (possibly cv-qualified) base class type of the dynamic type of the object,
+
+a char, unsigned char, or stdâ€‹::â€‹byte type.
+
+-----------------------
+ the only way union can be used for type punning is if union is standart layout and it has standart layout struct. then these standarat layout structs can share the common memeber sequence!
+ ----------------------
+ integer represention of a pointer might not be the same but sequence  as the pointer itself
+
+ it is ok to convert a pointer to integer and then integer back to pointer. But modifying that integer in the middle is kind of on the endge according to c++ standarrt!
+ ---------
+ trivial destructors can be skipped
+ -------------
+ Launder is defined in terms of a pointer to a pre-existing object. That pointer is then destroyed, and a new object with the same address is created (which is well defined).  std::launder then lets you take the pointer to the object that no longer exists and get a pointer to the existing object.
+
+ only works on placement new
+
+ --------------
+ C++ does not allow you to do "in-place type punning". Not in a general sense. The closest you can get is the new wording for unions, but that doesn't allow you to access the value through an object of a different type. C++ only supports type punning by copy or using unsigned char* or byte!
+ ----------------------------
+ void - type with an empty set of values. It is an incomplete type that cannot be completed (consequently, objects of type void are disallowed). There are no arrays of void, nor references to void. However, pointers to void and functions returning type void (procedures in other languages) are permitted
+ ----------------
+ One pointer is said to alias another pointer when both refer to the same location or object. 
+ Strict aliasing is an assumption, made by the C (or C++) compiler, that dereferencing pointers to objects of different types will never refer to the same memory location (i.e. alias eachother.)
+
+ ------------------------
+ operator new can hounr alingment up to 16 bytes, but if more required,aligned_alloc shall be used!
+
+ C++17 new operators support now alingment to whatever size is set and it does respect alingas for heap allocation!
+
+
+ ----------
+ An alignment is an implementation-defined integer value representing the number of bytes between successive addresses at which a given object can be allocated.
+
+Another unexpected penalty to unaligned accesses is that it breaks atomics on some architectures. Atomic stores may not appear atomic to other threads on x86 if they are misaligned
+
+If during pointer conversion, the resulting pointer breaks pointer alingment requirnments, it is undefined behaviour!
+
+char arr[4] = { 0x0F, 0x0, 0x0, 0x00 }; // Could be allocated on a 1 or 2 byte boundary
+int x = *reinterpret_cast<int*>(arr);   // Undefined behavior we have an unaligned pointer
+
+Fix -> alignas(alignof(int)) char arr[4] = { 0x0F, 0x0, 0x0, 0x00 }; 
+
+the standard blessed method for type punning in both C and C++ is memcpy. This may seem a little heavy handed but the optimizer should recognize the use of memcpy for type punning and optimize it away and generate a register to register move. For example if we know int64_t is the same size as double. Well even though c++ standard does not explicitly confirm it. Another way to go is modifying an object through a pointer to unsgined char - that way it does not violate strict aliasing rules.
+*****reinterpret_cast NOR union will work!*****
+void func1( double d ) {
+  std::int64_t n;
+  std::memcpy(&n, &d, sizeof d); 
+
+  
+
+***putting an object at something other than it's proper alignment ISSSSS UB***
+
+the only way union can be used for type punning is if union is standart layout and it has standart layout struct. then these standarat layout structs can share the common memeber sequence!
+---------------------
+explicit constructors are not allowed in copy initiliztion!
+explicit A() {}
+A obj = {} - not allowed!
+A f() { return {}; } - not allowed!
+------------------------------
+C++ cannot re-order data fields declared in struct! But compiler adds padding automatically to ensure alignment
+-----------------
+Pointers returned by allocation functions such as malloc are suitably aligned for any object, which means they are aligned at least as strictly as max_align_t.
+
+max_align_t is usually synonymous with the largest scalar type, which is long double on most platforms, and its alignment requirement is either 8 or 16.
+
+Note: of course, the reason why the alignas keyword has to fix all alignment, including heap alignment, is that it's undefined behavior to dereference an unaligned pointer. So if alignas didn't fix heap alignment, it would be impossible to dereference heap object of alignas types. The attribute is different as it's only a compiler hack, not a real part of the language, so it's not tightly spec'd
+
+If a request for a specific extended alignment in a specific context is not supported by an implementation, the program is ill-formed. Additionally, a request for runtime allocation of dynamic storage for which the requested alignment cannot be honored shall be treated as an allocation failure
+
+-------------
+alignment of class struct is the max alingment of its member!
+-----------
+ void* r = mmap(NULL, fileSize, PROT_READ, MAP_PRIVATE | MAP_POPULATE, fd, 0);
+               if ((void*)-1 == r) //ticky!
+-----
+ during the construction of the complex object which uses multiple inheretance, the most derived virtual based class would be initialized first!
+ 
+ ----------------------
+ class Foo{
+   Foo(const Foo& other) = delete;
+
+   # stil valid! becaose only Foo copy constructor was delted! tempalted onces are not affected
+   template <typename T> Foo& operator=(const Foo& other) {} 
+   template <typename T> Foo(const Foo& other) {}   
+ }
+ ---------------------
+ The private-inheritance variant allows access to the protected members of the base class. Basically protected and public members of the base class become the private members of the derived class. And still they can be manually exposed!
+class D_prot : protected B {
+public:
+  using B::f;  // Note: Not using B::f(int,float)
+};
+--------------------
+A legitimate, long-term use for private inheritance is when you want to build a class Fred that uses code in a class Wilma, and the code from class Wilma needs to invoke member functions from your new class, Fred. In this case, Fred calls non-virtuals in Wilma, and Wilma calls (usually pure virtuals) in itself, which are overridden by Fred. This would be much harder to do with composition
+---------------
+destrcturo has to be virtual not just because class has virtual functions but also when somebody creates dervied class and transfers it to a pointer or reference of the base class and then delete on base class object is called!
+---------------
+A virtual function allows derived classes to replace the implementation provided by the base class
+The derived class can either fully replace (ï¿½overrideï¿½) the base class member function, or the derived class can partially replace (ï¿½augmentï¿½) the base class member function. The latter is accomplished by having the derived class member function call the base class member function, if desire
+
 ---------
 implicit default constructor
 struct B { explicit B() = default; };
@@ -14,7 +142,41 @@ cin.tie(nullptr); - unties cin and cout streams which makes I/O faster! Basicall
 while (cin >> x) { // code } reads until no more data found!
 
 -----------------------------
-zero initialized objects would have their def constructor called
+
+
+struct T { int a; int b; };
+if zero initialized objects don't have a constructor then members and base clases would be also zero-initiazlied! If T does define default constructor then it won't be zero-initialized!
+static onbjects are also can be zero initialized!
+{
+T () ;
+T t = {} ; 
+T {} ;
+
+}
+static T t; always zero initialized!
+
+A zero-initialized pointer is the null pointer value of its type, even if the value of the null pointer is not integral zero
+zero initializing examples above and some real examples below!
+
+
+namepsace {
+static T t1; // a=0; b=0
+T* p; // p = nullptr
+int i; // i = 0
+double f; // f = 0
+}
+
+T t1 = {} //a= 0, b =0
+T t1 = T() // a = 0, b = 0
+
+struct TX { TX() {} int a; int b; }; //constructor defined
+void func()
+{
+TX t1 = {} //a= garbage, b =garbage
+TX t1 = T() // a = garbage, b = garbage
+}
+static TX t1{} // a= 0, b =0 //zero-initialized BECAUSE STATIC!
+
 ---------------------
 if class has a user defined destructor then move operators will be implicitly deleted. Copy sitll can live!
 ------------
@@ -127,7 +289,7 @@ and the const A && is implicitly casted to const A &
 (2) only one of these functions can be declared
     void f(Base other)
     void f(Base&& other)
-(3) Remember that “&&” indicates a universal reference only
+(3) Remember that ï¿½&&ï¿½ indicates a universal reference only
  where type deduction takes place
 
 universal ref: ->
@@ -138,16 +300,17 @@ not universal ref ->
 template<typename T>
 void f(vector<T>&& param); 
 
-Universal references can only occur in the form “T&&”!  Even the simple addition of a const qualifier
- is enough to disable the interpretation of “&&” as 
+Universal references can only occur in the form ï¿½T&&ï¿½!  Even the simple addition of a const qualifier
+ is enough to disable the interpretation of ï¿½&&ï¿½ as 
 a universal referenc
  
 (4)  && has preference when taking a temporary Base() as input, 
 then template<T>(T&&), then const Base&! coz overloading has a precedence over templates!
-    void f(const Base& other) 
-    void f(Base&& other) 
-    template <typename T> void f(T&& other) {}
-    void f(const Base&& other)
+
+void f(Base&& other)     
+template <typename T> void f(T&& other) {}
+void f(const Base& other) 
+void f(const Base&& other)
 
 (5) C++ does not guarantee any order for the evaluation of function arguments
 
@@ -182,7 +345,7 @@ std::string get_string() {
 If T is an aggregate, then each member is initialized from its brace-or-equal-initializer if it had one,
  otherwise as if by {} (so apply these steps recursively).
 If T is a class type with a user-provided default constructor, that constructor is called.
-If T is a class type with an implicitly-defined, or = defaulted default constructor, the object is zero-initialized and then 
+If T is a class type with an implicitly-defined, or = defaulted default constructor, <!!!!!!the object is zero-initialized and then !!!!!!!!!!!!!!!!!!!>>>>>
 the default constructor is called.
 If T is a std::initializer_list, the return value is an empty such list.
 Otherwise (i.e. T is a non-class type -- return types cannot be arrays), the return value is zero-initialized
@@ -344,3 +507,106 @@ WITHING SINGLE EXPRESSION!
 (36) It is particularly difficult to detect overflow in signed integers because the C standard specifies signed integer overflow as 'undefined behavior' which means that the compiler can assume that overflow does not happen, and some compilers will even optimize away an explicit overflow check for this reason
 
 Writing overflow checking code is difficult. gcc have built in functions to perfom such checks...https://gcc.gnu.org/onlinedocs/gcc/Integer-Overflow-Builtins.html
+
+(37)
+class MyExceptionBase { };
+class MyExceptionDerived : public MyExceptionBase { };
+void f(MyExceptionBase& e)
+{
+  // ...
+  throw e;
+}
+void g()
+{
+  MyExceptionDerived e;
+  try {
+    f(e);
+  }
+  catch (MyExceptionDerived& e) {
+    // ...code to handle MyExceptionDerived...   // THIS IS NOT CALLED!
+  }
+  catch (...) {
+    // ...code to handle other exceptions...
+  }
+}
+
+to correct
+class MyExceptionBase {
+public:
+  virtual void raise();
+};
+void MyExceptionBase::raise()
+{ throw *this; }
+class MyExceptionDerived : public MyExceptionBase {
+public:
+  virtual void raise();
+};
+void MyExceptionDerived::raise()
+{ throw *this; }
+void f(MyExceptionBase& e)
+{
+  // ...
+  e.raise();
+}
+void g()
+{
+  MyExceptionDerived e;
+  try {
+    f(e);
+  }
+  catch (MyExceptionDerived& e) {
+    // ...code to handle MyExceptionDerived...
+  }
+  catch (...) {
+    // ...code to handle other exceptions...
+  }
+}
+
+(38) null pointers can be deleted safely!
+(39) C++11 states integer division and modulo to be non Ecludian. The same goes for flotas/doubles!
+5 % -3 = -2! The reminder signs rounds towards zero!
+
+(40) lambda cannot be a recursive function if type type deduction takes place anywhere!
+Or!
+template<class Fun>
+class y_combinator_result {
+    Fun fun_;
+public:
+    template<class T>
+    explicit y_combinator_result(T &&fun): fun_(std::forward<T>(fun)) {}
+
+    template<class ...Args>
+    decltype(auto) operator()(Args &&...args) {
+        return fun_(std::ref(*this), std::forward<Args>(args)...);
+    }
+};
+
+template<class Fun>
+decltype(auto) y_combinator(Fun &&fun) {
+    return y_combinator_result<std::decay_t<Fun>>(std::forward<Fun>(fun));
+
+(41) move_iterator!
+vector<string> v{"asd", "asd"}
+vector<string> v2(make_move_iterator(v.begin()), make_move_iterator(v.end()));
+items from v gets moved!
+
+(42) Type pack is super usefull when composition not going to work, but type pack will for inheretance
+for example
+template<class... T>
+class D : public T...
+{
+}
+
+(43) Overload resolution tries to minimize the operations performed to convert an argument to the corresponding parameter
+
+(44) initializer_list have preference over any other constructor! even if implicit conversion will be involved!
+say
+clas Foo
+foo(int, double, bool)
+foo(initializer_list<int>& l) 
+
+foo(2,2.3,true) -> foo(initializer_list<int>& l) is called!
+
+(45) C++14 also removes the C++11 rule that constexpr member functions are implicitly const
+
+(45) input iterator got dereferencing by value!

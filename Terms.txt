@@ -1,0 +1,4 @@
+virtual function - enables overring implementation of a function in the derived class by calling it from the base class interface
+------------------
+Next time somebody tells you that you should never use multiple inheritance, look them straight in the eye and say, “One size does not fit all.” If they respond with something about their bad experience on their project, look them in the eye and repeat, slower this time, “One size does not fit all.”
+---------------------

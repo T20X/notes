@@ -36,7 +36,7 @@ The Completely Fair Scheduler (CFS) is the registered scheduler class for normal
 
 Each process runs for a "timeslice" proportional to its weight divided by the total weight of all runnable threads.
  CFS sets a target for its approximation of the "infinitely small" scheduling duration in perfect multitasking.
- This target is called the targeted latency (sysctl_sched_latency)
+ This target is called the targeted latency (sysctl_sched_latency - 20ms default )
 
  CFS imposes a floor on the timeslice assigned to each process, called the minimum granularity
  (by default 4 millisecond - sched_min_granularity_ns)
@@ -134,4 +134,4 @@ For real-time tasks, which never expire, sched_yield() merely move them to the e
 ------------------------------
 
 priority inversion is a problematic scenario in scheduling in which a high priority task is 
-indirectly preempted by a lower priority task effectively "inverting" the relative priorities of the two tasks
+indirectly preempted by a lower priority task effectively "inverting" the relative priorities of the two tasks. Can happen when low priority task gets an exclusive control of resource which high priority task tries to get and gets blocked.

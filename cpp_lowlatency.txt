@@ -1,3 +1,8 @@
+    workPerThread = workPerThread & ~(pageSz - 1); IS FAST ALTERNATIVE TO
+    workPerThread = (workPerThread / pageSz) * pageSz;
+
+----------------------------------------------
+std::to_string relies on the current locale for formatting purposes, and therefore concurrent calls to std::to_string from multiple threads may result in partial serialization of calls. C++17 provides std::to_chars as a higher-performance locale-independent alternative.
 --------------------------------------------------
 pow can be slow massively
 --------------------------------------------------
@@ -37,8 +42,9 @@ trivial classes/structs can be copied with memcpy which is an important optimiza
 pair and tuple are not trivial classes!
 
 A type that is trivial can be statically initialized
-
 standart layoout classes can be used in other programming languages!
+(gcc does not allow __attribute__((__packed__)) on structs that
+ * contain non-POD data)
 
 Trivial class req (can be statically initialized and memcpy optimized)
 --------------
@@ -58,3 +64,18 @@ All its non-static data members have the same access control (public, private, p
 All its non-static data members, including any in its base classes, are in the same one class in the hierarchy
 The above rules also apply to all the base classes and to all non-static data members in the class hierarchy
 It has no base classes of the same type as the first defined non-static data member
+-----------------------
+restrict
+-------------
+In the C programming language, as of the C99 standard, restrict is a keyword that can be used in pointer declarations. The restrict keyword is a declaration of intent given by the programmer to the compiler. It says that for the lifetime of the pointer, only the pointer itself or a value directly derived from it (such as pointer + 1) will be used to access the object to which it point
+
+If the compiler knows that there is only one pointer to a memory block, it can produce better optimized code. For instance:
+
+void updatePtrs(size_t *ptrA, size_t *ptrB, size_t *val)
+{
+  *ptrA += *val;
+  *ptrB += *val;
+}
+In the above code, the pointers ptrA, ptrB, and val might refer to the same memory location, so the compiler may generate less optimal code:
+
+The restrict keyword only affects pointers of compatible types (e.g. two int*) because the strict aliasing rules says that aliasing incompatible types is undefined behavior by default, and so compilers can assume it does not happen and optimize away

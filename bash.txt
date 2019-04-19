@@ -6,4 +6,13 @@ EOF
 
 ls | xargs -I % sh -c 'cd %; git add -A .;git commit -m "persist";git push'
 
+-----------------------------------
+Some people have a habit of doing things like
+
+for line in $(cat file); do ...; done
+Since the shell will have to expand the $(cat file) command substitution completely before running the for loop, this will read the whole of file into memory (that of the shell executing the for loop). This is a bit silly. Instead, one should do
+
+while read -r line; do ...; done <file
+This will process file line by line (but do read Understanding "IFS= read -r line").
+
 

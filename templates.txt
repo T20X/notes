@@ -1,3 +1,21 @@
+Function template parameters are substituted (replaced by template arguments) twice:
+
+ -explicitly specified template arguments are substituted before template argument deduction
+ - deduced arguments and the arguments obtained from the defaults are substituted after template argument deduction
+
+--------------
+decltype is explicitly excluded from template argument deduction
+-----------------------
+
+Remeber!
+template <template < class...> class A,   class B>
+struct test1;
+using test1_short = test1<std::tuple <- /*class tempalte*/, std::tuple<int,int,int> /*just class!*/>;
+
+--------------------
+For clarity, we will use an explicit return type, but we could use auto. Using an explicit return type has the advantage of generating a compilation error if your type conversions are incorrect.
+-----------
+The general behavior of the ... operator is to replicate the code fragment on its left for every type in the parameter pack
 --------------
 partial/full specializtion for templates must match EXACTLY, otherwise primary template
 is used
@@ -14,7 +32,7 @@ variable templates (since C++14)
 alias templates
 ---------------------------------
 can do specialization of a template template member!
--------------------------
+
 
 template<class T> struct A { // enclosing class template
   template<class T2>
@@ -260,3 +278,28 @@ template<size_t... _Indices,
 		: void()), 0)... };
 	(void)_Ignored;
 	}
+
+	// can specialize on function pointer as well!
+template <typename F>
+struct make_tuple_of_params;
+template <typename Ret, typename... Args>
+struct make_tuple_of_params<Ret (Args...)>
+{ using type = std::tuple<Args...>; };
+   // if F is in the form void(double *, double *)
+   // make_tuple_of_params is std::tuple<double *, double *>
+   make_tuple_of_params_t<F> params;
+
+
+	 //iterate over tuple! Better then recursion
+	 template <typename F, typename Params, std::size_t... I>
+auto dispatch_params(F f,
+                     Params & params,
+                     std::index_sequence<I...>)
+{
+    return f(std::get<I>(params)...);
+}
+template <typename F, typename Tuple, std::size_t... I>
+void dispatch_to_c(F f, Tuple & t, std::index_sequence<I...>)
+{  
+	  f(&std::get<I>(t)...);
+}
