@@ -34,7 +34,6 @@ a char, unsigned char, or std​::​byte type.
  the only way union can be used for type punning is if union is standart layout and it has standart layout struct. then these standarat layout structs can share the common memeber sequence!
  ----------------------
  integer represention of a pointer might not be the same but sequence  as the pointer itself
-
  it is ok to convert a pointer to integer and then integer back to pointer. But modifying that integer in the middle is kind of on the endge according to c++ standarrt!
  ---------
  trivial destructors can be skipped
@@ -610,3 +609,20 @@ foo(2,2.3,true) -> foo(initializer_list<int>& l) is called!
 (45) C++14 also removes the C++11 rule that constexpr member functions are implicitly const
 
 (45) input iterator got dereferencing by value!
+
+(46) set containers since C++14 now can accept key params as something which is like a key!
+for example: template<typename T> iterator find(const T& key) -- this specializiotn added!
+Now Compare struct can be done like this:
+struct Compare
+{
+using is_transpararent = void;
+bool operator(const std::string& l, const std::string& r)
+bool operator(const std::string&l , int l);
+{
+
+(47) std::piecewise_construct, 
+    std::vector<std::pair<std::string, std::string>> vs;
+    //vs.emplace_back(std::make_pair(std::string(10, 'c'), std::string(10, 'c')));
+    vs.emplace_back(std::piecewise_construct, 
+                    std::forward_as_tuple("dsfsdfsdfsdfsdfsdfsdfsdfsdfsdf"), 
+                    std::forward_as_tuple(10, 'c'));

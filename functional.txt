@@ -1,3 +1,19 @@
+﻿Functional programming is a style of programming that emphasizes the evaluation of expressions, rather than execution of commands. The expressions in these languages are formed by using functions to combine basic values. A functional language is a language that supports and encourages programming in a functional style.
+-----------------------
+Broadly speaking, FP is a style of programming in which the main program building blocks are functions as opposed to objects and procedures. A program written in the functional style doesn’t specify the commands that should be performed to achieve the result, but rather defines what the result is
+-------------------------
+This difference is the origin of the terms imperative and declarative programming. Imperative means you command the computer to do something by explicitly stating each step it needs to perform in order to calculate the result. Declarative means you state what should be done, and the programming language has the task of figuring out how to do it
+---------------------------------------------------
+he main idea when writing programs in the functional style—use abstractions that let you define the intent instead of specifying how to do something
+----------------------------
+The benefit of this solution is that you have fewer state variables to worry about, and you can begin to express the higher-level intent of a program instead of specifying the exact steps it needs to take to find the result
+-----------------------
+One of the most significant sources of software bugs is the program state. It’s difficult to keep track of all possible states a program can be in. The OOP paradigm gives you the option to group parts of the state into objects, thus making it easier to manage. But it doesn’t significantly reduce the number of possible states
+--------------
+It would be inefficient and counterproductive to write code in the imperative style first and then change it bit by bit until it became functional. Instead, you should think about problems differently. Instead of thinking of the algorithm steps, you should consider what the input is, what the output is, and which transformations you should perform to map one to the other
+---------------------------
+Functions that take other functions as arguments or that return new functions are called higher-order functions
+------------------------------
 Remeber!
 template <template < class...> class A,   class B>
 struct test1;
@@ -55,98 +71,6 @@ template<class T>
 class A<T, typename std::enable_if<std::is_floating_point<T>::value>::type> {
 }; // specialization for floating point types
 
-6.
- template<class T,
-         typename std::enable_if<
-             !std::is_trivially_destructible<T>{} &&
-             (std::is_class<T>{} || std::is_union<T>{}),
-            int>::type = 0>
-void destroy(T* t)
-
-7.
-
-    template <typename C, 
-        typename = void_t<>> 
-        struct is_iterable 
-        : std::false_type {}; 
-
-        template <typename C> 
-        struct is_iterable< 
-        C, void_t<decltype(*begin(std::declval<C>())), 
-        decltype(end(std::declval<C>()))>> 
-        : std::true_type{};
-
-8. template <typename T, typename... Args>
-std::unique_ptr<T> make_unique_helper(std::false_type, Args&&... args) {
-    return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
-}
-
-template <typename T, typename... Args>
-std::unique_ptr<T> make_unique_helper(std::true_type, Args&&... args) {
-   static_assert(std::extent<T>::value == 0,
-       "make_unique<T[N]>() is forbidden, please use make_unique<T[]>().");
-
-   typedef typename std::remove_extent<T>::type U;
-   return std::unique_ptr<T>(new U[sizeof...(Args)]{std::forward<Args>(args)...});
-}
-
-template <typename T, typename... Args>
-std::unique_ptr<T> make_unique(Args&&... args) {
-   return make_unique_helper<T>(std::is_array<T>(), std::forward<Args>(args)...);
-}
-
-9. 
-
-template<class... _Types> inline
-	constexpr tuple<typename _Unrefwrap<_Types>::type...>
-		make_tuple(_Types&&... _Args)
-	{	// make tuple from elements
-	typedef tuple<typename _Unrefwrap<_Types>::type...> _Ttype;
-	return (_Ttype(_STD forward<_Types>(_Args)...));
-	}
-
-10. default template argument - typename = std::enable_if_t<std::is_integral<Integer>::value>
-     default template arguments are not part of function template's signature
-
-11. A substitution failure is any situation when the type or expression above would be ill-formed (with a required diagnostic), if written using the substituted argument
-
-12. The compiler does overload resolution before it even looks at specialisations
-
-Only the failures in the types and expressions in the immediate context of the function type or its template parameter types or its explicit specifier (since C++20) are SFINAE errors. If the evaluation of a substituted type/expression causes a side-effect such as instantiation of some template specialization, generation of an implicitly-defined member function, etc, errors in those side-effects are treated as hard errors
-
-13. decval - Converts any type T to a reference type, making it possible to use member functions in decltype expressions without the need to go through constructors
-
-14. 
-template <class C, class F>
-auto test(C c, F f) -> decltype((void)(c.*f)(), void())
-{ std::cout << "Reference overload called\n"; }
-
-template <class C, class F>
-auto test(C c, F f) -> decltype((void)((c->*f)()), void())
-{ std::cout << "Pointer overload called\n"; }
-
-auto enableIfSINAFE(Container& v) -> decltype(enable_if_t<is_same<Iter, random_access_iterator_tag>::value>(), void())
-auto enableIfSINAFE(Container& v) -> decltype(enable_if_t<is_same<Iter, bidirectional_iterator_tag>::value>(), void())
-
-template <class _Ty1>
-class = enable_if_t<_Is_swappable<_Ty1>::value && _Is_swappable<_Ty2>::value>>
-void f()
-16. 
-template< class... >
-using void_t = void;
-(since C++17)
-This metafunction is used in template metaprogramming to detect ill-formed types in SFINAE context
-
-// primary template handles types that have no nested ::type member:
-template< class, class = std::void_t<> >
-struct has_type_member : std::false_type { };
- 
-// specialization recognizes types that do have a nested ::type member:
-template< class T >
-struct has_type_member<T, std::void_t<typename T::type>> : std::true_type { };
-OR
-template< class T >
-struct has_type_member<T, std::void_t<decltype(T::member)> : std::true_type { };
 
 
 15. - Types are first-class values inside compile-time programs.
