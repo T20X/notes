@@ -1,4 +1,28 @@
-﻿ For any object (other than a base-class subobject) of trivially copyable type T, whether or not the object
+﻿std::quick_exit  - quick ternination without static destructores called!
+use std::at_quick_exit to register functions if you still want something to be called! Up to 32 functions can be registed
+
+Aslo _exit can do the job!
+
+-----
+rvalue references (&&) mean we can move from it! That is important to realize as by value
+parameters are similar in this concept!
+---------------------------
+decltype(auto) - is good for forwarding functions as if we want to deduce the return type for free and at the same time pass EXACT values.
+-------------
+by value parameters can avoid copies with std::move!
+f(vector<int> v)
+...
+f(std::move(vec)) - parameter is constructed using move rather then by copy!
+----------
+Constant initialization is performed after (until C++14)instead of (since C++14) zero initialization of the static and thread-local objects and before all other initialization. Only the following variables are constant initialized:
+
+The effects of constant initialization are the same as the effects of the corresponding initialization, except that it's guaranteed that it is complete before any other initialization of a static or thread-local object begins, and it may be performed at compile time
+
+In practice, constant initialization is performed at compile time, and pre-calculated object representations are stored as part of the program image (e.g. in the .data section). If a variable is both const and constant-initialized, its object representation may be stored in a read-only section of the program image (e.g. the .rodata section)
+--------------------
+Method chaining is fine as long as the methods are sensible and only modify the invocant (for which the effects are well ordered, because the second method is called on the result of the first) - changed in c++17 a bit
+---------------------
+ For any object (other than a base-class subobject) of trivially copyable type T, whether or not the object
 holds a valid value of type T, the underlying bytes (6.6.1) making up the object can be copied into an array of
 § 6.7 57
 ©ISO/IEC N4713
@@ -12,7 +36,7 @@ std::memcpy(&obj, buf, N); // at this point, each subobject of obj of scalar typ
  -------
  Strict ALIASING Rules
 ---------------------
- If a program attempts to access the stored value of an object through a glvalue of other than one of the following types the behavior is undefined:
+ If a program attempts to access the stored value of an object through a glvalue of *OTHER* than one of the following types the behavior is undefined:
 
 the dynamic type of the object,
 
@@ -626,3 +650,26 @@ bool operator(const std::string&l , int l);
     vs.emplace_back(std::piecewise_construct, 
                     std::forward_as_tuple("dsfsdfsdfsdfsdfsdfsdfsdfsdfsdf"), 
                     std::forward_as_tuple(10, 'c'));
+
+(48)  auto f1= [this](auto l, decltype(l) r){ // second argument type is taken from the first one
+(49) This usage of std::forward may seem strange, but it’s nothing more than perfectly forwarding the argument passed to the call operator as the forwarding reference. You do the perfect forwarding because error() could be implemented differently for lvalue and rvalue references
+(50)
+Since C++14, you can omit the type when using the operator wrappers from the standard library. Instead of writing std::greater<int>(), you can write just std::greater<>(), which automatically deduces the argument type when called.For example, when calling std::sort, you can write this:std::sort(numbers.begin(), numbers.end(),            std::greater<>());
+(51) It's not that C++ disables the copy-assignment operator for lambda per-se, but that by default members in a lambda object are saved as const, and then the assignment operator can basically do nothing to assign to them, and so it is not generated. If you want lambdas to not hold members as const, you use the [...](...) mutable {...} syntax
+
+Solution (1)
+template <class T>
+struct LambdaContainer {
+    LambdaContainer(const T& lambda)
+        : lambda{lambda} {}
+
+    void resetLambda(const T& lambda) {
+        this->lambda.~T();
+        new (&this->lambda) T{lambda};
+    }
+
+    T lambda;
+};
+
+Solution (2) 
+If this is still what you're going for, I think dynamic allocation (e.g. using unique_ptr) is fair game

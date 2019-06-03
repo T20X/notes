@@ -20,3 +20,5 @@ When a scoped_lock object is created, it attempts to take ownership of the mutex
 4. std::lock (mutexes...)  locks given mutex using deadlock detection algo!
 5. for condition variables only unique_lock will work as it needs to unlock the mutex automatically.
 6. thread_local vairables can be static as well! When thread exits they are destoryed as well!
+7. std::once_flag flag1, flag2; 
+  void simple_do_once(){ std::call_once(flag1, [](){ std::cout << "Simple example: called once\n"; }); }

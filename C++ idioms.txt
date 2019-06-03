@@ -1,0 +1,26 @@
+----------------------
+       CRTP 
+----------------------
+The main idea is to pass Derived class to the base class
+it can help in few ways:
+
+No need to override dispatch in every event class! event_crtp gives it for free!
+struct state
+{
+  StatePtr on_event(const event_connecting& e) ...
+  StatePtr on_event(const event_connected& e) ...
+}
+template <State>
+struct event 
+{
+  virtual StatePtr dispatch(state& s) = 0
+}
+
+template <class Derived>
+class event_crtp : public event<state>
+{
+  StatePtr dispatch(state& s) override { s.on_event(*static_cast<const Derived*>(this)); }
+}
+
+class event_connection : event_crtp<event_connection> {}
+class event_connected : event_crtp<event_connected> {}

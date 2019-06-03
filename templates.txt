@@ -1,4 +1,19 @@
-﻿Function template parameters are substituted (replaced by template arguments) twice:
+﻿int p = (0,0,2,1);
+p=1!!!!!
+----------------
+
+class specializations can have parameters like Result(Args...)
+template <class Sig, class F> class memoize_helper;
+template <class Result, class... Args, class F>
+class memoize_helper<Result(Args...), F>
+{}
+
+------------
+template <typename C,typename T = typename C::value_type>
+std::unordered_map<T, unsigned int> 
+count_occurrences(const C& collection)
+-----
+Function template parameters are substituted (replaced by template arguments) twice:
  -explicitly specified template arguments are substituted before template argument deduction
  - deduced arguments and the arguments obtained from the defaults are substituted after template argument deduction
 
@@ -406,3 +421,57 @@ struct has_type_member<T, std::void_t<typename T::type>> : std::true_type { };
 OR
 template< class T >
 struct has_type_member<T, std::void_t<decltype(T::member)> : std::true_type { };
+
+(8) Expression tempalate
+template<typename T, typename Cont= std::vector<T> >
+class MyVector
+{
+  // assignment operator for MyVector of different type
+  template<typename T2, typename R2>
+  MyVector& operator=(const MyVector<T2, R2>& other){
+    assert(size() == other.size());
+    for (std::size_t i = 0; i < cont.size(); ++i) cont[i] = other[i];
+    return *this;
+  }
+
+template<typename T, typename Op1 , typename Op2>
+class MyVectorAdd{
+  const Op1& op1;
+  const Op2& op2;
+
+public:
+  MyVectorAdd(const Op1& a, const Op2& b): op1(a), op2(b){}
+
+  T operator[](const std::size_t i) const{ 
+    return op1[i] + op2[i]; 
+  }
+
+  std::size_t size() const{ 
+    return op1.size(); 
+  }
+};
+
+// function template for the + operator
+template<typename T, typename R1, typename R2>
+MyVector<T, MyVectorAdd<T, R1, R2> >
+operator+ (const MyVector<T, R1>& a, const MyVector<T, R2>& b){
+  return MyVector<T, MyVectorAdd<T, R1, R2> >(MyVectorAdd<T, R1, R2 >(a.data(), b.data()));
+}
+
+}
+
+9.  template <class Result, class... Args>
+    auto memoFib(Result (*f)(Args...))
+
+10. tuples don't have generic hash functions BUT do have operator <!
+11. 
+        template <class... InnerArgs>
+        Result operator ()(InnerArgs&&... args)
+        {
+            const auto key = make_tuple(args...); #tuple does forwarding inside already!
+             ..........
+                auto r = _f(*this, std::forward<decay_t<InnerArgs>>(args)...); /but here we need forwarding!
+12. function loop!
+template <typename... Args>
+ void f(Args... args)
+{ {o(args)...};

@@ -119,3 +119,15 @@ char my_tolower(char ch)
 (20) Do keep in mind that all iterator range based functions assume closed;open interval, like [front;back). while back is the iterator PAST the last one processed!
 
 (21) std::iterator_traits<InputIt>::difference_type  is there for a reason. Because it may potentially count objects which are not memory addressable - say number of planets/stars in the universe! Even though in practice it is std::ptrdiff_t (aka int64)
+
+(22) One of the most useful features of pairs and tuples is that when you create product types with them, you get lexicographical comparison operators for free
+
+(23) It’s a bad idea to ever make them a part of a public API (even if some parts of the STL do so)
+
+(24) bool operator<(const person_t& left, const person_t& right)
+{
+    return std::tie(left.m_surname, left.m_name) <
+            std::tie(right.m_surname, right.m_name);
+}
+]
+(25) std::distance - returns the number of increments needed to go from first to last. The value may be negative if random-access iterators are used and first is reachable from last (since C++11)

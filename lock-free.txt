@@ -1,3 +1,5 @@
+atomic on floating types is not atomic inc/dec, but store and load are!
+-------------
 While almost all programmers know that a volatile does not have the properties of an atomic variable, many code are still written with the idea that an atomic has the propertie of a volatile: "an atomic access is an observable behaviour". According to the standard it is no
 
 compilers optimize code as if atomics were also volatiless

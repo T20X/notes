@@ -1,3 +1,15 @@
+no auto for non-moveable types!
+------------
+void set_name(string s) noexcept //never declare it like that. even function is, but it may throw at the caller end!
+{ _s = std::move(s); }
+
+it is good to pass by values in constructors! because then we may not miss the capacity the source (string/vector) already have!
+
+forwarding references are good in functions which forwards values and then the destination function will know what to do with it
+
+----------------------
+don't use rvalue refrence optimizations (&&) and forwarding refrences by default - just stick to const & and by value parameter passing and refer to the && as an optimization given the set of use cases
+-----------------------
 The most important insight is that the answer depends on the details of the base class’s contract. It is not enough to know that the public interfaces / method signatures are compatible; one also needs to know if the contracts / behaviors are compatible
 -------------
 The important part of the previous sentence are the words “contracts / behaviors.” That phrase goes well beyond the public interface = method signatures = method names and parameter types and constness. A method’s contract means its advertised behavior = advertised requirements and promises = advertised preconditions and postconditions. So if the base class has a method void insert(const Foo& x), the contract of that method includes the signature (meaning the name insert and the parameter const Foo&), but goes well beyond that to include the method’s advertised preconditions and postconditions

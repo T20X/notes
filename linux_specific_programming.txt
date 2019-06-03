@@ -1,3 +1,4 @@
+﻿__cxa_atexit() will call the destructor of the static of a dynamic library when this dynamic library is unloaded before the program exi
 ----------------
 Among the APIs subsequently listed are write() and writev(2).  And
        among the effects that should be atomic across threads (and

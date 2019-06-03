@@ -1,4 +1,17 @@
-﻿Functional programming is a style of programming that emphasizes the evaluation of expressions, rather than execution of commands. The expressions in these languages are formed by using functions to combine basic values. A functional language is a language that supports and encourages programming in a functional style.
+﻿In the functional world, building new types from old ones is usually done through two operations: sum and product (these new types are thus called algebraic). A product of two types A and B is a new type that contains an instance of A and an instance of B (it’ll be a Cartesian product of the set of all values of type A and the set of all values of B)
+
+The sum type of types A and B is a type that can hold an instance of A or an instance of B, but not both at the same time
+-------------------
+This concept of creating a new function object from an existing one by fixing one or more of its arguments to a specific value is called *****partial function application******
+------------
+In addition to creating a class, evaluating the lambda expression also creates an instance of that class called a ****closure****: an object containing some state or environment along with code that should be executed on that state
+-------------
+It’s important to note that a generic lambda is a class on which the call operator is templated, not a class template that has a call operator. The lambda will deduce the type for each of its arguments that were declared as auto when it’s called, not when it’s constructed, and the same lambda can be used on completely different types
+----------------------
+Classes with the overloaded call operator are often called ***functors****
+Using duck-typing (if it walks like a duck and quacks like a duck, it’s a duck), we can say that anything that can be called like a function is a function object
+----------------------
+Functional programming is a style of programming that emphasizes the evaluation of expressions, rather than execution of commands. The expressions in these languages are formed by using functions to combine basic values. A functional language is a language that supports and encourages programming in a functional style.
 -----------------------
 Broadly speaking, FP is a style of programming in which the main program building blocks are functions as opposed to objects and procedures. A program written in the functional style doesn’t specify the commands that should be performed to achieve the result, but rather defines what the result is
 -------------------------
@@ -13,6 +26,8 @@ One of the most significant sources of software bugs is the program state. It’
 It would be inefficient and counterproductive to write code in the imperative style first and then change it bit by bit until it became functional. Instead, you should think about problems differently. Instead of thinking of the algorithm steps, you should consider what the input is, what the output is, and which transformations you should perform to map one to the other
 ---------------------------
 Functions that take other functions as arguments or that return new functions are called higher-order functions
+------------------------------
+although similar, currying and partial function application have their advantages and disadvantages. And both have their use cases. Partial function application is useful when you have a specific function whose arguments you want to bind. In this case, you know how many arguments the function has, and you can choose exactly which arguments you want bound to a specific value. Currying is particularly useful in generic contexts when you can be given a function with any number of arguments. In this case, std::bind isn’t useful, because if you don’t know how many arguments a function has, you can’t know how many arguments you need to bind to a placeholder; you don’t even know how many placeholders you’ll need
 ------------------------------
 Remeber!
 template <template < class...> class A,   class B>
@@ -73,7 +88,7 @@ class A<T, typename std::enable_if<std::is_floating_point<T>::value>::type> {
 
 
 
-15. - Types are first-class values inside compile-time programs.
+6. - Types are first-class values inside compile-time programs.
     - Functions at compile time live in a world where no side effects can occur
     - As per our first axiom, the only interesting values in metaprogramming are types. Thus, c    ompile-time functions are components that map types to other types.
     - compile-time containers must be types that contain zero or more other types.
@@ -85,9 +100,9 @@ class A<T, typename std::enable_if<std::is_floating_point<T>::value>::type> {
     - Dealing with compile-time containers requires no loops. Try to express your algorithm as much as possible as a direct manipulation of parameter packs.
 
 
-16. he first intuition we might have coming from our runtime experience is to find a way to “loop” over types as we repeatedly call push_back. Even if it’s a correct implementation, we need to fight this compulsion of thinking with loops. Loops over types will require a linear number of intermediate types to be computed, leading to unsustainable compilation times. The correct way of handling this use case is to find a natural way to exploit the variadic nature of our containers.
+7. he first intuition we might have coming from our runtime experience is to find a way to “loop” over types as we repeatedly call push_back. Even if it’s a correct implementation, we need to fight this compulsion of thinking with loops. Loops over types will require a linear number of intermediate types to be computed, leading to unsustainable compilation times. The correct way of handling this use case is to find a natural way to exploit the variadic nature of our containers.
 
-17.
+8.
 
     template <template <class...> class A, template <class...> class F, class... T>              
     struct my_transform <A<T...>, F> { using r = A<typename F<T>::type...>;  };
@@ -119,3 +134,41 @@ class A<T, typename std::enable_if<std::is_floating_point<T>::value>::type> {
           std::tuple<int, int, int>,
           lambda<std::add_pointer>
         >::type;
+
+9.     template <typename It, typename FilterFunc>
+    std::vector<std::string> names3(std::vector<std::string> prevNames, It front, It back, FilterFunc f)
+    {
+        if (front == back) return prevNames;
+        if (f(*front)) prevNames.push_back(name(front));
+        return names3(std::move(prevNames), next(front), back, f); #move their avoid copies!
+    }
+10. Instead of creating types that can be implicitly converted to function pointers, C++ provides a much nicer way to create new types that behave like functions: by creating classes and overloading their call operators
+
+11. 
+Instead of creating the class template, you can make the call operator a template member function, as shown in the following listing (and found in the book’s sample code in example:older-than-generic/main.cpp). This way, you won’t need to specify the type when you instantiate the older_than function object, and the compiler will automatically deduce the type of the argument when invoking the call operator
+
+class older_than {
+public:
+    older_than(int limit): m_limit(limit) {    }  
+  template <typename T>  
+  bool operator()(T&& object) const   {   
+      return std::forward<T>(object).age()> m_limit;  // we forward becayse age() function may have ovelaod for lvalues and rvalues refrences!
+     }
+private:   
+ int m_limit;
+};
+
+12. you can use a lambda to achieve the same effect while keeping the code localized and not polluting the program namespace
+
+13.[]—A lambda that doesn’t use any variable from the surrounding scope. These lambdas don’t have any internal state and can be implicitly cast to ordinary function pointers.
+
+14. Lambdas can create boilerplate code. Instead one may just write a function object by hand !
+15. Laze evaluation function object class template
+ template <typename F>
+class lazy_val
+ {
+private: 
+   F m_computation;
+   mutable decltype(m_computation()) m_cache;
+   mutable std::once_flag m_value_flag;public:  
+   operator const decltype(m_computation())& () const

@@ -1,1 +1,17 @@
 1. function call can prevent the compiler from re-ordering staff around it as it cannot know what the function is doing...
+
+2.  // RECURSIVE TAIL OPTIMIZATION
+template <typename FilterFunction, typename Iterator>
+std::vector<std::string> names_for(
+        Iterator people_begin,
+        Iterator people_end,
+        FilterFunction filter)
+{
+    return names_for_helper(people_begin,
+                            people_end,
+                            filter,
+                            {});
+}
+
+In this case, compilers that support tail-call optimization (TCO) will be able to convert 
+the recursive function to a simple loop

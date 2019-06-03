@@ -1,3 +1,5 @@
+auto may improve perfomance because there are not implicit conversions involved
+-------------
     workPerThread = workPerThread & ~(pageSz - 1); IS FAST ALTERNATIVE TO
     workPerThread = (workPerThread / pageSz) * pageSz;
 

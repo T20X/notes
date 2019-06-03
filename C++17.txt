@@ -46,3 +46,9 @@ integer represention of a pointer might not be the same but sequence  as the poi
 
  it is ok to convert a pointer to integer and then integer back to pointer. But modifying that integer in the middle is kind of on the endge according to c++ standarrt!
 ---------------
+
+7. Since C++17, the evaluation order of operands of operator << is strictly from left to right, and operands of overloaded operator share the same evaluation order as those of the bulit-in one
+  Postfix expressions are evaluated from left to right. This includes functions calls and member
+selection expressions.
+? Assignment expressions are evaluated from right to left. This includes compound assignments.
+? Operands to shift operators are evaluated from left to righ
