@@ -1,3 +1,9 @@
+ss -4 state listening -- all the listeningfor ipv4
+netstat -4 -a -- all the connections for ipv4
+arp -av
+cat /proc/pid/env - env variables process run with!
+cat /proc/pid/limits - process limits
+cat /proc/pid/smaps - nice memory stats!
 nc - arbitrary TCP/UDP connection listeners/publishers
  
 watch -n 1 grep 'bar' /proc/interrupt
@@ -25,9 +31,31 @@ then select from the boot menu
 -----
 A tickless kernel is an operating system kernel in which timer interrupts
  do not occur at regular intervals, but are only delivered as required
+
+It seems in Kernel 4.19 and 4.20, the residual 1HZ tick can be removed in NOHZ Full mode when running a task on the CPU.
+
+I tried that, but the 1 HZ tick is still there.  I am thinking maybe I missed some steps.
+
+Here are what I did:
+
+ 1. Set  CONFIG_NOHZ_FULL=y,   CONFIG_RCU_FAST_NO_HZ=y, CONFIG_RCU_NOCB_CPU=y
+
+ 2. Set boot parameters: GRUB_CMDLINE_LINUX_DEFAULT="quiet splash isolcpus=nohz,domain,1-3 nohz=on nohz_full=1-3  rcu_nocbs=1-3 intel_pstate=disable irqaffinity=0 nmi_watchdog=0 nosoftlockup
+
+3. Modify /sys/devices/virtual/workqueue/cpumask to 1
+
+4. systemctl stop irqbalance
+
+5. Turn off turbo mode, P state, and hythreading in BIOS
+
+Has anybody ever tried this? What did I miss?
+
+
+
 -----
-FIND WHO USES HUGE PAGES!
+HUGE PAGES!!!
 ------
+
 grep -B 11 'KernelPageSize: 2048 kB' /proc/[PID]/smaps \ | grep "^Size:" \ | awk 'BEGIN{sum=0}{sum+=$2}END{print sum/1024}'
 
 sudo grep huge /proc/*/numa_maps
@@ -46,3 +74,30 @@ HugePages_Total:    4096
 HugePages_Free:     3560
 HugePages_Rsvd:      234
 HugePages_Surp:        0
+
+
+numactl -m <node-list> echo 20 >/proc/sys/vm/nr_hugepages_mempolicy - allocates 20 huge pages on numa node-list!
+
+If the user applications are going to request huge pages using mmap system call, then it is required that system administrator mount a file system of type hugetlbfs
+cat /sys/devices/system/node/node*/meminfo | fgrep Huge - check Huge pages per NUMA node!
+ mount -t hugetlbfs -o  uid=maine, gid=maine, size=1G none /mnt/huge - mount huge page!
+ umount  /mnt/huge/
+
+ But need to use libhugfefs API in order to discover mounts!
+
+hugectl --heap=2M --$shm ./app
+ hugectl will work for shared memory, heap, data, code segments(if linked propertly..)..but not for sbrk and mmap(unless variab! in fact it hooks __morecore gblic function (the one which calls sbrk) to allocate memory from huge pages!
+
+By default, the hugepage heap does not shrink.  To enable hugepage heap
+shrinking, set HUGETLB_MORECORE_SHRINK=yes.  NB: We have been seeing some
+unexpected behavior from glibc's malloc when this is enabled
+
+Intead of hugectl, one can just set env variables
+HUGETLB_DEBUG=1
+HUGETLB_MORECORE=yes
+HUGETLB_SHM=yes
+HUGETLB_SHARE=1
+HUGETLB_PATH=/mnt/huge
+
+
+Currently, the stack cannot be backed by huge pages

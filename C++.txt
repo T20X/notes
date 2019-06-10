@@ -1,4 +1,6 @@
-﻿std::quick_exit  - quick ternination without static destructores called!
+﻿destructors are recursive by default
+-------------------
+std::quick_exit  - quick ternination without static destructores called!
 use std::at_quick_exit to register functions if you still want something to be called! Up to 32 functions can be registed
 
 Aslo _exit can do the job!
@@ -67,7 +69,7 @@ a char, unsigned char, or std​::​byte type.
  only works on placement new
 
  --------------
- C++ does not allow you to do "in-place type punning". Not in a general sense. The closest you can get is the new wording for unions, but that doesn't allow you to access the value through an object of a different type. C++ only supports type punning by copy or using unsigned char* or byte!
+ C++ does not allow you to do "in-place type punning". Not in a general sense. The closest you can get is the new wording for unions, but that doesn't allow you to access the value through an object of a different type. C++ only supports type punning by copy or using unsigned, char* or byte!
  ----------------------------
  void - type with an empty set of values. It is an incomplete type that cannot be completed (consequently, objects of type void are disallowed). There are no arrays of void, nor references to void. However, pointers to void and functions returning type void (procedures in other languages) are permitted
  ----------------
@@ -77,8 +79,36 @@ a char, unsigned char, or std​::​byte type.
  ------------------------
  operator new can hounr alingment up to 16 bytes, but if more required,aligned_alloc shall be used!
 
- C++17 new operators support now alingment to whatever size is set and it does respect alingas for heap allocation!
+ C++17 new operators support now alingment to whatever size is set and it does respect alingas for heap allocation! Pre C++17 an option is too overallocate and then aling
+with std::align!
 
+For example:
+void * RingBuffer::operator new(size_t request)
+{
+     static const size_t ptr_alloc = sizeof(void *);
+     static const size_t align_size = 64;
+     static const size_t request_size = sizeof(RingBuffer)+align_size;
+     static const size_t needed = ptr_alloc+request_size;
+
+     void * alloc = ::operator new(needed);
+     void *ptr = std::align(align_size, sizeof(RingBuffer),
+                          alloc+ptr_alloc, request_size);
+
+     ((void **)ptr)[-1] = alloc; // save for delete calls to use
+     return ptr;  
+}
+
+void RingBuffer::operator delete(void * ptr)
+{
+    if (ptr) // 0 is valid, but a noop, so prevent passing negative memory
+    {
+           void * alloc = ((void **)ptr)[-1];
+           ::operator delete (alloc);
+    }
+}
+
+--------------------------
+Regular std::malloc aligns memory suitable for any object type (which, in practice, means that it is aligned to alignof(std::max_align_t)). aligned_alloc(size,alingment) function is useful for over-aligned allocations, such as to SSE, cache line, or VM page boundary
 
  ----------
  An alignment is an implementation-defined integer value representing the number of bytes between successive addresses at which a given object can be allocated.

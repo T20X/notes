@@ -12,7 +12,7 @@ removes itself from the red-black tree of runnable,
 and calls schedule() to select a new process to execute.
 
 --------------------------
-Waking Up¶
+Waking Upï¿½
 wake_up() wakes up all the tasks waiting on the given wait queue. It does the following:
 
 Calls try_to_wake_up(), which sets the task's state to TASK_RUNNING
@@ -61,7 +61,7 @@ otherwise let the current task keep running anyway, since it is nearly done!
 sched_tunable_scaling -  controls whether the CFS scheduler can adjust sched_latency_n.
 
 sched_migration_cost - Amount of time after the last execution that a task is considered to
-be “cache hot” in migration decisions. A “hot” task is less
+be ï¿½cache hotï¿½ in migration decisions. A ï¿½hotï¿½ task is less
 likely to be migrated, so increasing this variable reduces task
 migrations. The default value is 500000 (ns)
 -----------------------------
@@ -99,11 +99,14 @@ The kernel can preempt a task running in the kernel so long as it does not hold 
  the current code is reentrant and capable of being preempted
 
 ----------------
-In conclusion, kernel preemption can occur
+in conclusion, kernel preemption can occur:
+
 When an interrupt handler exits, before returning to kernel-space
 When kernel code becomes preemptible again
 If a task in the kernel explicitly calls schedule()
 If a task in the kernel blocks (which results in a call to schedule())
+
+kernel cannot be preepmeted if lock is held. preempt_count is inc/dec on each lock/unlock. When it goes to 0 then kernel can be preemted by user space!
 
 --------------------------
 The SCHED_FIFO policy *
@@ -119,6 +122,8 @@ SCHED_RR is identical to SCHED_FIFO except that each process can run only until 
 
 When a SCHED_RR task exhausts its timeslice, any other real-time processes at its priority are scheduled round-robin. The timeslice is used to allow only rescheduling of same-priority processes.
 As with SCHED_FIFO, a higher-priority process always immediately preempts a lower-priority one, and a lower-priority process can never preempt a SCHED_RR task, even if its timeslice is exhausted.
+
+Threads with a SCHED_FIFO policy will run ahead of SCHED_OTHER tasks. Instead of using nice values, SCHED_FIFO uses a fixed priority between 1 (lowest) and 99 (highest). A SCHED_FIFO thread with a priority of 1 will always be scheduled ahead of any SCHED_OTHER thread
 
 ---------------
 Linux provides the sched_yield() system call as a mechanism for a process to explicitly yield

@@ -1,4 +1,4 @@
-no auto for non-moveable types!
+no auto for non-moveable types! auto v = type() //type has to be moveable!
 ------------
 void set_name(string s) noexcept //never declare it like that. even function is, but it may throw at the caller end!
 { _s = std::move(s); }

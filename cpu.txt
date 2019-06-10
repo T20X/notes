@@ -1,10 +1,51 @@
+------
+Skylake
+---
+Instruction Decoder Queue can hold up to 64 micor ops !
+decode icache can supply 6 micro ops per cycle to IDQ and DecodePipeline can supply 5 micors ops to IDQ!
+
+The L1 data cache can handle two 256-bit load and one 256-bit store operations each cycle. The unified L2 can service one cache line (64 bytes) each cycle. Additionally, there are 72 load buffers and 42 store buffers available to support micro-ops execution in-flight.
+
+The microprocessor can rename any of these temporary registers to represent a logical register such as EAX.
+
+
+My interpretation of the Haswell L1 Data Cache is that it is (for reads) a dual-ported cache with 64-Byte (512-bit) full-cache-line read ports.  The core can request up to 2 32-Byte (256-bit) reads and 1 32-Byte (256-bit) store per cycle.  The L1 Data Cache can service two reads per cycle for any size and any alignment -- as long as neither of the reads crosses a cache line boundary.  In other words, it looks like each of the two read ports of L1 Data Cache reads (up to) the full cache line containing the requested data and can return anywhere between 1 Byte (8-bits) and 32 Bytes (256-bits) for any alignment as long as all of the data requested is within that 512-bit cache line.   The cache can also service any two loads from the same cache line in one cycle (independent of alignment and/or overlap).   For loads that cross a cache line boundary, it looks like the L1 Data Cache must use both read ports -- one port to read the cache line containing the "lower" part of the requested data, and the other port to read the next cache line that contains the "upper" part of the requested data.  This limits throughput to one load per cycle (from the core's perspective).     It took a lot of experiments and a lot of thinking to figure out the read behavior of the cache.  Because of the potential for cycle skew between loads and stores, I don't know how to extend the methodology to understand how the L1 Data Cache handles stores.
+
+A branch instruction is recognized as having loop behavior if it goes one way n-1 times and then goes the other way one time. A loop counter makes it possible to predict branches with  loop behavior perfectly if the period n is no longer than 64. The loop counters are stored for each branch without using the global history table. Instead, the loop counters have their own buffer with 128 entries. Therefore, the prediction of a loop does not depend on the number of other branches inside the loop. Nested loops are predicted perfectly.
+
+Indirect jumps and indirect calls (but not returns) are predicted using the same two-level predictor principle as branch instructions. Branches without loop behavior and indirect jumps/calls share the same history buffer and history pattern table, but apparently not the same BTB. An indirect jump/call gets a new BTB entry every time it jumps to a new target. It can have more then four BTB entries even though the BTB has only four ways. The history buffer stores more than one bit for each entry, probably 6 or 7, in order to distinguish between more than two targets of an indirect jump/call. This makes it possible to predict a periodic jump pattern that switches between several different targets.
+
+Apparently, there are two 18-bit global history buffers. The first history buffer includes all jumps and branches including unconditional jumps but not including never-taken branches. The second history buffer includes only some branches, presumably the most important ones. This improves the prediction of some branches inside loops that contain up to nine jumps.
+
+note undconditional jumps also part of history table as they invert program flow!
+
+The high throughput for taken branches of one per clock was observed for up to 128 branches with no more than one branch per 16 bytes of code. If there is more than one branch per 16 bytes of code then the throughput is reduced to one jump per two clock cycles. If there are more than 128 branches in the critical part of the code, and if they are spaced by at least 16 bytes, then apparently the first 128 branches have the high throughput and the remaining have the low throughput.
+These observations may indicate that there are two branch prediction methods: a fast method tied to the Î¼op cache and the instruction cache, and a slower method using a branch target buffer.
+
+The processor is able to predict very long repetitive jump patterns with few or no mispredictions. I found no specific limit to the length of jump patterns that could be predicted. One study found that it stores a history of at least 29 branches. Loops are successfully predicted up to a count of 32 or a little more. Nested loops and branches inside loops are predicted reasonably well.
+
+
+-------------
 In the Pentium 4, Intel Xeon, and P6 family processors, the locking operation is handled with either a cache lock
 or bus lock. If a memory access is cacheable and affects only a single cache line, a cache lock is invoked and
 the system bus and the actual memory location in system memory are not locked during the operation. Here,
 other Pentium 4, Intel Xeon, or P6 family processors on the bus write-back any modified data and invalidate
 their caches as necessary to maintain system memory coherency. If the memory access is not cacheable
-and/or it crosses a cache line boundary, the processor’s LOCK# signal is asserted and the processor does not
+and/or it crosses a cache line boundary, the processorï¿½s LOCK# signal is asserted and the processor does not
 respond to requests for bus control during the locked operation
+
+-------
+for example a Haswell or Skylake core can do 2 loads and 1 store per cycle from/to L1d cache (See How can cache be that fast?). Obviously they can't have just one MBR. Instead, Haswell has 72 load-buffer entries and 42 store-buffer entries, which all together are part of the Memory Order Buffer which supports out-of-order execution of loads / stores while maintaining the illusion that only StoreLoad reordering happens / is visible to other cores
+
+--------
+To make speculative execution possible, the P6 processor microarchitecture decouples the
+dispatch and execution of instructions from the commitment of results. The processorâ€™s out-of-order execution
+core uses data-flow analysis to execute all available instructions in the instruction pool and store the results in
+temporary registers. The retirement unit then linearly searches the instruction pool for completed instructions
+that no longer have data dependencies with other instructions or unresolved branch predictions. When
+completed instructions are found, the retirement unit commits the results of these instructions to memory
+and/or the IA-32 registers (the processorâ€™s eight general-purpose registers and eight x87 FPU data registers)
+in the order they were originally issued and retires the instructions from the instruction pool. 
 
 -------
 
@@ -112,7 +153,7 @@ https://lwn.net/Articles/252125/
 
 When an instruction modifies memory the processor still has to load a cache line first because no instruction modifies an entire cache line at once (exception to the rule: write-combining as explained in Section 6.1).
  The content of the cache line before the write operation therefore has to be loaded. It is not possible for a cache to hold partial cache lines. 
-A cache line which has been written to and which has not been written back to main memory is said to be “dirty”. Once it is written the dirty flag is cleared
+A cache line which has been written to and which has not been written back to main memory is said to be ï¿½dirtyï¿½. Once it is written the dirty flag is cleared
 
 More sophisticated cache implementations allow another possibility to happen. If the cache line which another processor wants to read from or write to is currently marked dirty
  in the first processor's cache a different course of action is needed. In this case the main memory is out-of-date and the requesting processor must,
@@ -131,10 +172,15 @@ set associative cache
 
 --------------
 Modified
+-----
 This cache has the only valid copy of the cache line, and has made changes to that copy.
+-----
 Owned
+----
 This cache is one of several with a valid copy of the cache line, but has the exclusive right to make changes to it. It must broadcast those changes to all other caches sharing the line. The introduction of owned state allows dirty sharing of data, i.e., a modified cache block can be moved around various caches without updating main memory. The cache line may be changed to the Modified state after invalidating all shared copies, or changed to the Shared state by writing the modifications back to main memory. Owned cache lines must respond to a snoop request with data.
+------
 Exclusive
+-----
 This cache has the only copy of the line, but the line is clean (unmodified).
 Shared
 
@@ -157,17 +203,6 @@ This cache does not have permission to modify the copy.
  as well. Unlike the MESI protocol, a shared cache line may be dirty with respect to memory; if it is, some cache has a copy in the Owned state, and that cache is responsible for eventually updating main memory. If no cache hold the line in the Owned state, the memory copy is up to date. The cache line may not be written, but may be changed to the Exclusive or Modified state after invalidating all shared copies. (If the cache line was Owned before, the invalidate response will indicate this, and the state will become Modified, so the obligation to eventually write the data back to memory is not forgotten.) It may also be discarded (changed to the Invalid state) at any time. Shared cache lines may not respond to a snoop request with data.
 Invalid This block is not valid; it must be fetched to satisfy any attempted access.
 
---------------------------------
-Processor designers are currently using virtual address tagging for the first level caches.
- These caches are rather small and can be cleared without too much pain. 
-At least partial clearing the cache is necessary if the page table tree of a process changes.
- It might be possible to avoid a complete flush if the processor has an instruction which 
-specifies the virtual address range which has changed. Given the low latency of L1i and L1d caches
- (~3 cycles) using virtual addresses is almost mandatory.
-
-For larger caches including L2, L3, ... caches physical address tagging is needed
-
-
 -------------------------------
 The LOCK prefix originally stood for bus lock, which refers to a special signal
 issued at the front-side bus to suppress any attempt of memory transfer of other processors.
@@ -177,3 +212,10 @@ cache lines by different cores
 
 ---------------
 
+
+The L1 DCache can handle multiple outstanding cache misses and continue to service incoming stores
+and load
+
+------
+
+The general rule for a two-level adaptive predictor with an n-bit history is that it can predict any repetitive sequence with any period if all n-bit sub-sequences are different

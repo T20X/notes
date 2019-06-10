@@ -52,3 +52,7 @@ integer represention of a pointer might not be the same but sequence  as the poi
 selection expressions.
 ? Assignment expressions are evaluated from right to left. This includes compound assignments.
 ? Operands to shift operators are evaluated from left to righ
+
+8. template <auto value> void f() { }
+
+f<10>();               // deduces int

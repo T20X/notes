@@ -1,6 +1,10 @@
 NIC errros
 -------
 overruns - not enogh space in ring buffers
+dropped - not enough space in buffers TCP/UDP.
+errors - ill-formed packets
+
+netstrat -s //networking stats
 
 OOB data - priority delivery
 
@@ -9,3 +13,28 @@ RoCE stands for RDMA over Converged Ethernet. It is a standard that enables
 
 FCoE - Fibre Channel over Ethernet (FCoE) is a computer network technology that encapsulates Fibre Channel frames 
 over Ethernet network
+
+tcp_window_scaling (Boolean; default: enabled; since Linux 2.2)
+              Enable  RFC 1323  TCP  window  scaling.   This feature allows the use of a large window (> 64 kB) on a TCP connection, should the other end support it
+
+tcp_fin_timeout (integer; default: 60; since Linux 2.2)
+              This specifies how many seconds to wait for a final FIN packet before the socket is forcibly closed.  This is strictly a violation of  the  TCP  specification,  but  required  to  prevent
+              denial-of-service attacks.  In Linux 2.2, the default value was 180
+
+
+tcp_mem [low,pressure,limit] - in PAGES!
+ low - no regulation for memory allocation!
+ pressure - starts to regulate buffer memory allocation!
+ limit - no more allocation!This value overrides any other limits imposed by the kernel
+
+        tcp_retries1 (integer; default: 3; since Linux 2.2)
+              The number of times TCP will attempt to retransmit a packet on an established connection normally, without the extra effort of getting the network layers involved.  Once  we  exceed  this
+              number of retransmits, we first have the network layer update the route if possible before each new retransmit.  The default is the RFC specified minimum of 3.
+
+       tcp_retries2 (integer; default: 15; since Linux 2.2)
+              The  maximum  number of times a TCP packet is retransmitted in established state before giving up.  The default value is 15, which corresponds to a duration of approximately between 13 to
+              30 minutes, depending on the retransmission timeout.  The RFC 1122 specified minimum limit of 100 seconds is typically deemed too short.
+
+TCP Segmentation offload - These days many NICs can create headers/checksum for a given user data autmatically given a template from kernel! this can save massive amount of CPU time.
+
+TCP_CORK aggressively accumulates data. If TCP_CORK is enabled in a socket, it will not send data until the buffer fills to a fixed limit (MSS size). But still up until 200ms  - then it will be sent anyway!

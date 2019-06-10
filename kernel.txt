@@ -1,2 +1,10 @@
+(1) update boot!
+
 /etc/default/grub
-sudo grub2-mkconfig -o /boot/grub2/grub.cfg
+sudo update-grub
+
+
+(2) update config!
+
+vim /etc/sysctl.conf
+sysctl -p
