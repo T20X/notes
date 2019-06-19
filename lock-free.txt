@@ -87,7 +87,10 @@ atomic_thread_fence(memory_order_aqcuire)
 (`L1)--------------------- 
 (S)                      | nothing can espace this!And loads from L1 to Ln won't appear here - but writes can!
 (`Ln)-----------------------
+
+
 -------------------------
+
 A release fence prevents the memory reordering of any read or write which precedes it in program order with any write which follows it in program order
 
 A part

@@ -10,6 +10,12 @@ rvalue references (&&) mean we can move from it! That is important to realize as
 parameters are similar in this concept!
 ---------------------------
 decltype(auto) - is good for forwarding functions as if we want to deduce the return type for free and at the same time pass EXACT values.
+
+becuase forwarding refrences have the name they must be used with std::forward otherwise they'll be always treated like lvalues!
+To put it another way, the compiler can figure out which forward to call based on whether the input is an lvalue or rvalue, but that is unrelated to whether you want the desired output to be an lvalue or rvalue. The compiler knows the type of the input, but you need to explicitly tell it the type of the output, because they are not the same! Like complier could figure it out, BUT what if you want first to use that forwarding reference as lvalue first and then move from it in the end!
+like 
+temaplte <T> f()(T&& t_) { g(t_); x(forward<T>(t_)); }
+
 -------------
 by value parameters can avoid copies with std::move!
 f(vector<int> v)

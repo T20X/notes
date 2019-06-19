@@ -6,6 +6,7 @@ cat /proc/pid/limits - process limits
 cat /proc/pid/smaps - nice memory stats!
 nc - arbitrary TCP/UDP connection listeners/publishers
  
+awk '{print $1, $NF}' // $NF - line number!
 watch -n 1 grep 'bar' /proc/interrupt
 cat /proc/cmdline
 chrt -p <pid> - get scheduling process policy
