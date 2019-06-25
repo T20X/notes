@@ -1,10 +1,10 @@
 (1) reverse for loops for STL containers
 (2) list to have reserve as well!
-(3) algorithms to accept reverse iterators
+//(3) algorithms to accept reverse iterators
 (4) ability to set lambda in the class - Atm cannot do the below!
 MyClass o([](const auto& v) { std::cout << v << std::endl; })
 (5) two argument constructor for constexpr atomic( T desired ) noexcept;
 to allow spicfy memory model on initialization write to atomic in order to be sure
 it would have been synchronized
-(6) for loop reverse
+(6) powerfull stringstream. the current implmenentation are limited. cannot re-use the buffer / pre-allocate!
           

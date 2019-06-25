@@ -24,3 +24,8 @@ O(n!) - permutational time complexity!
 n! - numer of all permutations!
  -  If we just want to select K subelemts then, it is n!/(n - k)!
 
+triangular numbers are the sum of the first n positive integers
+
+Pythagoreans also observed that some numbers could not be made into any nontrivial rectangular shape (a shape where both sides of the rectangle are greater than 1). These are what we now call prime numbers - numbers that are not products of smaller numbers
+
+The product of two odd numbers is an odd number

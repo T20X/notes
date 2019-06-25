@@ -24,3 +24,81 @@ class event_crtp : public event<state>
 
 class event_connection : event_crtp<event_connection> {}
 class event_connected : event_crtp<event_connected> {}
+
+
+-----------
+logical XOR
+----
+!(a) != !(a)
+
+-------
+Assignemnt operator
+--------
+To ensure a strongly exception-safe class that can’t leak any resources when an exception occurs and that can guarantee an operation either is successfully completed or isn’t completed at all, you usually use the copy-and-swap idiom when implementing the assignment operator
+------------
+
+------------
+Pattern matching
+------------
+template <typename... Ts> struct overloaded : Ts... 
+{ using Ts::operator()...; };
+template <typename... Ts> overloaded(Ts...) -> overloaded<Ts...>;
+
+std::visit(overloaded {[&](const normal_scoring& state) {},  
+                       [&](const forty_scoring& state) {}},
+            m_state );
+
+-----
+Swap
+---
+
+in modern C++ swap can can give an edge over move swap, as normal swap based of move assignemnt would take 3 moves! 
+
+Normally good libaries in c++ would use swap call
+
+template<class ForwardIt1, class ForwardIt2>
+constexpr void iter_swap(ForwardIt1 a, ForwardIt2 b) // constexpr since C++20
+{
+   using std::swap; // here we bounce back to std::swap call if we cannot perform swap ADL on a and b!
+   swap(*a, *b);
+}
+
+typical patter
+namespace stuff
+{
+  struct foo { void swap(foo& other); };
+  swap(foo& lhs, foo& rhs) { lhs.swap(rhs); }
+}
+
+int main()
+{
+  foo a, b;
+  int i = 0;
+  int j = 42;
+
+  using std::swap;
+  swap(i, j); // calls std::swap
+  swap(a, b); // calls stuff::swap(stuff::foo&, stuff::foo&) via ADL
+}
+
+-----
+runtime concept polymorphism 
+------------
+tempalte <typename T> void draw(const T& x, ostream out) { out << x << endl; }
+template <> void draw(const mytype& x, osteram out) { out << x.to_string() << endl; }
+
+struct package
+{
+   friend void draw(package& p, ostream) { p._c->draw(); } // defines a non-member friend function!
+   struct conceptbase { virtual draw(ostream out) = 0; virtual concept* copy() {} };
+
+   template <typname T> 
+   struct model : conceptbase 
+   { 
+     virtual draw(ostream out) { draw(data_, out); }
+     concept* copy() {}
+     T data_
+    };
+
+   unique_ptr<conceptbase> c_;
+}

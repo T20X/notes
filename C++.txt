@@ -1,4 +1,6 @@
-﻿destructors are recursive by default
+﻿Two pointers can be compared with using the comparison function objects less,  greater etc. Otherwise, using blanket operator< etc, this is only possible if the pointers point to elements of the same array object or one past the end. Otherwise, results are unspecifie
+----------------------------------
+destructors are recursive by default
 -------------------
 std::quick_exit  - quick ternination without static destructores called!
 use std::at_quick_exit to register functions if you still want something to be called! Up to 32 functions can be registed
@@ -709,3 +711,12 @@ struct LambdaContainer {
 
 Solution (2) 
 If this is still what you're going for, I think dynamic allocation (e.g. using unique_ptr) is fair game
+
+(52) inline namespace
+ namespace std {
+
+#if __cplusplus < 1997L // pre-standard C++
+    inline
+#endif
+
+    namespace pre_cxx_1997 {

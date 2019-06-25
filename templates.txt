@@ -1,4 +1,17 @@
-﻿int p = (0,0,2,1);
+﻿the goal is incremental construction of systematic catalogs of useful, efficient and abstract algorithms
+
+-------------
+One of the neat tricks you can use is to declare a class template, but not implement it. Whenever you want to check for a specific type, you can try to instantiate that template, and the compiler will report an error specifying exactly which type you passed
+
+template <class T> test;
+test<decltype(...)>();
+
+error: invalid use of incomplete type
+'class test;std::string&>'
+
+
+------------
+int p = (0,0,2,1);
 p=1!!!!!
 ----------------
 

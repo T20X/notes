@@ -59,11 +59,15 @@ Random access - constant O(1)
 Insertion or removal of elements at the end or beginning - constant O(1)
 Insertion or removal of elements - linear O(n)
 
-In addition, insertion and deletion at either end of a deque never invalidates pointers or references to the rest of the elements. But iterators are invalidated!
+erase in the end only invalidates the erase iterator and reference as well as past the end iterator
+erase in the front only invalidates the erase iterator and reference, but not the rest including past the end iterator
+insert in the end invalidates all the iterators including past the end. No references are invalidated
+insert in the front invalidates all the iterators including past the end. No references are invalidated
 
 insert/emplace - Time complexity: Constant plus linear in the lesser of the distances between pos and either of the ends of the container.
 insert in the middle of the deque invalidates all iterators and references!
-insert/erase from the front/back of deque invalidates all iterators but not refrences!
+
+
 
 Invalidation notes
 When inserting at either end of the deque, references are not invalidated by insert and emplace.
@@ -131,3 +135,5 @@ char my_tolower(char ch)
 }
 ]
 (25) std::distance - returns the number of increments needed to go from first to last. The value may be negative if random-access iterators are used and first is reachable from last (since C++11)
+
+(26) An LegacyInputIterator is an LegacyIterator that can read from the pointed-to element. LegacyInputIterators only guarantee validity for single pass algorithms: once an LegacyInputIterator i has been incremented, all copies of its previous value may be invalidated.

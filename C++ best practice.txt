@@ -1,3 +1,47 @@
+regular types match primitive type semantics
+we call the set of axioms satisfaying data type and a set of operations on it a concept
+---------------
+f(object o);
+f(object(12)) - copy of object can be elided - contstructs right in o!
+---------
+copy/move operators and destructos ideally should not have observable side-effects as if someone is 100% relied on them being called
+------------------
+
+object f() { return 5; }
+object o = f(); //only calls o ctor!
+object o2 = 1;
+o2 = f(); //calls ctor, ctor and copy
+-------------
+assignment operators ideally should provide strong exception safety gauarantee
+---------------------
+there is no such a polymorphic type, but the use is
+-------------------
+value is a correspondence between entities with common properties and a set of values
+an object type is a pattern for storing a value of a corresponding value type inside the memory
+an object is a representation of a concrete entity as a value in memory
+we define operations in terms of the operation's semantics. choosing the same syntax for the same semantics enables code reuse
+(example: assingment is a procedure of taking two same types and making the first like second one without modifying the second one)
+
+regular types which have operations defined on them using normal names are said to have "value semantics"
+regualr types which are accessed indirectly through some shared reference are said to have "reference semantics"
+
+partially formed type - it can be destructed, it can be assigned to, but cannnot be used in other way
+-------------------
+classes no need to define swap function anymore really from c++14 if move operators are present as std::swap can now work well with move operators!
+------
+objects shall be composable
+sink object ideally pass by value
+objects shall be easy to move
+----------------------
+Pointers can have a lot of different meanings in different situations, and they’re bad at communicating what they’re used for. When you see a function that returns a pointer, you have a few options:
+It’s a factory function that returns an object you’ll become the owner of.
+It’s a function that returns a pointer to an existing object you don’t own.
+It’s a function that can fail, and it communicates the failure by returning the null pointer as the result.
+------------------------------------------------------
+This is the recommended approach to designing programs with state based on sum types: put the logic that deals with one state inside the object that defines that state, and put the logic that performs state transitions into the main program
+-------------------------
+It’s a bad idea to ever make std::pair or std::tuple to be a part of a public API
+--------------------------------
 no auto for non-moveable types! auto v = type() //type has to be moveable!
 ------------
 void set_name(string s) noexcept //never declare it like that. even function is, but it may throw at the caller end!
@@ -82,3 +126,7 @@ void f()  // Using exceptions
 }
 IMAGINE NOW checking returns codes for each function instead???
 ---------------------
+
+std::any issues
+ - no control over memory allocation coz no way atm on how  to store type erased memory allocator in type erased class!
+- if T move constructor throws is bad as it type is erased; any(any&&) noexcept...

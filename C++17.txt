@@ -56,3 +56,30 @@ selection expressions.
 8. template <auto value> void f() { }
 
 f<10>();               // deduces int
+
+9. Pack expansions in using declarations - short and compact syntax with variadic templates
+template<class... Ts> struct overload : Ts... { using Ts::operator()...; };
+template<class... Ts> overload(Ts...) -> overload<Ts...>;
+
+std::variant<int, float> intFloat { 0.0f };
+std::visit(overload(
+    [](const int& i) { ... },
+    [](const float& f) { ... },
+  ),
+  intFloat;
+);
+
+Pack expansions in using declarations - short and compact syntax with variadic templates.
+Custom template argument deduction rules - that allows converting a list of lambdas into a list of base classes for the overloaded class.
+Extension to aggregate Initialization - the overload pattern uses a constructor to initialise, but we don’t have to specify it in the class. Before C++17 it wasn’t possible
+
+
+10. Aggregate initialization for base classes is now possible!
+struct A0 {  A0(int) {}};
+struct A : A0 {  A(int):A0(1) {} };
+struct B {   B(int){} };
+struct D : A, B {};
+ D d1{1,2}; //WORKS NOW in C++17!
+
+11.  constexpr lambda
+

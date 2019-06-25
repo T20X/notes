@@ -10,3 +10,6 @@
 
 (2) if N is power of 2! N & ( N - 1)
 (3) modulo! pos = ++pos; pos &= (N - 1)
+
+(4) bool odd(int n) { return n & 0x1; }
+(5) int half(int n) { return n >> 1; }

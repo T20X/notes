@@ -1,3 +1,7 @@
+? : can disable RVO
+multiple return statements can disable RVO
+returning passed argument can disable RVO
+----------------
 auto may improve perfomance because there are not implicit conversions involved
 -------------
     workPerThread = workPerThread & ~(pageSz - 1); IS FAST ALTERNATIVE TO
