@@ -1,4 +1,33 @@
-﻿the goal is incremental construction of systematic catalogs of useful, efficient and abstract algorithms
+﻿
+-----------------------
+lambdas can be declared as template variables! but not constexpr until c++20!
+template <typename T> auto v = []() { T t1; return 0; };
+auto v1 = v<int>();
+
+-------------
+lift types to values
+template <typename T> struct type {};
+constepxr type<T*>{}add_pointer(type<T> v) { {}; }
+template <typename T>  constexpr std::true_type is_pointer(type<T*> v) { return {}; }
+template <typename T>  constexpr std::false_type is_pointer(type<T> v) { return {}; }
+
+make_tuple(type<int>, type<double>)!
+--------------------
+easy type configuration!
+typedef true_type is_always_equal
+------------
+Heterogeneous Lookup, C++14. Now comparison can be based on matching pattern
+bool operator<(const Product& prod, const std::string_view& sv) { 
+    return prod.mName < sv; 
+}
+bool operator<(const std::string_view& sv, const Product& prod) { 
+    return sv < prod.mName; 
+}
+---------------------------------
+struct can be declared inside template parameter itself as incomplete types
+template <class T> struct A {}; A<struct t1> t;
+----------------------------
+the goal is incremental construction of systematic catalogs of useful, efficient and abstract algorithms
 
 -------------
 One of the neat tricks you can use is to declare a class template, but not implement it. Whenever you want to check for a specific type, you can try to instantiate that template, and the compiler will report an error specifying exactly which type you passed
@@ -481,10 +510,153 @@ operator+ (const MyVector<T, R1>& a, const MyVector<T, R2>& b){
         template <class... InnerArgs>
         Result operator ()(InnerArgs&&... args)
         {
-            const auto key = make_tuple(args...); #tuple does forwarding inside already!
+            const auto key = make_tuple(std::forward<InnerArgs>(args)...); #tuple does forwarding inside already!
              ..........
                 auto r = _f(*this, std::forward<decay_t<InnerArgs>>(args)...); /but here we need forwarding!
 12. function loop!
 template <typename... Args>
  void f(Args... args)
 { {o(args)...};
+
+
+13. this pointer is required!
+template<class T>
+struct B : A<T> {  int foo() {  return this->i }  };
+
+14.       template<typename _Tp, typename... _Args>
+    struct __construct_helper
+    {
+      template<typename _Alloc2,
+        typename = decltype(std::declval<_Alloc2*>()->construct(
+          std::declval<_Tp*>(), std::declval<_Args>()...))>
+        static true_type __test(int); // declares a function!
+
+      template<typename>
+        static false_type __test(...); // declares a function!
+
+      using type = decltype(__test<_Alloc>(0));
+    };
+
+      template<typename _Tp, typename... _Args>
+    using __has_construct
+      = typename __construct_helper<_Tp, _Args...>::type
+
+
+15.   template<typename _Tp>
+    struct __is_floating
+    {
+      enum { __value = 0 };
+      typedef __false_type __type;
+    };
+
+  // three specializations (float, double and 'long double')
+  template<>
+    struct __is_floating<float>
+    {
+      enum { __value = 1 };
+      typedef __true_type __type;
+    };
+
+
+16. 
+
+    template <typename... T> struct _and;
+    template <> struct _and<> : std::true_type {};
+    template <typename T1> struct _and<T1> : T1 {};
+    template <typename T1, typename T2> struct _and<T1, T2> : std::conditional<T1::value, T2, T1>::type  {};
+    template <typename T1, typename T2, typename... Tn> struct _and<T1, T2, Tn...> : _and<T1, _and<T2, Tn...>> {};
+
+17. 
+  template<typename _From, typename _To,
+           bool = __or_<is_void<_From>, is_function<_To>,
+                        is_array<_To>>::value>
+    struct __is_convertible_helper
+    {
+      typedef typename is_void<_To>::type type;
+    };
+
+  template<typename _From, typename _To>
+    class __is_convertible_helper<_From, _To, false>
+    {
+      template<typename _To1>
+    static void __test_aux(_To1) noexcept;
+
+      template<typename _From1, typename _To1,
+           typename = decltype(__test_aux<_To1>(std::declval<_From1>()))>
+    static true_type
+    __test(int);
+
+      template<typename, typename>
+    static false_type
+    __test(...);
+
+    public:
+      typedef decltype(__test<_From, _To>(0)) type;
+    };
+
+18.   struct __nonesuchbase {};
+  struct __nonesuch : private __nonesuchbase {
+    ~__nonesuch() = delete;
+    __nonesuch(__nonesuch const&) = delete;
+    void operator=(__nonesuch const&) = delete;
+  };
+
+      pair&
+      operator=(typename conditional<
+        __and_<is_copy_assignable<_T1>,
+               is_copy_assignable<_T2>>::value,
+        const pair&, const __nonesuch&>::type __p)
+      {
+    first = __p.first;
+    second = __p.second;
+    return *this;
+      }
+
+19.  template <typename T,typename,typename... Args> struct mine_is_constructible : std::false_type {};
+     template <typename T, typename... Args> struct mine_is_constructible<T, void_t<decltype(T(std::declval<Args>()...))>, Args...> : std::true_type {};
+     template <typename T, typename... Args> using mine_is_constructible_v = mine_is_constructible<T, void_t<T>, Args...>;
+
+20.   template<typename> struct __is_member_function_pointer_helper : public false_type { };
+      template<typename _Tp, typename _Cp> struct __is_member_function_pointer_helper<_Tp _Cp::*> : public is_function<_Tp>::type { };
+
+21.   template<typename> struct is_function : public false_type { };
+      template<typename _Res, typename... _ArgTypes _GLIBCXX_NOEXCEPT_PARM>
+    struct is_function<_Res(_ArgTypes...) _GLIBCXX_NOEXCEPT_QUAL>
+    : public true_type { };
+
+
+22. type complete check!
+static_assert(sizeof(type), "type must be complete");
+
+23. template <typename T, bool v = is...> struct S {}
+    template <typename T> struct S<T, false> {}
+     
+24.   template<typename _MemberPointer>  struct _Mem_fn; // undefined
+  template<typename _Res, typename _Class>
+    struct _Mem_fn<_Res _Class::*>
+    : _Mem_fn_base<_Res _Class::*>
+    {
+      using _Mem_fn_base<_Res _Class::*>::_Mem_fn_base;
+    };
+
+25. Make sure return types are comparable!
+
+   template<typename _From, typename _To>
+    using __check_func_return_type
+      = __or_<is_void<_To>, is_same<_From, _To>, is_convertible<_From, _To>>;
+
+      template<typename _Func,
+           typename _Res2 = typename result_of<_Func&(_ArgTypes...)>::type>
+    struct _Callable : __check_func_return_type<_Res2, _Res> { };
+
+      // Used so the return type convertibility checks aren't done when
+      // performing overload resolution for copy construction/assignment.
+      template<typename _Tp>
+    struct _Callable<function, _Tp> : false_type { }; //note that function here can be a short name for template!
+
+26. template <char ..c>
+  constexpr auto operator"" _c() {
+//parses char and returns int!
+}
+1_c + 1_2
+

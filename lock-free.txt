@@ -222,3 +222,12 @@ while(!latch.compare_exchange_weak(unlatched, true, std::memory_order_acquire)) 
     unlatched = false;
 }
 --------------
+
+
+mportantly, volatile does not guarantee that memory operations won’t tear, meaning that a volatile load may observe partial writes and volatile stores may be observed in parts. Realistically, compilers will only tear when the hardware doesn’t have an instruction which can perform the entire memory operation atomically. That being said, the Standard technically allows an implementation which touched each target byte exactly once, one after the other, in an unspecified order that could change on each execution.
+
+The order of volatile operations cannot change relative to other volatile operations, but may change relative to non-volatile operations.
+
+That being said, volatile doesn’t imply any observable ordering in terms of the C++ memory model
+
+http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p1152r0.html

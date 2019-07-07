@@ -7,4 +7,5 @@ MyClass o([](const auto& v) { std::cout << v << std::endl; })
 to allow spicfy memory model on initialization write to atomic in order to be sure
 it would have been synchronized
 (6) powerfull stringstream. the current implmenentation are limited. cannot re-use the buffer / pre-allocate!
+(7) noexcept(auto)
           

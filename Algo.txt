@@ -1,3 +1,11 @@
+binary heap 
+
+0 1 2----3----
+- P Left Right
+P = Pos / 2;
+Left = 2 * P;
+Right = 2 * P + 1
+----------------------------------
 Hopcroft–Karp algorithm -  is an algorithm that takes as input a bipartite graph and produces as output a maximum cardinality matching
 Edmonds–Karp algorithm
 Dinic's algorithm

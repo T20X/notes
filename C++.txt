@@ -1,4 +1,99 @@
-﻿Two pointers can be compared with using the comparison function objects less,  greater etc. Otherwise, using blanket operator< etc, this is only possible if the pointers point to elements of the same array object or one past the end. Otherwise, results are unspecifie
+﻿
+temporary bounded to reference extends temporary lifetime except!
+(1)a temporary bound to a return value of a function in a return statement is not extended: it is destroyed immediately at the end of the return expression. Such function always returns a dangling referenc
+auto& s() {  return string("asd"); };
+auto s() { retuirn string("asd") } is fine because only the first temporary gets destoryed *after* it copies into 
+the rreturn value!
+(2)a temporary bound to a reference parameter in a function call exists until the end of the full expression containing that function call: if the function returns a reference, which outlives the full expression, it becomes a dangling reference
+ string& s = f(string()/s/)
+-----
+Dynamic initialization of a non-local variable with static storage duration is unordered if the variable is an implicitly or explicitly instantiated specialization, is partially-ordered if the variable is an inline variable that is not an implicitly or explicitly instantiated specialization, and otherwise is ordered. [ Note: An explicitly specialized non-inline static data member or variable template specialization has ordered initialization. — end note ]
+--------------------
+If the initialization of a non-local variable with static or thread storage duration exits via an exception, std::terminate is called
+-----------
+In all cases, if the empty pair of braces {} is used and T is an aggregate type, aggregate-initialization is performed instead of value-initialization
+
+(1)T t, new T - default intialization(calls default constructor / set intermediate values - like not good ones)! static and per thread variables will get zero-initialized!
+
+(2)T t{}, new T{}, T() - value initialization. if default constructor declared, deleted object gets default initialized,otherwise zero-initialized (for trivial members) and default-initialoized for non-trivial
+****In all cases, if the empty pair of braces {} is used and T is an aggregate type, aggregate-initialization is performed instead of value-initialization
+If T is a class type that has no default constructor but has a constructor taking std::initializer_list, list-initialization is performed
+*****
+
+(3) direct initialization - Initializes an object from explicit set of constructor arguments
+(4) aggregate initialization  struct B { int x; int y };
+B1 a2 = { 1, 1 }
+B1 a2{ 1, 1 }
+
+(5) list initialization - if type is an aggregate type, aggregate initialozion is performed
+B1 a2 = B1{ 1, 1.1 } // prohibited because of narrowing conversion
+-------------------
+A braced-init-list is not an expression and therefore has no type
+----------------
+tempalte <class M,class T>
+M T::* pm - function object variable! M - function! T - class!
+void (A::*f1)(int) = &A::func; // declares member function variable f1!
+void (A::*)(int) - declares type!
+is_same<decltype(f1), void (A::*)(int)>::value = true
+decltype(&A::func1)
+decltype(&func1)
+
+  sjtruct funcnameprinter<Ret (Class::*)(Args)> // has priority!
+  struct funcnameprinter<Func (Class::*)>
+  struct funcnameprinter<Func (*)>
+  struct funcnameprinter<Func (*)(Args...)> // has priority!
+  struct funcnameprinter<Func(Args...)>
+
+----------
+
+is_nothrow_move_constructible!
+
+if allocators don't compare equal then move/copy operators need to use the corresponding allocator!
+(1)For copy say nodes are deleted using target allocator and allocated using the source allocator
+(2)For move operator elements are getting moved one by one if allocators don't comapre equal!
+
+--------------------------
+A trick a wrap an int into another type!
+enum class align_val_t : std::size_t {};
+------
+The type does not have to implement move assignment operator in order to satisfy this type requirement: a copy assignment operator that takes its parameter by value or as a const Type&, will bind to rvalue argument.
+
+If a MoveAssignable class implements a move assignment operator, it may also implement move semantics to take advantage of the fact that the value of rv after assignment is unspecified
+
+--------------
+The noexcept operator performs a compile-time check that returns true if an expression is declared to not throw any exceptions.
+
+    _S_construct(_Alloc&, _Tp* __p, _Args&&... __args)
+    noexcept(noexcept(::new((void*)__p)
+----------------------
+hidden friend - member function can be declared friend! it is not a memember function of a class, however it can access classes private members - it is defined outside class. However ADL can find it. Exactly for the type of input arguments.
+
+--------------------------
+- once value is moved from, something can be moved in!
+- currently move semantics is non-destructive. there potentially may be a destructive move semantics!
+(Another solution is to just declare that an object can not have a destructive move constructor unless all of its base classes and members have a non-destructive move constructor. Thus the destructive move constructor can non-destructively move construct the bases and members before destructively move constructing itself)
+- The only requirement is that the object remain in a self consistent state (all internal invariants are still intact)
+- For trivial classes, move and copy are identical operations (right down to the machine instruction level)
+
+an object state that is not specified except that the object’s invariants are met and operations on the object behave as specified for its type [ Example: If an object x of type std::vector<int> is in a valid but unspecified state, x.empty() can be called unconditionally, and x.front() can be called only if x.empty() returns false. —end example ]
+
+Therefore, the object is live. You can perform any operation that does not require a precondition (unless you verify the precondition first).
+
+
+it is often more efficient to perform a destructive move operation
+than a non-destructive move construction. In the case of a string, for example, a destructive move would
+simply copy pointers. Since pointers are trivially copyable, the entire move operation becomes a trivial copy
+that can be implemented as a memcpy. This optimization is magnified when operating on arrays of strings; the
+entire array can be destructively moved with a single memcpy or memmove. This optimization was implemented
+at Bloomberg before move constructors were even invented and has yielded significant performance gains. It
+turns out that a large number of classes, like string, can be destructively moved using byte copies. Such
+classes model a concept I call trivially destructive-movable
+
+-------------
+prvalue - pure rvalue
+xvalue - rvalue from lvalue
+----------------
+Two pointers can be compared with using the comparison function objects less,  greater etc. Otherwise, using blanket operator< etc, this is only possible if the pointers point to elements of the same array object or one past the end. Otherwise, results are unspecifie
 ----------------------------------
 destructors are recursive by default
 -------------------
@@ -23,12 +118,6 @@ by value parameters can avoid copies with std::move!
 f(vector<int> v)
 ...
 f(std::move(vec)) - parameter is constructed using move rather then by copy!
-----------
-Constant initialization is performed after (until C++14)instead of (since C++14) zero initialization of the static and thread-local objects and before all other initialization. Only the following variables are constant initialized:
-
-The effects of constant initialization are the same as the effects of the corresponding initialization, except that it's guaranteed that it is complete before any other initialization of a static or thread-local object begins, and it may be performed at compile time
-
-In practice, constant initialization is performed at compile time, and pre-calculated object representations are stored as part of the program image (e.g. in the .data section). If a variable is both const and constant-initialized, its object representation may be stored in a read-only section of the program image (e.g. the .rodata section)
 --------------------
 Method chaining is fine as long as the methods are sensible and only modify the invocant (for which the effects are well ordered, because the second method is called on the result of the first) - changed in c++17 a bit
 ---------------------
@@ -85,6 +174,12 @@ a char, unsigned char, or std​::​byte type.
  Strict aliasing is an assumption, made by the C (or C++) compiler, that dereferencing pointers to objects of different types will never refer to the same memory location (i.e. alias eachother.)
 
  ------------------------
+
+The versions (1-4) are implicitly declared in each translation unit even if the <new> header is not included. Versions (1-8) are replaceable: a user-provided non-member function with the same signature defined anywhere in the program, in any source file, replaces the default version. Its declaration does not need to be visible.
+
+The behavior is undefined if more than one replacement is provided in the program for any of the replaceable allocation function, or if a replacement is defined with the inline specifier. The program is ill-formed if a replacement is defined in namespace other than global namespace, or if it is defined as a static non-member function at global scope.
+
+
  operator new can hounr alingment up to 16 bytes, but if more required,aligned_alloc shall be used!
 
  C++17 new operators support now alingment to whatever size is set and it does respect alingas for heap allocation! Pre C++17 an option is too overallocate and then aling
@@ -720,3 +815,29 @@ If this is still what you're going for, I think dynamic allocation (e.g. using u
 #endif
 
     namespace pre_cxx_1997 {
+
+(53) is_convertable! To test() { return std::declval<From>(); } Well-formed if implicit conversion can happen
+(54) If T is an object or reference type and the variable definition T obj(std::declval<Args>()...); is well-formed
+(55) Direct-initialization is more permissive than copy-initialization: copy-initialization only considers non-explicit constructors and non-explicit user-defined conversion functions, while direct-initialization considers all constructors and all user-defined conversion functions
+
+  static_assert(!std::is_constructible<X, int>::value &&
+                !std::is_convertible<int, X>::value, "");
+  X x {1};  
+***even though X is not either constructable / nor convertible, but it can make an object of X!***
+
+(56) The effects of constant initialization are the same as the effects of the corresponding initialization, except that it's guaranteed that it is complete before any other initialization of a static or thread-local object begins, and it may be performed at compile time
+
+
+The compiler is permitted to initialize other static and thread-local objects using constant initialization, if it can guarantee that the value would be the same as if the standard order of initialization was followed
+
+(57) access restricution does not change how overload works! make constructor privet is not going to remove it from the overload resolution set!
+(58) that is how compiler will transform class member function call!
+void Zazxdfun_managled(class* this)
+{  this->a + this->b; }
+
+(59) vtable pointer is set in the constructor
+A::A()
+{
+this->Base::Base();
+vtable = AVtalbe;
+}

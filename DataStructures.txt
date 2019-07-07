@@ -8,6 +8,8 @@ Radix tree
   PATRICIA 
   HAT-trie
 --------------
+Union find. Quick intuition is to map values to indecies in an array and treat connected components as directed grapth where childs POINT to parent! Root defines the connected component and idea is to reach the root when finding. To union just link root of second node (value) to the root of the first value - well better smaller trees to bigger one! Also they can be compressed on find operation as the flatter tree is the better!
+------
 In a simple case, the intervals do not overlap and they can be inserted into a simple binary search tree and queried in O(log n) time. However, with arbitrarily overlapping intervals, there is no way to compare two intervals for insertion into the tree since orderings sorted by the beginning points or the ending points may be different. A naive approach might be to build two parallel trees, one ordered by the beginning point, and one ordered by the ending point of each interval. This allows discarding half of each tree in O(log n) time, but the results must be merged, requiring O(n) time. This gives us queries in O(n + log n) = O(n), which is no better than brute-force
 ---------------
 A tree is a connected, acyclic graph that consists of n nodes and n-1 edges.

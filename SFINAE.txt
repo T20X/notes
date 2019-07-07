@@ -43,6 +43,19 @@ auto enableIfSINAFE(Container& v) -> decltype(enable_if_t<is_same<Iter, random_a
 auto enableIfSINAFE(Container& v) -> decltype(enable_if_t<is_same<Iter, bidirectional_iterator_tag>::value>(), void())
 
 
+      template<typename _Alloc2>
+    static auto
+    _S_select(_Alloc2& __a, int)
+    -> decltype(__a.select_on_container_copy_construction())
+    { return __a.select_on_container_copy_construction(); }
+
+      template<typename _Alloc2>
+    static _Alloc2
+    _S_select(_Alloc2& __a, ...)
+    { return __a; }
+
+
+
 (2) 
 
 void_t!

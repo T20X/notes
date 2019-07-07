@@ -1,3 +1,5 @@
+use std::copy to copy as it would choose the most optimizied veriosn
+------------
 regular types match primitive type semantics
 we call the set of axioms satisfaying data type and a set of operations on it a concept
 ---------------

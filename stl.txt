@@ -137,3 +137,27 @@ char my_tolower(char ch)
 (25) std::distance - returns the number of increments needed to go from first to last. The value may be negative if random-access iterators are used and first is reachable from last (since C++11)
 
 (26) An LegacyInputIterator is an LegacyIterator that can read from the pointed-to element. LegacyInputIterators only guarantee validity for single pass algorithms: once an LegacyInputIterator i has been incremented, all copies of its previous value may be invalidated.
+
+(27)  std::list(list&& other). After container move construction (overload (6)), references, pointers, and iterators (other than the end iterator) to other remain valid, but refer to elements that are now in *this
+
+list(list&&) = defualt - is noexcept in gcc implementation!
+
+(28) "The C++ Standard forbids containers of const elements
+      because allocator<const/volatile T> is ill-formed
+
+(29)  Allocator properties
+
+      /// How the allocator is propagated on copy assignment
+      using propagate_on_container_copy_assignment = false_type;
+
+      /// How the allocator is propagated on move assignment
+      using propagate_on_container_move_assignment = true_type;
+
+      /// How the allocator is propagated on swap
+      using propagate_on_container_swap = false_type;
+
+      /// Whether all instances of the allocator type compare equal. That means other allocator
+      /// can be moved in!
+      using is_always_equal = true_type;
+
+(30) All standard containers (std::vector, std::list, etc.) value-initialize their elements when constructed with a single size_type argument or when grown by a call to resize()

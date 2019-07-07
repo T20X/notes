@@ -1,0 +1,29 @@
+(1) void foo() try
+    {
+      throw int();
+    } 
+    catch(...)
+    {
+     	std::cout << "Exception caught\n";
+    }
+
+Can also be used to catch excetiptions in the class initializer list!. Note that it stil would be implicitly re-throw!
+
+class A
+{
+public:
+  A(int x) { throw x; }
+};
+
+class B
+{
+  A a;
+public:
+  B()
+    try
+    : a(5)
+    { } catch(...) {
+      std::cout << "Exception in initializer merely-caught\n";
+      // implicit throw;!
+    }
+};

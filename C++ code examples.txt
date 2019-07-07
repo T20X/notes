@@ -7,3 +7,7 @@ bool operator<(const person_t& left, const person_t& right)
 
 (2) std::tie may be used to unpack a std::pair because std::tuple has a converting assignment from pairs
 bool result; std::tie(std::ignore, result) = set.insert(value);
+
+(3)     for (; __n; --__n)
+      emplace_back();
+      }
