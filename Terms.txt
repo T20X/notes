@@ -19,3 +19,19 @@ type;
 optionally, a name.
 ----------------
 closure: an unnamed function object capable of capturing variables in scope
+------------------
+an object is a storage where value lives
+-------------
+An entity is a value, object, reference, structured binding, function, enumerator, type, class member, bit-field, template, template specialization, namespace, or pack
+
+Every name that denotes an entity is introduced by a declaration
+-------------
+An expression is a sequence of operators and operands that specifies a computation. An expression can result in a value and can cause side effects
+------------------
+The object representation of an object of type T is the sequence of N unsigned char objects taken up by the object of type T, where N equals sizeof(T). The value representation of an object of type T is the set of bits that participate in representing a value of type T. Bits in the object representation that are not part of the value representation are padding bits
+------------
+An object type is a (possibly cv-qualified) type that is not a function type, not a reference type, and not cv void.
+-------------------------------
+Operators can be overloaded, that is, given meaning when applied to expressions of class type or enumeration type
+
+

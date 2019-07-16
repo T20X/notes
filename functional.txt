@@ -1,4 +1,8 @@
-﻿In the functional world, building new types from old ones is usually done through two operations: sum and product (these new types are thus called algebraic). A product of two types A and B is a new type that contains an instance of A and an instance of B (it’ll be a Cartesian product of the set of all values of type A and the set of all values of B)
+﻿mathemetically function is two set pair - mapping one set of values into another!
+-----------
+fundamental intuition of functional design is to figure out mathematical essense of a program and then implement discovered interface in C++ for efficiency
+-----------------
+In the functional world, building new types from old ones is usually done through two operations: sum and product (these new types are thus called algebraic). A product of two types A and B is a new type that contains an instance of A and an instance of B (it’ll be a Cartesian product of the set of all values of type A and the set of all values of B)
 
 The sum type of types A and B is a type that can hold an instance of A or an instance of B, but not both at the same time
 -------------------
@@ -135,6 +139,29 @@ Functors allow you to easily handle and transform wrapper types, whereas monads 
 
 "For a monad m, a value of type m a represents having access to a value of type a within the context of the monad.
 like "optional int" (m a)
+
+You can—and this is a more common way to define monads. You can say that a monad M is a wrapper type that has a constructor (a function that constructs an instance of M<T> from a value of type T) and an mbind function (it’s usually called just bind, but we’ll use this name so it doesn’t get confused with std::bind), which is a composition of transform and join:construct : 
+
+T → M<T>mbind     : (M<T1>, T1 → M<T2>/*transform*/) → M<T2>
+m:M<T> , a:T
+mbind(construct(a), f)) == f(a) // f: T-> M<T>
+mbind(m, construct) = m;
+
+template <typename T, typename F>
+auto mbind(const std::optional<T>& opt, F f)    -> decltype(f(opt.value()))
+    ①  {   
+ if (opt) {        return f(opt.value());    ②      }
+ else {        return {};    ③      }
+}
+
+std::optional<std::string> current_login();
+std::optional<std::string> user_full_name();
+std::optional<std::string> to_html();
+std::optional<std::string> current_user_html()
+{  
+  return mbind(
+      mbind(current_login, user_full_name), to_html);
+}
 
 7. he first intuition we might have coming from our runtime experience is to find a way to “loop” over types as we repeatedly call push_back. Even if it’s a correct implementation, we need to fight this compulsion of thinking with loops. Loops over types will require a linear number of intermediate types to be computed, leading to unsustainable compilation times. The correct way of handling this use case is to find a natural way to exploit the variadic nature of our containers.
 

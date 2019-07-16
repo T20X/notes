@@ -29,3 +29,24 @@ triangular numbers are the sum of the first n positive integers
 Pythagoreans also observed that some numbers could not be made into any nontrivial rectangular shape (a shape where both sides of the rectangle are greater than 1). These are what we now call prime numbers - numbers that are not products of smaller numbers
 
 The product of two odd numbers is an odd number
+
+----------
+Algebraic
+----------
+u[[ syntax ]] = mathExpression(value) - value meanining of "synatax" is math function!
+u[[expression] : mathExpresion(type) - type of expression!
+u[[x1 + x2]] = u[[x1]] + u[[x2]]
+u[[int]] = Z
+u[[3]] = 3
+u[[3]]:Z
+
+u[[connect<e>]] : u[[source<e>]] -> u[[sink<e>]] -> Action
+u[[connect<e>(so,si)]] : u[[so]](u[[si]])
+tempalate <typename T> void connect(source<T> so, sink<T> si) { so(si}; }
+connect(so(), si());
+
+-------------
+An operation is commutative if you can change the order of the numbers involved without changing the result. Addition and multiplication are both commutative. Subtraction is not commutative: 2 - 1 is not equal to 1 - 2.
+ 
+An operation is associative if you can group numbers in any way without changing the answer. It doesn't matter how you combine them, the answer will always be the same. Addition and multiplication are both associative
+

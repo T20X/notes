@@ -3,6 +3,7 @@ suffix tree
 fusion tree
 segment tree
 pairing heap
+Judy arrays
 -----------
 Radix tree
   PATRICIA 

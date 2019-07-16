@@ -1,3 +1,11 @@
+class Builder {
+Foo&& finish()    {  return std::move(obj);  } } // not good, as this would make object of Builder unusable!
+better make it more explicit
+class Builder { Foo&& finish() && { return std::move(obj); } // safer now caller is forced to call std::move! move(obj).finish();
+
+--------------
+when transferring ownership even trvially copyable types good to pass as rvalue refrences to functions as this would force caller to call std::move and it would be more clear code to read.
+----------
 use std::copy to copy as it would choose the most optimizied veriosn
 ------------
 regular types match primitive type semantics
@@ -132,3 +140,9 @@ IMAGINE NOW checking returns codes for each function instead???
 std::any issues
  - no control over memory allocation coz no way atm on how  to store type erased memory allocator in type erased class!
 - if T move constructor throws is bad as it type is erased; any(any&&) noexcept...
+---------------------------
+
+constexpr containers downside
+ - container is immutable
+ - call site must know size of container
+ - 

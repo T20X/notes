@@ -1,7 +1,206 @@
-﻿
+﻿The result of the expression static_­cast<T>(v) is the result of converting the expression v to type T. If T is an lvalue reference type or an rvalue reference to function type, the result is an lvalue; if T is an rvalue reference to object type, the result is an xvalue; otherwise, the result is a prvalue. The static_­cast operator shall not cast away constness.
+-------------------------
+The effect of any implicit conversion is the same as performing the corresponding declaration and initialization and then using the temporary variable as the result of the conversion. The result is an lvalue if T is an lvalue reference type or an rvalue reference to function type ([dcl.ref]), an xvalue if T is an rvalue reference to object type, 
+and a prvalue otherwise. The expression e is used as a glvalue if and only if the initialization uses it as a glvalue
+
+ For class types, user-defined conversions are considered as well; see [class.conv]. In general, an implicit conversion sequence ([over.best.ics]) consists of a standard conversion sequence followed by a user-defined conversion followed by another standard conversion sequenc
+---------------------
+The result of a glvalue is the entity denoted by the expression. The result of a prvalue is the value that the expression stores into its context; a prvalue that has type cv void has no result. A prvalue whose result is the value V is sometimes said to have or name the value V. The result object of a prvalue is the object initialized by the prvalue; a non-discarded prvalue that is used to compute the value of an operand of a built-in operator or a prvalue that has type cv void has no result object. [ Note: Except when the prvalue is the operand of a decltype-specifier, a prvalue of class or array type always has a result object. For a discarded prvalue that has type other than cv void, a temporary object is materialized
+------------------
+A function call is an lvalue if the result type is an lvalue reference type or an rvalue reference to function type, an xvalue if the result type is an rvalue reference to object type, and a prvalue otherwis
+------------------------------------
+As far as I know, ABI requires GCC and Clang to delay the destruction of function parameters to the end of full expression
+-----------------------
+void foo(Bar value);
+Bar bar;
+foo(bar); // here bar is lvalue but get's converted to the prvalue with copy initialization
+
+Once the preconditions are met the conversion is following:
+For non-class types (class types: class, struct, union) the resulting type is cv unqualified. The resulting object is obtained by copy initialization
+Otherwise (for class types) the resulting type preserves it’s const and volatile qualificatio
+
+Such C++ feature, that actually does the object instantiation and casts prvalue type to the xvalue (that belongs to the glvalue group) is called temporary materialization conversion. 
+
+---------------------------
+A glvalue shall not have type cv void
+-----------------
+So typically, an lvalue-to-rvalue conversion will just read the value from an object. It isn't just a no-op conversion between value (expression) categories; it can even create a temporary by calling a copy constructor. And the lvalue-to-rvalue conversion always returns a prvalue value, not a (temporary) object.
+================
+Every expression belongs to exactly one of the fundamental classifications in this taxonomy: lvalue, xvalue, or prvalue. This property of an expression is called its value category
+--------------------
+A type cv void is an incomplete type that cannot be completed; such a type has an empty set of values
+-----------------
+The copies and moves of polymorphic classes cannot be trivial because then base objects may copy vtable from derived object - that would just break value semantics!
+-----------------
+extern int arr[]; //incomplete!
+in arr[10]; now comlete!
+
+----------------------
+Pre-C++17, prvalues are temporary objects. In C++17, a prvalue expression is merely something which can materialize a temporary, but it isn't a temporary yet
+
+In C++17, there is a dual to this conversion, known as temporary materialization (but it could just as well have been called “prvalue-to-xvalue conversion”): Any time a prvalue validly appears where a glvalue (which includes the xvalue case) is expected, a temporary object is created and initialized with the prvalue (recall that prvalues are primarily “initializing values”), and the prvalue is replaced by an xvalue designating the temporar
+
+With the keyword decltype (introduced in C++11), it is possible to check the value category of any C++ expression. For any expression x, decltype((x)) (note the double parentheses) yields:
+• type if x is a prvalue
+• type& if x is an lvalue
+• type&& if x is an xvalue
+
+if constexpr (std::is_lvalue_reference<decltype((e))>::value)
+ {  std::cout << "expression is lvalue\n";}
+else if constexpr (std::is_rvalue_reference<decltype((e))>::value) 
+{  std::cout << "expression is xvalue\n";}
+else
+ {  std::cout << "expression is prvalue\n";}
+---------------------
+This led me to the conclusion that there are exactly three kinds of values (using the regex notational trick
+of using a capital letter to indicate a negative – I was in a hurry):
+• iM: has identity and cannot be moved from
+• im: has identity and can be moved from (e.g. the result of casting an lvalue to a rvalue
+reference)
+• Im: does not have identity and can be moved from
+The fourth possibility (“IM”: doesn’t have identity and cannot be moved) is not useful in C++ (or, I think)
+in any other language.
+In addition to these three fundamental classifications of values, we have two obvious generalizations that
+correspond to the two independent properties:
+• i: has identity
+• m: can be moved from
+----------------------------------
+The difference between xvalue and prvalue is that xvalue has identity and prvalue does not
+
+f(C&& other)
+    C&& c2 = C();
+    f(std::move(c2)); //c2 is still lvalue! and move is required
+    But c2 can be modified!
+
+n brief , a prvalue is now like a "delayed evaluation" expression; if the prvalue is passed across function calls and returns, there is not actually an object created until it reaches its final destination. This avoids the possibility of intermediate temporaries and the need for some copy elision cases; it enables you to have a function that creates a non-copyable non-movable object and returns it
+------------------
+•A glvalue is an expression whose evaluation determines the identity of an object, bit-field, or function (i.e., an entity that has storage).
+• A prvalue is an expression whose evaluation initializes an object or a bit-field, or computes the value of the operand of an operator. Say temporaries
+• An xvalue is a glvalue designating an object or bit-field whose resources can be reused (usually because it is about to “expire”—the “x” in xvalue originally came from “eXpiring value”).
+• An lvalue is a glvalue that is not an xvalue.
+• An rvalue is an expression that is either a prvalue or an xvalue.
+
+It’s worth emphasizing that glvalues, prvalues, xvalues, and so on, are expressions, and not values2 or entities. For example, a variable is not an lvalue even though an expression denoting a variable is an lvalue
+
+Every expression belongs to exactly one of the fundamental classifications in this taxonomy: lvalue, xvalue,
+or prvalue. This property of an expression is called its value category.
+
+------------------------
+template<typename T> using id = T;
+int i = 1;
+int&& a = id<int[3]>{1, 2, 3}[i];          // temporary array has same lifetime as a
+const int& b = static_cast<const int&>(0); // temporary int has same lifetime as b
+int&& c = cond ? id<int[3]>{1, 2, 3}[i] : static_cast<int&&>(0);
+                                           // exactly one of the two temporaries is lifetime-extended
+const int& x = (const int&)1;  // temporary for value 1 has same lifetime as x
+struct S { const int& m; };
+const S& s = S{1};             // both S and int temporaries have lifetime of s
+A temporary bound to a reference in a new-initializer ([expr.new]) persists until the completion of the full-expression containing the new-initializer. [ Note: This may introduce a dangling reference. — end note ] [ Example:
+struct S { int mi; const std::pair<int,int>& mp; };
+S a { 1, {2,3} };
+S* p = new S{ 1, {2,3} };      // creates dangling reference because of "new" - works for automatic storage duration !
+
+A { string a_ }
+auto&& v = A().a_; //v now extends lifetime of A!
+
+----------------
+ Treat placement new as making the pointer invalid for access use. launder may help though sometimes.
+
+The effect of indirecting through a pointer returned from a request for zero size is undefined
+In particular, a global allocation function is not called to allocate storage for objects with static storage duration, for objects or references with thread storage duration, for objects of type std​::​type_­info, or for an exception object. 
+
+  ----------
+|virtual base class |
+
+for each distinct baseclass that is specified virtual, the most derived object shall contain a single base class subobject of that type". In your case this means that when constructing the base, your class F immediately calls A's default constructor, not B's.
+-------------------
+glvalue - is either lvalue or xvalue
+struct X { int n; };
+X foo();
+
+X x;
+x; // has a name, so it's a glvalue
+std::move(x); // has a name (we're moving from "x"), so it's a glvalue
+              // can be moved from, so it's an xvalue not an lvalue
+
+foo(); // has no name, so is a prvalue, not a glvalue
+X{};   // temporary has no name, so is a prvalue, not a glvalue
+X{}.n; // HAS a name, so is a glvalue. can be moved from, so it's an xvalue
+
+int x = 7; // x is an lvalue. x is also a glvalue.
+           // 7 is a literal, so it is a prvalue. 7 is not a glvalue.
+
+auto foo = static_cast<int&&>(x); // foo is an lvalue, so it is a glvalue
+                                  // the cast is an rvalue but not a prvalue,
+                                  // it is an xvalue. so it is a glvalue.
+
+class Foo
+{
+    std::string name;
+
+public:
+
+    Foo(std::string some_name) : name(std::move(some_name))  {   }
+    std::string& original_name()  {     return name;   }
+    std::string copy_of_name() const  {    return name;   }
+};
+The expression some_foo.copy_of_name() is a prvalue, because copy_of_name returns an object (std::string), not a reference. Every prvalue is also an rvalue. (Rvalues are more general.)
+
+The expression some_foo.original_name() is an lvalue, because original_name returns an lvalue reference (std::string&). Every lvalue is also a glvalue. (Glvalues are more general.)
+
+The expression std::move(some_name) is an xvalue, because std::move returns an rvalue reference (std::string&&). Every xvalue is also both a glvalue and an rvalue
+
+
+--------------------------
+clang linker  process libraries left to right like g++, but once it gets a defined symbol it keeps it, so it does not require symbol to be defined *AFTER* it found a refenrece to it. So in g++ you may end up putting the same library multiple times!
+
+symbol definitions get copies from static libraries
+---------
+Every expression belongs to exactly one of the fundamental classifications in this taxonomy: lvalue, xvalue, or prvalue. This property of an expression is called its value category
+-----------------
+sizeof(int) = 4
+sizeof(long) = 8
+---------------------
+inside constexpr functions, variables may not be constexpr, but called functions must be!
+only the most outter must constexpr functions needs to return a value, inner functions may return void!
+-------------------
+once values gets binded to constexpr variables, it cannot be changed!
+-------------------
+constexpr float in compile-time and runtime may be diffrent!
+---------------
+undefined behaviour is hard-error in constepxr! great to diagnos ones!
+------------------
+constexpr declares an object as fit for use in what the Standard calls constant expressions. 
+constepxr arguments and return value must also be litteral type!
+constexpr int f(double d)
+{
+     return d * 2.51;
+}
+
+constexpr double d1 = 6.6;
+int arr[f(d1)]; // forces constexpr to be at compile-time!
+constexpr int = f(d1);// forces constexpr to be at compile-time!
+static_assert(array_size(arr) == f(d1), "asdas");
+
+----------------
+refrences are not really values, they just an alias to another object!
+--------------------------------
+ it currently unusable in constexpr evaluations:
+
+Destructors cannot be constexpr.
+Dynamic memory allocation/deallocation isn't available.
+In-place construction using placement-new isn't available.
+-----------------
+non-trivially destructuble classes cannot be constexpr at compile time
+----------
+When using rvalue references as return types, returning temporaries or function local variables still creates a dangling reference, just like with lvalue references. So it is only really applicable if you’re returning something like member variables or reference parameters and you’re moving them out of place. So should you use rvalue return types? I’d say you should only do it if you have an rvalue qualified member function but think about the consequences
+type { string s; auto&& value() { return s; }
+auto&& rvalue = type().value(); 
+auto s = type().value(); //ok
+-------------------------------
 temporary bounded to reference extends temporary lifetime except!
 (1)a temporary bound to a return value of a function in a return statement is not extended: it is destroyed immediately at the end of the return expression. Such function always returns a dangling referenc
-auto& s() {  return string("asd"); };
+auto& s() {  return string("asd"); }; //bad!
 auto s() { retuirn string("asd") } is fine because only the first temporary gets destoryed *after* it copies into 
 the rreturn value!
 (2)a temporary bound to a reference parameter in a function call exists until the end of the full expression containing that function call: if the function returns a reference, which outlives the full expression, it becomes a dangling reference
@@ -179,11 +378,14 @@ The versions (1-4) are implicitly declared in each translation unit even if the 
 
 The behavior is undefined if more than one replacement is provided in the program for any of the replaceable allocation function, or if a replacement is defined with the inline specifier. The program is ill-formed if a replacement is defined in namespace other than global namespace, or if it is defined as a static non-member function at global scope.
 
+size operator delete exist in C++ becuase user may pass the size himself to speed up performance and not to store size along with chunk of allocated data
 
  operator new can hounr alingment up to 16 bytes, but if more required,aligned_alloc shall be used!
 
  C++17 new operators support now alingment to whatever size is set and it does respect alingas for heap allocation! Pre C++17 an option is too overallocate and then aling
 with std::align!
+
+So in your case with C++17 or -faligned-new, since Foo has new-extended alignment, Foo* f = new Foo(); will call void* operator new(size_t, align_val_t) to allocate memory and return a pointer to a Foo object that is properly aligned on a 64-byte boundary. Under earlier standards that was not the case.
 
 For example:
 void * RingBuffer::operator new(size_t request)
@@ -841,3 +1043,5 @@ A::A()
 this->Base::Base();
 vtable = AVtalbe;
 }
+
+(60) data_(new T[N]{}) - value initilize array! note if T is integral type that means zero initializtion!

@@ -1,4 +1,14 @@
-﻿
+﻿throwing exceptions in constexpr context in compile-time is fine! compiler won't compile it!
+-------------------------
+types of metaprogramms
+-compile-time numeric calcualations
+-self-adapting code given input types & constexpr variables
+-type manipulations
+-type-dependement code
+-code generation driven by type collecton
+-domain languge specific tools
+-----
+decltype,sizeof,declval,alingof don't evaluate expression which means sife-effects may not leak if the overload candidates d gets removed by SFINAE!
 -----------------------
 lambdas can be declared as template variables! but not constexpr until c++20!
 template <typename T> auto v = []() { T t1; return 0; };
@@ -660,3 +670,4 @@ static_assert(sizeof(type), "type must be complete");
 }
 1_c + 1_2
 
+27. But since C++11 there is also expression SFINAE. expression SFINAE occurs on arbitrary expressions in the function signature

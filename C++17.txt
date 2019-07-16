@@ -53,6 +53,8 @@ selection expressions.
 ? Assignment expressions are evaluated from right to left. This includes compound assignments.
 ? Operands to shift operators are evaluated from left to righ
 
+All side effects of argument evaluations are sequenced before the function is entered
+
 8. template <auto value> void f() { }
 
 f<10>();               // deduces int
@@ -81,5 +83,6 @@ struct B {   B(int){} };
 struct D : A, B {};
  D d1{1,2}; //WORKS NOW in C++17!
 
-11.  constexpr lambda
-
+11.  constexpr lambdas do work now!
+12. in C++ now prvalues(values not having a name) are defined now. Bascially this
+auto x = T(); x will get constructed like T()! Even if copy constructor for T is deleted!

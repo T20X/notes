@@ -102,3 +102,17 @@ struct package
 
    unique_ptr<conceptbase> c_;
 }
+
+----
+accessing global variables!
+----
+global variables in header files is good! at least ordering can be enforced, not like with translation units!
+
+inline Informer& str() { static Informer str1{}; return str1; }
+static auto& g_str = detail::str();
+
+template <class = void> struct Temp { static Informer other; };
+template <> inline Informer Temp<>::other{};
+static auto& g_str2 = Temp<>::other;
+
+inline Informer g_str3; //the best! C++17

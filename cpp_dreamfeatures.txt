@@ -8,4 +8,4 @@ to allow spicfy memory model on initialization write to atomic in order to be su
 it would have been synchronized
 (6) powerfull stringstream. the current implmenentation are limited. cannot re-use the buffer / pre-allocate!
 (7) noexcept(auto)
-          
+(8) if constexpr functio nbeing evailabe at compile / runtime          
