@@ -15,3 +15,6 @@
 
 (4) bool odd(int n) { return n & 0x1; }
 (5) int half(int n) { return n >> 1; }
+
+(6) toggle j-th bit status
+  i ^= (1 << j)

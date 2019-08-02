@@ -671,3 +671,40 @@ static_assert(sizeof(type), "type must be complete");
 1_c + 1_2
 
 27. But since C++11 there is also expression SFINAE. expression SFINAE occurs on arbitrary expressions in the function signature
+
+28.   template <typename... T>
+ void p(const T&... args) 
+ {   
+   int a[] = {0, ((void)(cout << "," << args), 0)...}; (void)a;   
+   cout << "\n";
+ }
+
+ template <typename... T>
+ void p(const string& s, const T&... args) 
+ {   
+   cout << s.c_str();
+   p(args...);  
+ }
+
+ 29. template <typename C> using ContainerType = decay_t<decltype(*begin(declval<C>()))>;
+template <typename C, typename = void_t<>> struct is_container : std::false_type {};
+template <typename C> struct is_container<C, 
+void_t<decltype(*begin(declval<C>())),
+       decltype(*end(declval<C>())),
+       typename C::iterator
+>> : std::true_type {};
+
+30. template <typename C> using ContainerType =
+    typename iterator_traits<
+        decltype(declval<C>().begin())
+       >::value_type;
+
+31.   FIFO(const FIFO& other) {  copyConstruct(other); }    
+31.   FIFO(FIF&& other) {  moveConstruct(other); }  
+     template <typename O> FIFO(const FIFO<O>& other) {  copyConstruct(other); }
+
+FIFO<int> q1;
+FIFO<double> q2
+q2 = move(q1);
+
+    Even just having templated copy construct will cause q1 to be first converted into FIFO<double> and then moved into q2. So this is a bad idea!

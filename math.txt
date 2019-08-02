@@ -1,3 +1,9 @@
+ if modulo of two numbers by k are same, then their difference is going to be divisible by k
+a%k = x
+b%k = x
+(a - b) %k = x -x = 0
+here a - b = the sum between i and j.
+
 312(numerator)/941(denominator)
 
 log x A = y; x = base, A - fixed number, y - exponent!

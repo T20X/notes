@@ -1,4 +1,20 @@
+Eulerian Path - is path through the graph where each edge can be visited exactly once (in-degree vertice count also must be even and be the number of out-degree vertice count, but starting and destination nodes may have odd and not equal in-andj-out degree vertice count)
+Eulerian Cycle - is a path through the grapth where each edge can be visited exactly once and the destination node would be the same as strting node! (in-degree vertice is equal to out-degree vertice count and the count is even)
 
+------------------
+A major charactersictic of a search problem is that its solution can be easily verifyble
+
+NP is the class of all search problems
+P is the class of search problems we can solve in poly-time in natural world
+
+
+nondetermentstic machine may guess the solution!
+
+----------------------
+A problem is intractable is you cannot gauarntee solving it in polynominal time
+--------------
+To find shorted path in undirected graph, just make the edges directed both ways and run normal algo to fin one! works only on positive weight edges
+------------------------
 These changes to the position of the operator with respect to the operands create two new expression formats, prefix and postfix. Prefix expression notation requires that all operators precede the two operands that they work on. Postfix, on the other hand, requires that its operators come after the corresponding operands. A few more examples should help to make this a bit clearer (see Table 2).
 
 A + B * C would be written as + A * B C in prefix. The multiplication operator comes immediately before the operands B and C, denoting that * has precedence over +. The addition operator then appears before the A and the result of the multiplication.

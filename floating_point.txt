@@ -1,3 +1,22 @@
+f the number is not normalized, then you can subtract 1 from the exponent while multiplying the mantissa by the base, and get another floating point number with the same value. Normalization consists of doing this repeatedly until the number is normalized. Two distinct normalized floating point numbers cannot be equal in value.
+-------------
+in the actual bits representing the floating point number, the exponent is biased by adding a constant to it, to make it always be represented as an unsigned quantit
+-------------
+Round to nearest.
+This is the default mode. It should be used unless there is a specific need for one of the others. In this mode results are rounded to the nearest representable value. If the result is midway between two representable values, the even representable is chosen. Even here means the lowest-order bit is zero. This rounding mode prevents statistical bias and guarantees numeric stability: round-off errors in a lengthy calculation will remain smaller than half of FLT_EPSILON
+--------------------------
+general idea to reduce rounding error is to keep calculations with similar exponents to each other! keep big number with big number, little numbers with little numbers!
+-----------------
+1.0e-37. Minimum natural epxonent for base 10 which can be repsented normalized! Below that value would be non-normalized and matissa will keep destoring the more exponent goes down or just drops to 0!
+
+1.0e-128 is 0!
+1.oe-45 = 1.4013e-45
+-----------------
+relative error - diffrence between real number and appromixed number devided by the real number
+
+(r - a) / r = "relative error"
+
+----------------------------
 A NaN never compares equal to itself. Copying a NaN may not preserve its bit representation
 --------------------------
 
@@ -8,7 +27,7 @@ This won't always work, due to floating-point error: if sqrt() or cbrt() happens
 
 https://www.youtube.com/watch?time_continue=23&v=mKJiD2ZAlwM - add two numbers!
 
-123.45 = 0.12345 × 10+3. - true normalized form
+123.45 = 0.12345 ï¿½ 10+3. - true normalized form
 a/b (b - denominator)
 1/1000
 
@@ -20,24 +39,24 @@ Total bits 32 64
 Sign bits 1 1
 Significand bits 23 52
 Exponent bits 8 11
-Smallest number 2-126 ˜ 1.2 × 10-38 2
--1022 ˜ 2.2 × 10-308
-Largest number ca. 2 × 2
-127 ˜ 3.4 × 1038 ca. 2 × 2
-1023 ˜ 1.8 × 10308
+Smallest number 2-126 ï¿½ 1.2 ï¿½ 10-38 2
+-1022 ï¿½ 2.2 ï¿½ 10-308
+Largest number ca. 2 ï¿½ 2
+127 ï¿½ 3.4 ï¿½ 1038 ca. 2 ï¿½ 2
+1023 ï¿½ 1.8 ï¿½ 10308
 
 The actual bit sequence is the sign bit first, followed by the exponent and finally the
 significand bits.
-• The exponent does not have a sign; instead an exponent bias is subtracted from it (127
+ï¿½ The exponent does not have a sign; instead an exponent bias is subtracted from it (127
 for single and 1023 for double precision). This, and the bit sequence, allows floating-point
 numbers to be compared and sorted correctly even when interpreting them as integers.
-• The significand’s most significant bit is assumed to be 1 and omitted, except for special cases.
-• There are separate positive and a negative zero values, differing in the sign bit, where all
+ï¿½ The significandï¿½s most significant bit is assumed to be 1 and omitted, except for special cases.
+ï¿½ There are separate positive and a negative zero values, differing in the sign bit, where all
 other bits are 0. These must be considered equal even though their bit patterns are different.
-• There are special positive and negative infinity values, where the exponent is all 1-bits and
+ï¿½ There are special positive and negative infinity values, where the exponent is all 1-bits and
 the significand is all 0-bits. These are the results of calculations where the positive range of
 the exponent is exceeded, or division of a regular number by zero.
-• There are special not a number (or NaN) values where the exponent is all 1-bits and the
+ï¿½ There are special not a number (or NaN) values where the exponent is all 1-bits and the
 significand is not all 0-bits. These represent the result of various undefined calculations (like
 multiplying 0 and infinity, any calculation involving a NaN value, or application-specific
 cases). Even bit-identical NaN values must not be considered equal.
@@ -46,17 +65,17 @@ cases). Even bit-identical NaN values must not be considered equal.
 
 While the errors in single floating-point numbers are very small, even simple calculations on them
 can contain pitfalls that increase the error in the result way beyond just having the individual errors
-“add up”.
+ï¿½add upï¿½.
 In general:
-• Multiplication and division are “safe” operations
-• Addition and subtraction are dangerous, because when numbers of different magnitudes are
+ï¿½ Multiplication and division are ï¿½safeï¿½ operations
+ï¿½ Addition and subtraction are dangerous, because when numbers of different magnitudes are
 involved, digits of the smaller-magnitude number are lost.
-• This loss of digits can be inevitable and benign (when the lost digits also insignificant for the
+ï¿½ This loss of digits can be inevitable and benign (when the lost digits also insignificant for the
 final result) or catastrophic (when the loss is magnified and distorts the result strongly).
-• The more calculations are done (especially when they form an iterative algorithm) the more
+ï¿½ The more calculations are done (especially when they form an iterative algorithm) the more
 important it is to consider this kind of problem.
 12
 5 APENDIX
-• A method of calculation can be stable (meaning that it tends to reduce rounding errors) or
+ï¿½ A method of calculation can be stable (meaning that it tends to reduce rounding errors) or
 unstable (meaning that rounding errors are magnified). Very often, there are both stable and
 unstable solutions for a problem.

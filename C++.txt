@@ -1,4 +1,27 @@
-﻿The result of the expression static_­cast<T>(v) is the result of converting the expression v to type T. If T is an lvalue reference type or an rvalue reference to function type, the result is an lvalue; if T is an rvalue reference to object type, the result is an xvalue; otherwise, the result is a prvalue. The static_­cast operator shall not cast away constness.
+﻿template <typename T>
+void func(size_t sz, size_t pos)
+{
+static constexpr std::align_val_t __al = std::align_val_t(alignof(T));
+T* data= static_cast<T*>(::operator new(sz * sizeof(T), __al)); // wrong way if T is not trivially default constructible
+//T* data = ::new(static_cast<void*>(buffer + pos*sizeof(T))) T(1, 2); //correct way!
+data[pos] = T(1, 2); //is this legal? thechnically object at data[pos] is in some undetermenistic state.
+}
+
+This is valid only for scalar types (like numeric types or any pointer type), or class types (including unions) that have a "trivial" default constructor, or arrays of such types. If T is a class type with non-trivial default constructor or no default constructor, or an array of such class types, it is undefined behavior to call any member function on memory where no object was created, even if that member is a copy assignment operator
+
+---------------
+malloc reports failure as a nullpointer result, operator new reports failure via exception, (5) malloc is called directly by user code
+If you want operator new without throwing exceptiosn then use this
+void* operator new  ( std::size_t count, const std::nothrow_t& tag);
+-----------
+template <class C> friend class FIFO;
+----------------------------------
+epsilon is the diffrence between 1.0 and the next representable floating point number
+std::numeric_limits<T>::epsilon
+Used for programmatic almost equal compuations
+
+-------------------
+The result of the expression static_­cast<T>(v) is the result of converting the expression v to type T. If T is an lvalue reference type or an rvalue reference to function type, the result is an lvalue; if T is an rvalue reference to object type, the result is an xvalue; otherwise, the result is a prvalue. The static_­cast operator shall not cast away constness.
 -------------------------
 The effect of any implicit conversion is the same as performing the corresponding declaration and initialization and then using the temporary variable as the result of the conversion. The result is an lvalue if T is an lvalue reference type or an rvalue reference to function type ([dcl.ref]), an xvalue if T is an rvalue reference to object type, 
 and a prvalue otherwise. The expression e is used as a glvalue if and only if the initialization uses it as a glvalue
