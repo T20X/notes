@@ -1,3 +1,26 @@
+----
+probability
+--
+(0)
+Probabiility sample consists of S and P. S is the set of all the events in the event space. P is the probability functions wihch maps all subsets of S into probabilites  [0;1].
+
+(1) P(empty space) = 0; no event no probability of it happening;
+(2) P(S) = 1; the probability of any event happening is 100%;
+(3) P( sum of all of events in S one by one) = sum of individual proability of each event IF events are disjoint!
+
+(1) say there are 10 people, *split* a team of 4 and a team of 6. Just pick the team of 4 and the rest is team of 6. Like first time we peak team of 4, we also pick first time time of 6, because what is left is team of 6!
+(10) = (10)
+(4)    (6)
+
+(2) combination of k from n numbers with repetition is 
+(n - 1 + k)
+(k)
+because imagine the problem like boxes below:
+***|***|**** <-- dots can float!
+k = 7
+n = 3
+so now the problem is selcting k dots separated by 3 separators!
+-------
  if modulo of two numbers by k are same, then their difference is going to be divisible by k
 a%k = x
 b%k = x

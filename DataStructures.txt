@@ -8,6 +8,14 @@ Judy arrays
 Radix tree
   PATRICIA 
   HAT-trie
+--------
+BTREE
+         Split!
+ p1 p2      p1 (`p2) \ p2
+c1 c2 c3   c1 (`c2) (`c2) \ c3
+
+ p1     (`p1) \ p1
+c1 c2  (`c1) (`c1) \  c2
 --------------
 Union find. Quick intuition is to map values to indecies in an array and treat connected components as directed grapth where childs POINT to parent! Root defines the connected component and idea is to reach the root when finding. To union just link root of second node (value) to the root of the first value - well better smaller trees to bigger one! Also they can be compressed on find operation as the flatter tree is the better!
 ------
