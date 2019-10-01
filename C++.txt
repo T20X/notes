@@ -1,4 +1,59 @@
-﻿template <typename T>
+﻿
+
+-------
+- for function overload resolution with multiple paramters, the less conversion operations are required the better candidate is
+- The more specific, narrower overload is considered a better match and is selected. This is a new notion, specific to templates—instead of choosing better conversions (in general, fewer or simpler conversions), we select the overload that is harder to instantiate. 
+-Note that certain conversions are considered trivial and are included in the notion of the exact match, for example, the conversion from T to const T
+-One important detail to note here is that conversions are not considered when deducing template types—the deduction of T as int would have yielded f(int, int*) for the second call, which is a viable option for calling f(long, int*) with the conversion of the first argument. However, this option is not considered at all, and instead, type deduction fails as ambiguous
+-The type of the default argument does not matter—if it can be converted to the specified parameter type, then that's the value that is used
+---------
+We could do with some guidelines for when to consider type erasure. There are two types of issues to keep in mind—design considerations and performance considerations
+---------------
+providing default implementation for pure virtual function can be done, but derived class still has to provide an implementation regardless
+---------------
+a valid use case for static_cast
+------------
+Base* b = new Derived;    // *b is really DerivedDerived* d = b;           
+   Derived* d = static_cast<Derived*>(b);    // Explicit conversion
+
+- Remember that the public interface is like a contract—we promise to the clients of the class that it supports certain operations, maintains some invariants, and obeys the specified restrictions
+- public inheritance implies the is-a relationship
+- that private inheritance implements a has-a relationship—the derived object has an instance of the base class contained inside of i
+
+The programming technique where some code operates on any number of base objects and invokes the same methods, but the results depend on the actual type of these objects, is known as runtime polymorphism, and the objects that support this technique are polymorphic
+-------------------
+.  values are mental model(platonic type) of things which could then be mapped/approximated into C++.
+    values are recursively defined in terms of operations that are possible on a given type.
+We refer to stateful objects that do not represent a value as "Mechanisms" - say C++ allocators for example.
+
+-values are interpretation of subset of instance state in terms of operations(values they return)
+-values semantic objects state is only changed via object's interface!
+-if a and b have the same value and then the same operations on the value interface have been called on them
+then a and b values have to be the same again!
+-(advice) if two objects have the same value then individual observeable attributes that contribute to the value also need to have the same value
+(advice) when deciding if object has value semantics the question is really to how to compare two objects of this value type!
+
+data members are for variation in values
+virtual functions are for variations in behavior.
+----------------------------------------------------------
+- For an unqualified name, that is a name that does not appear to the right of a scope resolution operator ::
+- A qualified name is a name that appears on the right hand side of the scope resolution operator :: (see also qualified identifiers). A qualified name may refer to a
+      - class member (including static and non-static functions, types, templates, etc)
+      - namespace member (including another namespace)
+      - enumerator
+If there is nothing on the left hand side of the ::, the lookup considers only declarations made in the global namespace scope (or introduced into the global namespace by a using declaration). This makes it possible to refer to such names even if they were hidden by a local declaration:
+
+Because of argument-dependent lookup, non-member functions and non-member operators defined in the same namespace
+ as a class are considered part of the public interface of that class (if they are found through ADL)
+
+ADL is the reason behind the established idiom for swapping two objects in generic code:
+using std::swap;
+swap(obj1, obj2);
+because calling std::swap(obj1, obj2) directly would not consider the user-defined swap() functions that could be defined in the same namespace as the types of obj1 or obj2, and just calling the unqualified swap(obj1, obj2) would call nothing if no user-defined overload was provided. In particular, std::iter_swap and all other standard library algorithms use this approach when dealing with Swappable types.
+
+hidden friend - member function can be declared friend! it is not a memember function of a class, however it can access classes private members - it is defined outside class. However ADL can find it. Exactly for the type of input arguments.
+----------------------------------------------------------
+template <typename T>
 void func(size_t sz, size_t pos)
 {
 static constexpr std::align_val_t __al = std::align_val_t(alignof(T));
@@ -126,6 +181,9 @@ S* p = new S{ 1, {2,3} };      // creates dangling reference because of "new" - 
 A { string a_ }
 auto&& v = A().a_; //v now extends lifetime of A!
 
+In C++17 the references are [expr.ref]/4.2 "If E1 is an lvalue, then E1.E2 is an lvalue; otherwise E1.E2 is an xvalue.",
+ and [class.temporary]/6 covers that binding to E1.E2 actually extends E1 in this circumstance
+
 ----------------
  Treat placement new as making the pointer invalid for access use. launder may help though sometimes.
 
@@ -213,6 +271,18 @@ refrences are not really values, they just an alias to another object!
 Destructors cannot be constexpr.
 Dynamic memory allocation/deallocation isn't available.
 In-place construction using placement-new isn't available.
+---------------
+class MyHeap {   
+   public:    ...   
+    void* allocate(size_t size);    void deallocate(void* p);    ...};
+    void* operator new(size_t size, MyHeap* heap) {    return heap->allocate(size);}
+
+// Example of allocating int on the custom storage using placement new!
+    MyHeap heap;
+    std::unique_ptr<int> p(new(&heap) int(0));
+
+
+    placement operator new can also be overriden
 -----------------
 non-trivially destructuble classes cannot be constexpr at compile time
 ----------
@@ -287,8 +357,7 @@ The noexcept operator performs a compile-time check that returns true if an expr
 
     _S_construct(_Alloc&, _Tp* __p, _Args&&... __args)
     noexcept(noexcept(::new((void*)__p)
-----------------------
-hidden friend - member function can be declared friend! it is not a memember function of a class, however it can access classes private members - it is defined outside class. However ADL can find it. Exactly for the type of input arguments.
+
 
 --------------------------
 - once value is moved from, something can be moved in!
@@ -1068,3 +1137,49 @@ vtable = AVtalbe;
 }
 
 (60) data_(new T[N]{}) - value initilize array! note if T is integral type that means zero initializtion!
+(61) 
+       (1) const auto sum = [](int a, int b) {
+  auto sum_impl=[](int a,int b,auto& sum_ref) mutable {
+    if(a>b){
+      return 0;
+    }
+    return a + sum_ref(a+1,b,sum_ref);
+  };
+  return sum_impl(a,b,sum_impl);
+};
+recursive lambda!
+
+(2) template <class F>
+struct y_combinator {
+    F f; // the lambda will be stored here
+
+    // a forwarding operator():
+    template <class... Args>
+    decltype(auto) operator()(Args&&... args) const {
+        // we pass ourselves to f, then the arguments.
+        // [edit: Barry] pass in std::ref(*this) instead of *this
+        return f(std::ref(*this), std::forward<Args>(args)...);
+    }
+};
+
+// helper function that deduces the type of the lambda:
+template <class F>
+y_combinator<std::decay_t<F>> make_y_combinator(F&& f) {
+    return {std::forward<F>(f)};
+}
+auto sum2 = make_y_combinator([](auto sum2, int a, int b) {
+  if (a>b) {
+    return 0;
+  }
+  else {
+    return  a+sum2(a+1,b);
+  }
+});
+
+
+(62) lambdas which don't capture anything become free functions and can be casted to usual function pointers.
+
+int (func:*)(int, int)
+func = [](int,int){
+};
+

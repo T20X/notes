@@ -1,4 +1,9 @@
 Bloom filter
+-------------
+ If bloom filter says it hasn't seen a value, then it definitely hasn't seen it. 
+But if it says it has seen a value, there is a good probability it has (but not guaranteed)
+it just maintains a N-bit array and for a given key there are m-hash functions to map the key into the N-bit array.
+----------
 suffix tree
 fusion tree
 segment tree
@@ -33,7 +38,7 @@ A spanning tree of a graph consists of all nodes of the graph and some of the
 edges of the graph so that there is a path between any two nodes. Like trees
 in general, spanning trees are connected and acyclic.
 
-To find minimum spanning tree for undirected grapth, Kruskal or Prim algorithms can be used! To find minimum spanning tree for directed grapth Chu–Liu/Edmonds can be used.
+To find minimum spanning tree for undirected grapth, Kruskal or Prim algorithms can be used! To find minimum spanning tree for directed grapth Chuï¿½Liu/Edmonds can be used.
 
 ---------------------------------
 binary indexed tree (Fenwick tree)

@@ -87,6 +87,10 @@ the absence of a cache line in LLC does not indicate that the line is not presen
  Therefore, a snoop filter is used to keep track of the location of cache lines in the
  L1 or MLC of cores when it is not allocated in the LLC
 
+For the Xeon Scalable Processors (Skylake Xeon), the L3 cache is no longer inclusive.   A cache line will be held in either a core (L1 or L2) or in the L3 cache, but not in both. (I don't know if Intel allows exceptions to this in the way that AMD has in the past with its "mostly-exclusive" L3 cache.)   In Xeon Scalable Processors, the L3 acts primarily as a victim cache for lines evicted from the L1 and L2 caches. The behavior is complex because there are dynamic prediction mechanisms in the L2 caches that decide whether a victim should be sent to L3 or to memory, and the heuristics controlling these predictors are not documented.  From my testing, it appears that if data is dirty, or remotely homed, or evicted due to a snoop filter eviction, it has a very high probability of being sent to the L3.  If data is clean and locally homed, the probability of being sent to the L3 appears to be based on the history of whether subsequent accesses to that address typically hit in the L3.   I have not attempted to determine what sorts of state are tracked by the hardware to make these decisions.
+
+Xeon Scalable Processors don't have an inclusive L3, but still need to track lines held in L1 and L2 caches.  This is done using a structure called a "snoop filter", which is essentially the tags+directory part of an inclusive L3 cache, but without room to store the actual data for the cache line.  Like the earlier inclusive L3 caches, the snoop filter is inclusive, so lines chosen as victims in the snoop filter must be evicted from all L1 and L2 caches before the snoop filter entry can be freed to track a different cache line.   Information in the Xeon Scalable Processor Uncore Performance Monitoring Guide (plus information on core performance counter events in Chapter 19 of Volume 3 of the Intel Architectures Software Developers Guide) suggests that the snoop filter receives eviction notifications from the L1 and L2 caches for many (but not all) evictions, and probably receives replacement hints from the L1 and L2 caches as well.
+
  It uses a mesh network instead of a ring bus to connect cores to each othe
 ---
 Intel caches are physically tagged and virtually indexed
@@ -126,7 +130,16 @@ In a |write-back| or copy-back cache, writes are not immediately mirrored to the
  tracks which locations have been written over, marking them as dirty
 |Write combining| memory stores are combined by using temoral stores and then commited
 in a burst!
- 
+
+---
+L3 cache (not MESIF )
+---
+A physical tag, which is used to identify a particular cache line in the physical address space. On an incoming request to an L3 slice, the physical tag is compared against the physical tags of all of the cache entries in the cache set. There can be at most one match. The target line is present if a matching tag is found and the request is said to have hit in the cache. Otherwise, the request is said to have missed in the cache. Snoops may only be sent on hits.
+A coherence state, which can be either Invalid, Clean, or Modified. Only the tags of the entries that are not Invalid are considered for comparison. The Clean state indicates that the line in the L3 cache is the same as the one in main memory. The Modified state indicates that the line in the L3 cache needs to be written back to memory when evicted.
+A vector of coherence directory bits, where the number of bits is equal to the number of physical cores. Each bit corresponds to one physical core. The value of each bit indicates whether the line may be present in the private caches of the corresponding physical core. However, the coherence states of the line in the private caches of a core are not available at the L3 cache. The directory bits are also called the cross-core snoop filter (XSNP filter) and the core valid bits.
+
+ A minor complication arises if the line in the L1 Data Cache is dirty -- when it is eventually chosen as the victim by the L1 Data Cache, there will not be an entry for that line in the L2 cache.  An implementation might allocate an entry in the L2 cache for the dirty line, but this is complex.  It is much easier to simply send the L1 victim to the L3
+
 -----------------------
 On x86, all atomic loads generate a MOV. SequentiallyConsistent stores generate an XCHG, 
 other stores generate a MOV. SequentiallyConsistent fences generate an MFENCE, 

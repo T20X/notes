@@ -24,6 +24,8 @@ a = a^b      # mix of a and b
 b = a^b      # a^b^b = a
 a = a^b      # a^b^a = b
 
+And XOR swap fails if you accidentally try to swap a value with itsel
+
 (8) x = x | 0 and x = x ^ 0. Both are equivalent!
 
 (9)     // k = 3, p = 1 

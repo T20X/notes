@@ -1,3 +1,6 @@
+-------------------
+the overload resolution is done only on the basis of the function declaration—the parameters, the default arguments, and the return type (the latter is not used to deduce types or select a better overload, but still undergoes type substitution and is covered by SFINAE)
+--------------
 TEMPLATE SEQUENCE 
 ------------
 instantiation -> deduction -> substitution -> evaluation!

@@ -86,3 +86,9 @@ struct D : A, B {};
 11.  constexpr lambdas do work now!
 12. in C++ now prvalues(values not having a name) are defined now. Bascially this
 auto x = T(); x will get constructed like T()! Even if copy constructor for T is deleted!
+
+13.
+void transmogrify(std::vector<C>& out) 
+{ fill out...}
+
+in c++17 out can be returned by value as copy ellison is now guaranteed

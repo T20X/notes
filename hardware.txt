@@ -1,4 +1,5 @@
-﻿(1) negative integers are represented as two's complemented
+﻿
+(1) negative integers are represented as two's complemented
 first normal ingteger is inverted! then + 1
 for example 
 1100 -> 0011 -> 0011 + 1 -> 0100
@@ -88,3 +89,5 @@ value pointed by an IST pointer into the RSP.
 When an interrupt occurs, the new SS selector is forced to NULL and the SS selector’s RPL field is set to the new 
 CPL. The old SS, RSP, RFLAGS, CS, and RIP are pushed onto the new stack. Interrupt processing then proceeds as 
 normal.
+
+(11) memory is not fast enough to feed data to all CPUs. Say 2 cores writing data  > 8K chunks of data in the loop can saturate the whole bus

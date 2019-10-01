@@ -126,7 +126,7 @@ char my_tolower(char ch)
 
 (22) One of the most useful features of pairs and tuples is that when you create product types with them, you get lexicographical comparison operators for free
 
-(23) It’s a bad idea to ever make them a part of a public API (even if some parts of the STL do so)
+(23) Itï¿½s a bad idea to ever make them a part of a public API (even if some parts of the STL do so)
 
 (24) bool operator<(const person_t& left, const person_t& right)
 {
@@ -161,3 +161,17 @@ list(list&&) = defualt - is noexcept in gcc implementation!
       using is_always_equal = true_type;
 
 (30) All standard containers (std::vector, std::list, etc.) value-initialize their elements when constructed with a single size_type argument or when grown by a call to resize()
+
+
+(31)
+list& operator=( list&& other )
+Move assignment operator. Replaces the contents with those of other using move semantics (i.e. the data in other is moved from other into this container). other is in a valid but unspecified state afterwards. If std::allocator_traits<allocator_type>::propagate_on_container_move_assignment::value is true, the target allocator is replaced by a copy of the source allocator. If it is false and the source and the target allocators do not compare equal, the target cannot take ownership of the source memory and must move-assign each element individually, allocating additional memory using its own allocator as needed. In any case, all elements originally present in *this are either destroyed or replaced by elementwise move-assignment
+
+(32) unordered_set/unordered_map containers have the following important requirenments which make open addressing implementation not possible and chaining is used!
+
+- iterators are only forward ones and it must be O(1) complexity to move to the next iterator!
+- insertation of a new item shall not invalidate refrences to the items already stored in the container.
+
+(33) list past the end iterator is never invalidates, because list creates it right away!
+
+    [2]<->[past the end]<->[1]<->[2]->[past the end]...

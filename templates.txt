@@ -1,4 +1,7 @@
-﻿throwing exceptions in constexpr context in compile-time is fine! compiler won't compile it!
+﻿Also, you may find the notion of the doubly universal template f(...) function curious—it takes any arguments of any type, even without the template, so why use the template? Of course, it is so a call with an explicitly specified type, like f<int>(), considers this function as a possible overload (remember that, by specifying the template parameter type, we also exclude all non-template functions from consideration
+
+--------------
+throwing exceptions in constexpr context in compile-time is fine! compiler won't compile it!
 -------------------------
 types of metaprogramms
 -compile-time numeric calcualations
@@ -700,11 +703,33 @@ void_t<decltype(*begin(declval<C>())),
        >::value_type;
 
 31.   FIFO(const FIFO& other) {  copyConstruct(other); }    
-31.   FIFO(FIF&& other) {  moveConstruct(other); }  
+   FIFO(FIF&& other) {  moveConstruct(other); }  
      template <typename O> FIFO(const FIFO<O>& other) {  copyConstruct(other); }
 
 FIFO<int> q1;
 FIFO<double> q2
 q2 = move(q1);
 
-    Even just having templated copy construct will cause q1 to be first converted into FIFO<double> and then moved into q2. So this is a bad idea!
+    Even just having templated copy construct will cause q1 to be first converted into FIFO<double>
+ and then moved into q2. So this is a bad idea!
+
+32. template non-dependent symbol lookup just associats symbols with whatever it
+ encounter so far! even it there is better definition later or after template instantiation. 
+temlate <class T> struct B : D<T> { g() // global g() will be called, not one from D<T>! }; 
+temlate <class T> struct B : D<T> { FromDT v; //won't compile because FromDT is defined in D<T>; D<T>::FromDt v will compile }; 
+
+33. 
+
+For a non-dependent name used in a template definition, unqualified name lookup takes place when the template definition is examined. The binding to the declarations made at that point is not affected by declarations visible at the point of instantiation. For a dependent name used in a template definition, the lookup is postponed until the template arguments are known, at which time ADL examines function declarations with external linkage (until C++11) that are visible from the template definition context as well as in the template instantiation context, while non-ADL lookup only examines function declarations with external linkage (until C++11) that are visible from the template definition context (in other words, adding a new function declaration after template definition does not make it visible except via ADL). The behavior is undefined if there is a better match with external linkage in the namespaces examined by the ADL lookup, declared in some other translation unit, or if the lookup would have been ambiguous if those translation units were examined. In any case, if a base class depends on a template parameter, its scope is not examined by unqualified name lookup (neither at the point of definition nor at the point of instantiation).
+
+34. We now understand the difference between type deduction and type substitution. Type deduction can be ambiguous when different concrete types can be deduced from different arguments. If this happens, it means we have failed to deduce the argument types and cannot use this template function. Type substitution is never ambiguous—once we know what T is, we simply substitute that type every time we see T in the function definition. This process can also fail, but in a different way
+
+35. namespace implementation {
+      // Selected if C is a class type 
+         template<typename C> static char test(int C::*);    // Selected otherwise  
+         template<typename C> static int test(...);}t
+          
+          emplate <class T>struct is_class :   std::integral_constant<bool, sizeof
+          (implementation::test<T>(0)) ==  sizeof(char)> {};
+
+legacy like SFINAE
