@@ -1,4 +1,79 @@
-﻿
+﻿----
+vtable
+-----
+
+--
+0offset to top
+8RTTI std::type_info
+16 ~ with delete after
+24 ~ without delete after
+32 func1
+....
+N offset to top
+N+8 RTTI std::type_info
+A,B, C : A,B
+.....
+
+[vptr A,C]  <---this for A and C
+data A
+[vptr B]   // B* b = new C;  <----- this for B!
+data B
+data C
+
+The entries for virtual destructors are actually pairs of entries. The first destructor, called the complete object destructor, performs the destruction without calling delete() on the object. The second destructor, called the deleting destructor, calls delete() after destroying the object. Both destroy any virtual bases; a separate, non-virtual function, called the base object destructor, performs destruction of the object but not its virtual base subobjects, and does not call delete().
+
+The offset to top holds the displacement to the top of the object from the location within the object of the virtual table pointer that addresses this virtual table, as a  ptrdiff_t. It is always present. The offset provides a way to find the top of the object from any base subobject with a virtual table pointer. This is necessary for dynamic_cast<void*> in particular. So basically this offset is an offest insdie the top object! !!!!!!!!!! ---------- 
+(1) Used by  dynamic_cast<void*>(b);(returns the most derived pointer! so no RTTI needed) for example. One last point, you might wonder what's offsetToTop doing in vtables. It's used when casting to void* so that you can simply substract the pointer by the offset to get the base of the most derived class ----------------
+(2) Also used by thunk functions which are kept the same across all VTABLE and just adjust pointer for this BY offset to top to get the right this for object!
+ !!!!!!!!!!!!!!!!!!!!
+
+The typeinfo pointer points to the typeinfo object used for RTTI. It is always present. All entries in each of the virtual tables for a given class must point to the same typeinfo object. A correct implementation of typeinfo equality is to check pointer equality, except for pointers (directly or indirectly) to incomplete types. The typeinfo pointer is a valid pointer for polymorphic classes, i.e. those with virtual functions, and is zero for non-polymorphic classes
+
+destructors change the vtable pointer to point to the their own class’s rather than keep it pointing to the concrete class
+
+
+SUGGESTION TO IMPROVE DYNAMIC CAST PERFORMANCE:
+Our suggestion for an F function is integer modulo. To construct the type ID, a different prime
+number is associated with each class. The type ID for that class will be that prime number times the
+prime number for each of its base classes. Thus, the type ID for a class will be evenly divisible by the
+type ID of any of its base classes, and only by its base classes. This is guaranteed by the uniqueness of
+the factorization of integers into prime factors. Given an arbitrarily large integer type ID, any hierarchy
+can be represented this way
+
+----------------
+to allow implicit conversions (if any are provided) on both the left-and right-hand side of the == sign, we have to declare operator== as a non-member function.
+-----------------------
+overloading is ad-hoc polymorphism
+----------------
+C++filt can be used to demangle names
+abidiff can be used to compare two executable on ABI compatibility
+---------------
+in clang and gcc can hide symbols and make them private ... can make it by deafult as well
+
+can also limit symbol visibility per translation unit
+------
+inline namespace changes mangled names!
+-----------
+For a default constructor and destructor being “trivial” means literally “do nothing at all”. For copy-constructor and copy-assignment operator, being “trivial” means literally “be equivalent to simple raw memory copying” (like copy with memcpy
+--------------------
+Simply, the closure type defined by the lambda expression will have a templated call operator rather than the regular, non-template call operator of C++11's lambdas (of course, when auto appears at least once in the parameter list).
+
+So your example:
+
+auto glambda = [] (auto a) { return a; };
+Will make glambda an instance of this type:
+
+class /* unnamed */
+{
+public:
+    template<typename T>
+    T operator () (T a) const { return a; }
+};
+-----------------------------
+std::variant
+- no dynamic memory allocation
+- if initialized by value the first type is used
+- not permitted to hold refrences
 
 -------
 - for function overload resolution with multiple paramters, the less conversion operations are required the better candidate is
@@ -148,7 +223,7 @@ The difference between xvalue and prvalue is that xvalue has identity and prvalu
 f(C&& other)
     C&& c2 = C();
     f(std::move(c2)); //c2 is still lvalue! and move is required
-    But c2 can be modified!
+    But c2 still can be modified because c2 is lvalue!
 
 n brief , a prvalue is now like a "delayed evaluation" expression; if the prvalue is passed across function calls and returns, there is not actually an object created until it reaches its final destination. This avoids the possibility of intermediate temporaries and the need for some copy elision cases; it enables you to have a function that creates a non-copyable non-movable object and returns it
 ------------------
@@ -1183,3 +1258,8 @@ int (func:*)(int, int)
 func = [](int,int){
 };
 
+(63) templated copy constructors are very powerfull, even normal value initialization constructors would be called
+struct A {  template <typename T>  A(const T& o) {  s1 = o.s1;  } };
+A a1("asdfasdf");
+
+(64) A typical mistake in implementing the Coercion by Member Template Idiom is failing to provide the non-template copy constructor or copy assignment operator when introducing the templated copy constructor and assignment operator. A compiler will automatically declare a copy constructor and a copy assignment operator if a class does not declare them, which can cause hidden and non-obvious faults when using this idiom.

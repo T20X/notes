@@ -71,10 +71,20 @@ Eulerian Cycle - is a path through the grapth where each edge can be visited exa
 ------------------
 A major charactersictic of a search problem is that its solution can be easily verifyble
 
-NP is the class of all search problems
+NP - is problem for which a possible solution could be generated (gueesed from a number of possible polynominal solutions) in O(1) time (assuming non-deterministic machines exists)| and then verified in polynominal time. NP is biased towards YES in decision problems (YES/NO). For example 3SAT problem! Imagine if we had to go through all possible solutions, then we'd have N! possible solition candidates!
 P is the class of search problems we can solve in poly-time in natural world
 
+NP-hard is the class of decision problems to which all problems in NP can be reduced to in polynomial time by a deterministic Turing machine. They for sure cannot be in P space! we may/may-not verify the solution to these problems in polynomial time.
 
+NP-complete is the intersection of NP-hard and NP. Equivalently, NP-complete is the class of decision problems in NP to which all problems in NP can be reduced to in polynomial time by a deterministic Turing machine
+
+One of the most fundamental and important questions in computer science right now is whether any problem that is known to be in NP is also in P. That is, if we can easily verify the answer to a problem efficiently (in polynomial time), can we always solve that problem efficiently (in polynomial time)? It is known that any problem in P is also a problem in NP, since you can use the polynomial time algorithm to produce an answer and then check whether it's correct, but no one has ever found a way to solve arbitrary problems in NP in polynomial time
+
+
+
+
+-------|---------------------|----------
+P         NP      (| NP-complete)  NP-hard
 nondetermentstic machine may guess the solution!
 
 ----------------------
@@ -96,8 +106,8 @@ P = Pos / 2;
 Left = 2 * P;
 Right = 2 * P + 1
 ----------------------------------
-Hopcroft–Karp algorithm -  is an algorithm that takes as input a bipartite graph and produces as output a maximum cardinality matching
-Edmonds–Karp algorithm
+Hopcroftï¿½Karp algorithm -  is an algorithm that takes as input a bipartite graph and produces as output a maximum cardinality matching
+Edmondsï¿½Karp algorithm
 Dinic's algorithm
 ------------------
 

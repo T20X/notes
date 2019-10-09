@@ -26,6 +26,22 @@ class event_connection : event_crtp<event_connection> {}
 class event_connected : event_crtp<event_connected> {}
 
 
+// BE CAREFULL TO AVOID INFINITE LOOPS IF BASE AND DERIVED FUNCTIINS HAVE THE SAME NAME
+
+template <typename D> class B 
+{ 
+     public:    
+     ...    void f(int i) 
+     { static_cast<D*>(this)->f(i); 
+     }
+};
+
+class D : public B<D> 
+{ 
+     // no f() here!
+};
+     ...B<D>* b = ...;b->f(5);                // goes into infinite loop!
+
 -----------
 logical XOR
 ----
@@ -34,7 +50,7 @@ logical XOR
 -------
 Assignemnt operator
 --------
-To ensure a strongly exception-safe class that can’t leak any resources when an exception occurs and that can guarantee an operation either is successfully completed or isn’t completed at all, you usually use the copy-and-swap idiom when implementing the assignment operator
+To ensure a strongly exception-safe class that canï¿½t leak any resources when an exception occurs and that can guarantee an operation either is successfully completed or isnï¿½t completed at all, you usually use the copy-and-swap idiom when implementing the assignment operator
 ------------
 
 ------------

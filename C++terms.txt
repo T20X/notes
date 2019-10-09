@@ -1,0 +1,6 @@
+-----------------
+code is said to be exception safe if it keeps program in a consistent state even if a throw occurs
+
+-basic guarantee
+-the strong guarantee
+-nothrow guarantee

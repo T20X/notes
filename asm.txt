@@ -5,9 +5,11 @@ standard guarantees that the union & struct itself will be aligned to the size o
  element
 16-byte stack alignment is mandatory!
 ----
+
 REGISTERS
 ---
 rax..rdx - general purpose! (Accumulator, Base, Counter, Data)
+GS register stores the base address for per-cpu are
 ---
 STACK
 ---

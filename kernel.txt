@@ -8,3 +8,5 @@ sudo update-grub
 
 vim /etc/sysctl.conf
 sysctl -p
+
+GS register stores the base address for per-cpu are

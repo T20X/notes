@@ -1,7 +1,18 @@
+there are no polymorphic types only the polymorphic use
+------------------
+shared structure breaks our ability to locally reason about code
+---------------
+don't call new directly for example, better use make_shared, make_unique
+vector<shared_ptr<Item>> v;
+v.emplace_back(new item); //if emplace_back throws due to size reallocation inside vector, then new Item would not be associated with a pointer and it would leak.
+-----
 class Builder {
 Foo&& finish()    {  return std::move(obj);  } } // not good, as this would make object of Builder unusable!
 better make it more explicit
-class Builder { Foo&& finish() && { return std::move(obj); } // safer now caller is forced to call std::move! move(obj).finish();
+class Builder { 
+  Foo&& finish() && 
+  { return std::move(obj); }
+   // safer now caller is forced to call std::move! move(obj).finish();
 
 --------------
 when transferring ownership even trvially copyable types good to pass as rvalue refrences to functions as this would force caller to call std::move and it would be more clear code to read.
@@ -16,6 +27,10 @@ f(object(12)) - copy of object can be elided - contstructs right in o!
 ---------
 copy/move operators and destructos ideally should not have observable side-effects as if someone is 100% relied on them being called
 ------------------
+objcet  {
+  object(const object&)...
+  object& operator=(const object&)...
+  { object tmp(other); dat = move(tmp.dat);return *this; }
 
 object f() { return 5; }
 object o = f(); //only calls o ctor!
@@ -43,14 +58,14 @@ objects shall be composable
 sink object ideally pass by value
 objects shall be easy to move
 ----------------------
-Pointers can have a lot of different meanings in different situations, and they’re bad at communicating what they’re used for. When you see a function that returns a pointer, you have a few options:
-It’s a factory function that returns an object you’ll become the owner of.
-It’s a function that returns a pointer to an existing object you don’t own.
-It’s a function that can fail, and it communicates the failure by returning the null pointer as the result.
+Pointers can have a lot of different meanings in different situations, and theyï¿½re bad at communicating what theyï¿½re used for. When you see a function that returns a pointer, you have a few options:
+Itï¿½s a factory function that returns an object youï¿½ll become the owner of.
+Itï¿½s a function that returns a pointer to an existing object you donï¿½t own.
+Itï¿½s a function that can fail, and it communicates the failure by returning the null pointer as the result.
 ------------------------------------------------------
 This is the recommended approach to designing programs with state based on sum types: put the logic that deals with one state inside the object that defines that state, and put the logic that performs state transitions into the main program
 -------------------------
-It’s a bad idea to ever make std::pair or std::tuple to be a part of a public API
+Itï¿½s a bad idea to ever make std::pair or std::tuple to be a part of a public API
 --------------------------------
 no auto for non-moveable types! auto v = type() //type has to be moveable!
 ------------
@@ -64,26 +79,26 @@ forwarding references are good in functions which forwards values and then the d
 ----------------------
 don't use rvalue refrence optimizations (&&) and forwarding refrences by default - just stick to const & and by value parameter passing and refer to the && as an optimization given the set of use cases
 -----------------------
-The most important insight is that the answer depends on the details of the base class’s contract. It is not enough to know that the public interfaces / method signatures are compatible; one also needs to know if the contracts / behaviors are compatible
+The most important insight is that the answer depends on the details of the base classï¿½s contract. It is not enough to know that the public interfaces / method signatures are compatible; one also needs to know if the contracts / behaviors are compatible
 -------------
-The important part of the previous sentence are the words “contracts / behaviors.” That phrase goes well beyond the public interface = method signatures = method names and parameter types and constness. A method’s contract means its advertised behavior = advertised requirements and promises = advertised preconditions and postconditions. So if the base class has a method void insert(const Foo& x), the contract of that method includes the signature (meaning the name insert and the parameter const Foo&), but goes well beyond that to include the method’s advertised preconditions and postconditions
+The important part of the previous sentence are the words ï¿½contracts / behaviors.ï¿½ That phrase goes well beyond the public interface = method signatures = method names and parameter types and constness. A methodï¿½s contract means its advertised behavior = advertised requirements and promises = advertised preconditions and postconditions. So if the base class has a method void insert(const Foo& x), the contract of that method includes the signature (meaning the name insert and the parameter const Foo&), but goes well beyond that to include the methodï¿½s advertised preconditions and postconditions
 ------------------------
 in OO, a thing is defined by how it behaves, not by the label used to name it
 The derived class must do what the base class promises, not what it actually does.
-The key is that we’ve separated the advertised behavior (“specification”) from implemented behavior (“implementation”)
+The key is that weï¿½ve separated the advertised behavior (ï¿½specificationï¿½) from implemented behavior (ï¿½implementationï¿½)
 -------------
-Next insight: inheritance means “is substitutable for.” It does not mean “is a” (since that is ill defined) and it does not mean “is a kind of” (also ill defined). Substitutability is well defined: to be substitutable, the derived class is allowed (not required) to add (not remove) public methods, and for each public method inherited from the base class, the derived class is allowed (not required) to weaken preconditions and/or strengthen postconditions (not the other way around). Further the derived class is allowed to have completely different constructors, static methods, and non-public methods
+Next insight: inheritance means ï¿½is substitutable for.ï¿½ It does not mean ï¿½is aï¿½ (since that is ill defined) and it does not mean ï¿½is a kind ofï¿½ (also ill defined). Substitutability is well defined: to be substitutable, the derived class is allowed (not required) to add (not remove) public methods, and for each public method inherited from the base class, the derived class is allowed (not required) to weaken preconditions and/or strengthen postconditions (not the other way around). Further the derived class is allowed to have completely different constructors, static methods, and non-public methods
 -------------
-You should use inheritance (a) only if the derived class’s methods can abide by all the promises made in the base class, and (b) only if you don’t think you’ll confuse your users, and (c) only if there’s something to be gained by using the inheritance — some real, measurable improvement in time, money or risk
+You should use inheritance (a) only if the derived classï¿½s methods can abide by all the promises made in the base class, and (b) only if you donï¿½t think youï¿½ll confuse your users, and (c) only if thereï¿½s something to be gained by using the inheritance ï¿½ some real, measurable improvement in time, money or risk
 
-Bad inheritances always have a base class with an extra capability (often an extra member function or two; sometimes an extra promise made by one or a combination of member functions) that a derived class can’t satisfy. You’ve either got to make the base class weaker, make the derived class stronger, or eliminate the proposed inheritance relationship. I’ve seen lots and lots and lots of these bad inheritance proposals, and believe me, they all boil down to the Circle/Ellipse example
+Bad inheritances always have a base class with an extra capability (often an extra member function or two; sometimes an extra promise made by one or a combination of member functions) that a derived class canï¿½t satisfy. Youï¿½ve either got to make the base class weaker, make the derived class stronger, or eliminate the proposed inheritance relationship. Iï¿½ve seen lots and lots and lots of these bad inheritance proposals, and believe me, they all boil down to the Circle/Ellipse example
 
 -------------
 you can make anything inherit from anything provided the methods in the derived class abide by the promises made in the base class
 ------------
 concept based polymorphizm
 ----------------------
-Note: decltype(auto) is primarily useful for deducing the return type of forwarding functions and similar wrappers, as shown above, where you want the type to exactly “track” some expression you’re invoking. However, decltype(auto) is not intended to be a widely used feature beyond that. In particular, although it can be used to declare local variables, doing that is probably just an antipattern since a local variable’s reference-ness should not depend on the initialization expression. Also, it is sensitive to how you write the return statement. These two functions have different return types
+Note: decltype(auto) is primarily useful for deducing the return type of forwarding functions and similar wrappers, as shown above, where you want the type to exactly ï¿½trackï¿½ some expression youï¿½re invoking. However, decltype(auto) is not intended to be a widely used feature beyond that. In particular, although it can be used to declare local variables, doing that is probably just an antipattern since a local variableï¿½s reference-ness should not depend on the initialization expression. Also, it is sensitive to how you write the return statement. These two functions have different return types
 
 ------------------------
 Don't delete the move members
@@ -145,4 +160,5 @@ std::any issues
 constexpr containers downside
  - container is immutable
  - call site must know size of container
- - 
+ --------------
+  A typical mistake in implementing the Coercion by Member Template Idiom is failing to provide the non-template copy constructor or copy assignment operator when introducing the templated copy constructor and assignment operator. A compiler will automatically declare a copy constructor and a copy assignment operator if a class does not declare them, which can cause hidden and non-obvious faults when using this idiom

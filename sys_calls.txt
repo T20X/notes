@@ -1,3 +1,8 @@
+
+linux-vdso is not a shared libarry on a disk, linux kernel bakes it on the fly!
+
+GS register stores the base address for per-cpu are
+
 Latency 5-10microseconds
 
 IA32_LSTAR MSR - register container kernel entyry code (Code and stack selctors) to handle sys calss

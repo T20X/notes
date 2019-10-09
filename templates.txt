@@ -1,4 +1,13 @@
-﻿Also, you may find the notion of the doubly universal template f(...) function curious—it takes any arguments of any type, even without the template, so why use the template? Of course, it is so a call with an explicitly specified type, like f<int>(), considers this function as a possible overload (remember that, by specifying the template parameter type, we also exclude all non-template functions from consideration
+﻿----------
+friend declaration for template paramater
+template <typename D> class B {    friend D; }
+---------------
+why template programming aka duck typing is bad
+ - massive error messages if something goes wrong
+ - latent bugs - say if later some client code instantiates template with not expected types we got an issue
+ - they don't state intent
+-----------------------------
+Also, you may find the notion of the doubly universal template f(...) function curious—it takes any arguments of any type, even without the template, so why use the template? Of course, it is so a call with an explicitly specified type, like f<int>(), considers this function as a possible overload (remember that, by specifying the template parameter type, we also exclude all non-template functions from consideration
 
 --------------
 throwing exceptions in constexpr context in compile-time is fine! compiler won't compile it!
@@ -675,21 +684,14 @@ static_assert(sizeof(type), "type must be complete");
 
 27. But since C++11 there is also expression SFINAE. expression SFINAE occurs on arbitrary expressions in the function signature
 
-28.   template <typename... T>
+28.    template <typename... T>
  void p(const T&... args) 
  {   
    int a[] = {0, ((void)(cout << "," << args), 0)...}; (void)a;   
    cout << "\n";
  }
 
- template <typename... T>
- void p(const string& s, const T&... args) 
- {   
-   cout << s.c_str();
-   p(args...);  
- }
-
- 29. template <typename C> using ContainerType = decay_t<decltype(*begin(declval<C>()))>;
+template <typename C> using ContainerType = decltype(*begin(declval<C>()));
 template <typename C, typename = void_t<>> struct is_container : std::false_type {};
 template <typename C> struct is_container<C, 
 void_t<decltype(*begin(declval<C>())),
@@ -697,14 +699,29 @@ void_t<decltype(*begin(declval<C>())),
        typename C::iterator
 >> : std::true_type {};
 
+static_assert(is_container<vector<size_t>>::value, "not vec");
+
+template <typename C, typename = enable_if_t<
+std::conjunction<
+  is_container<C>,
+  std::negation<is_same<C, string>>
+>::value
+  >>
+ostream& operator<<(ostream& out, const C& v)
+{
+  for (const auto& item : v)
+    cout << item << ",";
+  return out;
+}
+
 30. template <typename C> using ContainerType =
     typename iterator_traits<
         decltype(declval<C>().begin())
        >::value_type;
 
-31.   FIFO(const FIFO& other) {  copyConstruct(other); }    
-   FIFO(FIF&& other) {  moveConstruct(other); }  
-     template <typename O> FIFO(const FIFO<O>& other) {  copyConstruct(other); }
+31.   FIFO(const FIFO& other) {  copyConstruct(other); }       
+      template <typename O>  FIFO(const FIFO<O>& other) {  copyConstruct(other); }
+      FIFO(FIF&& other) {  moveConstruct(other); }  
 
 FIFO<int> q1;
 FIFO<double> q2
@@ -733,3 +750,9 @@ For a non-dependent name used in a template definition, unqualified name lookup 
           (implementation::test<T>(0)) ==  sizeof(char)> {};
 
 legacy like SFINAE
+
+
+36. auto have_star_equal(const T& x, size_t n) -> decltype(T(x) *= n, yes())
+
+37. how to call templated constructor from base class!
+using __uniq_ptr_impl<_Tp, _Dp>::__uniq_ptr_impl;
