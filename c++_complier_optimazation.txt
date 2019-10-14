@@ -15,3 +15,11 @@ std::vector<std::string> names_for(
 
 In this case, compilers that support tail-call optimization (TCO) will be able to convert 
 the recursive function to a simple loop
+
+3. double checking would be optimized by the compiler
+if (a)
+{
+   ...
+   if (a) // won't happen again, would be optimized out!
+   {
+   ...

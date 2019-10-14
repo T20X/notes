@@ -1,0 +1,1 @@
+Each execution report contains two fields which are used to communicate both the current state of the order as understood by the broker (OrdStatus <39>) and the purpose of the message (ExecType <150>).

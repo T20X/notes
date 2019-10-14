@@ -1,4 +1,9 @@
-﻿----
+﻿
+A variable declared inline has the same semantics as a function declared inline: it can be defined, identically, in multiple translation units, must be defined in every translation unit in which it is used, and the behavior of the program is as if there was exactly one variable.
+--------------
+zero initialization does not mean litterly memset(0)! it could be in fact set to all bits 1!
+
+----
 vtable
 -----
 
@@ -25,7 +30,11 @@ The entries for virtual destructors are actually pairs of entries. The first des
 The offset to top holds the displacement to the top of the object from the location within the object of the virtual table pointer that addresses this virtual table, as a  ptrdiff_t. It is always present. The offset provides a way to find the top of the object from any base subobject with a virtual table pointer. This is necessary for dynamic_cast<void*> in particular. So basically this offset is an offest insdie the top object! !!!!!!!!!! ---------- 
 (1) Used by  dynamic_cast<void*>(b);(returns the most derived pointer! so no RTTI needed) for example. One last point, you might wonder what's offsetToTop doing in vtables. It's used when casting to void* so that you can simply substract the pointer by the offset to get the base of the most derived class ----------------
 (2) Also used by thunk functions which are kept the same across all VTABLE and just adjust pointer for this BY offset to top to get the right this for object!
+ 
+ NOW VIRTUAL BASE INHERITANCE WORKS THE SIMILAR WAY because at any any given base vtable the location of virtual base cannot be known for sure since earlier / later classes might have created it! That is why each vtable having virtual base classes has an offset to the virtual base object
  !!!!!!!!!!!!!!!!!!!!
+
+
 
 The typeinfo pointer points to the typeinfo object used for RTTI. It is always present. All entries in each of the virtual tables for a given class must point to the same typeinfo object. A correct implementation of typeinfo equality is to check pointer equality, except for pointers (directly or indirectly) to incomplete types. The typeinfo pointer is a valid pointer for polymorphic classes, i.e. those with virtual functions, and is zero for non-polymorphic classes
 
@@ -223,7 +232,7 @@ The difference between xvalue and prvalue is that xvalue has identity and prvalu
 f(C&& other)
     C&& c2 = C();
     f(std::move(c2)); //c2 is still lvalue! and move is required
-    But c2 still can be modified because c2 is lvalue!
+    But c2 still can be modified because c2 is lvalue !
 
 n brief , a prvalue is now like a "delayed evaluation" expression; if the prvalue is passed across function calls and returns, there is not actually an object created until it reaches its final destination. This avoids the possibility of intermediate temporaries and the need for some copy elision cases; it enables you to have a function that creates a non-copyable non-movable object and returns it
 ------------------
@@ -526,6 +535,9 @@ a char, unsigned char, or std​::​byte type.
  it is ok to convert a pointer to integer and then integer back to pointer. But modifying that integer in the middle is kind of on the endge according to c++ standarrt!
  ---------
  trivial destructors can be skipped
+
+ pretty bad to write constructors like this! as it can make trivial type untrivial and call unncessry contrustruct and destructor!
+B() {}
  -------------
  Launder is defined in terms of a pointer to a pre-existing object. That pointer is then destroyed, and a new object with the same address is created (which is well defined).  std::launder then lets you take the pointer to the object that no longer exists and get a pointer to the existing object.
 
@@ -1008,6 +1020,17 @@ struct aligned_union;
 (since C++11)
 Provides the nested type type, which is a trivial standard-layout type of a size and alignment suitable for use as uninitialized storage for an object of any of the types listed in Types. The size of the storage is at least Len. std::aligned_union also determines the strictest (largest) alignment requirement among all Types and makes it available as the constant alignment_value
 
+template <std::size_t Len, class... Types>
+struct aligned_union
+{
+    static constexpr std::size_t alignment_value = std::max({alignof(Types)...});
+ 
+    struct type
+    {
+      alignas(alignment_value) char _s[std::max({Len, sizeof(Types)...})];
+    };
+};
+
 (30) 	void operator()(_Ty * _Ptr) const noexcept
 		{	// delete a pointer
 		static_assert(0 < sizeof (_Ty),
@@ -1033,7 +1056,7 @@ WITHING SINGLE EXPRESSION!
 
 Writing overflow checking code is difficult. gcc have built in functions to perfom such checks...https://gcc.gnu.org/onlinedocs/gcc/Integer-Overflow-Builtins.html
 
-(37)
+(37) //exception classes are not polymorphic
 class MyExceptionBase { };
 class MyExceptionDerived : public MyExceptionBase { };
 void f(MyExceptionBase& e)
@@ -1091,24 +1114,6 @@ void g()
 (39) C++11 states integer division and modulo to be non Ecludian. The same goes for flotas/doubles!
 5 % -3 = -2! The reminder signs rounds towards zero!
 
-(40) lambda cannot be a recursive function if type type deduction takes place anywhere!
-Or!
-template<class Fun>
-class y_combinator_result {
-    Fun fun_;
-public:
-    template<class T>
-    explicit y_combinator_result(T &&fun): fun_(std::forward<T>(fun)) {}
-
-    template<class ...Args>
-    decltype(auto) operator()(Args &&...args) {
-        return fun_(std::ref(*this), std::forward<Args>(args)...);
-    }
-};
-
-template<class Fun>
-decltype(auto) y_combinator(Fun &&fun) {
-    return y_combinator_result<std::decay_t<Fun>>(std::forward<Fun>(fun));
 
 (41) move_iterator!
 vector<string> v{"asd", "asd"}
@@ -1194,6 +1199,8 @@ If this is still what you're going for, I think dynamic allocation (e.g. using u
   X x {1};  
 ***even though X is not either constructable / nor convertible, but it can make an object of X!***
 
+In case of ambiguity between a variable declaration using the direct-initialization syntax (1) (with round parentheses) and a function declaration, the compiler always chooses function declaratio
+
 (56) The effects of constant initialization are the same as the effects of the corresponding initialization, except that it's guaranteed that it is complete before any other initialization of a static or thread-local object begins, and it may be performed at compile time
 
 
@@ -1263,3 +1270,7 @@ struct A {  template <typename T>  A(const T& o) {  s1 = o.s1;  } };
 A a1("asdfasdf");
 
 (64) A typical mistake in implementing the Coercion by Member Template Idiom is failing to provide the non-template copy constructor or copy assignment operator when introducing the templated copy constructor and assignment operator. A compiler will automatically declare a copy constructor and a copy assignment operator if a class does not declare them, which can cause hidden and non-obvious faults when using this idiom.
+
+(65) template< class T, class Compare >
+constexpr T max( std::initializer_list<T> ilist, Compare comp );
+(since C++1
