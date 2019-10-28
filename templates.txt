@@ -1,4 +1,39 @@
-﻿----------
+﻿  ---------
+  template <auto v> struct S;                 // type of v is deduced
+    template <auto x> constexpr auto constant = x;
+    // List of heterogeneous constant values
+  // same as template <auto v1, auto v2, auto v3, ...>
+  template <auto... vs> struct value_list { };
+
+  // List of homogeneous constant values
+template <auto v1, decltype(v1)... vs> struct typed_value_list { };
+--------------------
+  // Payload for optionals with non-trivial destructors.
+ // Payload for optionals with non-trivial destructors.
+  template <typename _Tp, bool _Copy, bool _Move>
+    struct _Optional_payload<_Tp, false, _Copy, _Move>
+    : _Optional_payload<_Tp, true, false, false>
+    {
+      // Base class implements all the constructors and assignment operators:
+      using _Optional_payload<_Tp, true, false, false>::_Optional_payload;
+      _Optional_payload() = default;
+      _Optional_payload(const _Optional_payload&) = default;
+      _Optional_payload(_Optional_payload&&) = default;
+      _Optional_payload& operator=(const _Optional_payload&) = default;
+      _Optional_payload& operator=(_Optional_payload&&) = default;
+
+      // Destructor needs to destroy the contained value:
+      ~_Optional_payload() { this->_M_reset(); }
+    };
+
+
+inherits all the guts but overrides selectively what is wants!
+---------------------------------
+unions can also be templated
+   template<typename _Up, bool = is_trivially_destructible_v<_Up>>
+    union _Storage
+    {
+----------
 friend declaration for template paramater
 template <typename D> class B {    friend D; }
 ---------------

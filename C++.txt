@@ -1,5 +1,68 @@
 ﻿
-A variable declared inline has the same semantics as a function declared inline: it can be defined, identically, in multiple translation units, must be defined in every translation unit in which it is used, and the behavior of the program is as if there was exactly one variable.
+the difference between these two kinds of initialization:
+
+T v1 = u; // copy-initialization
+T v2 (u); // direct-initialization
+A common-sense answer would be “the latter is more powerful because it additionally considers explicit constructors and conversion operators.” True, it considers more constructors, but to ‘consider’ an additional constructor does not necessarily mean ‘successfully use it construction’.
+
+--------------------
+std::decay
+-------------
+Basically, it's this, in pseudo-code:
+Let U = std::remove_reference<T>::type
+
+Choose one of the following:
+If U is an array, then std::decay<T> = std::remove_extent<U>::type*
+If U is a function, then std::decay<T> = std::add_pointer<U>::type
+Otherwise, std::decay<T> = std::remove_cv<U>::type
+-------------------------------------
+direct-list-initialization
+T object { arg1, arg2, ... };
+
+elements have sequences side-effects - ony by one, not like function call parameters
+------------
+Union
+--------
+(1)if T is not trivial then inside union one must define default constructor and destructor
+union {
+  T() {}
+  ~T() {}
+  T nonTrivial;
+}
+Note that compiler would mandsate const/dtor for union which contains  T, but it just mandates you to put them so that you are aware what are you doing! But note it won't automatically call the corresponding cont/dtro for T itself from ctro/dtor of the union!
+
+Union can be default initialized with the help of initializer_list!
+union Storage
+{
+    Storage() {}
+    Storage(initializer_list<MyType> l){}
+    ~Storage() {}
+    MyType t_;
+};
+
+Storagge s{MyType()};
+
+
+(2) If members of a union are classes with user-defined constructors and destructors, to switch the active member, explicit destructor and placement new are generally needed:
+union S
+{
+    std::string str;
+    std::vector<int> vec;
+    ~S() {} // needs to know which member is active, only possible in union-like class 
+};          // the whole union occupies max(sizeof(string), sizeof(vector<int>))
+ 
+int main()
+{
+    S s = {"Hello, world"};
+    // at this point, reading from s.vec is undefined behavior
+    std::cout << "s.str = " << s.str << '\n';
+    s.str.~basic_string();
+    new (&s.vec) std::vector<int>;
+
+    
+---- 
+
+A variable declared inline has the same semantics as a function declared inline: it can be defined, identically, in multiple translation units, and in fact each trasnlation unit would still only have a unique definiton of it, and the behavior of the program is as if there was exactly one variable.
 --------------
 zero initialization does not mean litterly memset(0)! it could be in fact set to all bits 1!
 
@@ -196,7 +259,8 @@ The copies and moves of polymorphic classes cannot be trivial because then base 
 -----------------
 extern int arr[]; //incomplete!
 in arr[10]; now comlete!
-
+--------------------------------------
+The evaluation of a lambda-expression results in a prvalue  .result object is called the closure object
 ----------------------
 Pre-C++17, prvalues are temporary objects. In C++17, a prvalue expression is merely something which can materialize a temporary, but it isn't a temporary yet
 
@@ -207,6 +271,8 @@ With the keyword decltype (introduced in C++11), it is possible to check the val
 • type& if x is an lvalue
 • type&& if x is an xvalue
 
+Every expression belongs to exactly one of the fundamental classifications in this taxonomy: lvalue, xvalue, or prvalue. This property of an expression is called its value category
+
 if constexpr (std::is_lvalue_reference<decltype((e))>::value)
  {  std::cout << "expression is lvalue\n";}
 else if constexpr (std::is_rvalue_reference<decltype((e))>::value) 
@@ -214,18 +280,7 @@ else if constexpr (std::is_rvalue_reference<decltype((e))>::value)
 else
  {  std::cout << "expression is prvalue\n";}
 ---------------------
-This led me to the conclusion that there are exactly three kinds of values (using the regex notational trick
-of using a capital letter to indicate a negative – I was in a hurry):
-• iM: has identity and cannot be moved from
-• im: has identity and can be moved from (e.g. the result of casting an lvalue to a rvalue
-reference)
-• Im: does not have identity and can be moved from
-The fourth possibility (“IM”: doesn’t have identity and cannot be moved) is not useful in C++ (or, I think)
-in any other language.
-In addition to these three fundamental classifications of values, we have two obvious generalizations that
-correspond to the two independent properties:
-• i: has identity
-• m: can be moved from
+Whenever an rvalue expression appears as an operand of an operator that expects a glvalue for that operand, the temporary materialization conversion ([conv.rval]) is applied to convert the expression to an xvalue.
 ----------------------------------
 The difference between xvalue and prvalue is that xvalue has identity and prvalue does not
 
@@ -358,17 +413,48 @@ In-place construction using placement-new isn't available.
 ---------------
 class MyHeap {   
    public:    ...   
-    void* allocate(size_t size);    void deallocate(void* p);    ...};
+    void* allocate(size_t size);    void deallocate(void* p);    
+   ...};
+
     void* operator new(size_t size, MyHeap* heap) {    return heap->allocate(size);}
 
 // Example of allocating int on the custom storage using placement new!
     MyHeap heap;
     std::unique_ptr<int> p(new(&heap) int(0));
 
+if the allocation function returns a null pointer, which is possible if the non-throwing overload was selected, e.g. with new(std::nothrow) T;
+
 
     placement operator new can also be overriden
+    struct X {
+    X() { throw std::runtime_error(""); }
+    // custom placement new
+    static void* operator new(std::size_t sz, bool b) {
+        std::cout << "custom placement new called, b = " << b << '\n';
+        return ::operator new(sz);
+    }
+    // custom placement delete
+    static void operator delete(void* ptr, bool b)
+    {
+        std::cout << "custom placement delete called, b = " << b << '\n';
+        ::operator delete(ptr);
+    }
+};
+int main() {
+   try {
+     X* p1 = new (true) X;
+   } catch(const std::exception&) { }
+}
+
+
+Array allocation may supply unspecified overhead, which may vary from one call to new to the next. The pointer returned by the new-expression will be offset by that value from the pointer returned by the allocation function. Many implementations use the array overhead to store the number of objects in the array which is used by the delete[] expression to call the correct number of destructors. In addition, if the new-expression is used to allocate an array of char, unsigned char, or std::byte, it may request additional memory from the allocation function if necessary to guarantee correct alignment of objects of all types no larger than the requested array size, if one is later placed into the allocated array.
+
 -----------------
 non-trivially destructuble classes cannot be constexpr at compile time
+
+literal type: a type whose objects can be used as compile-time constants. One constraint that the Standard imposes on literal types is that they should provide a trivial destructor: a destructor that does nothing. As we can see above, optional’s destructor has to do something, so we cannot achieve our goal in general. However, we can achieve our goal for certain Ts that have a trivial destructor themselves. Imagine that T is int: we do not have to call int’s destructor — because it is trivial. Here we also arrive at the practical definition of a trivial destructor: it is a destructor that we can skip (simply not call it) without any harm.
+
+Another requirement for literal types is that they should have at least one constexpr constructor. This constructor(s) will be used to create compile-time constants. However, in order to avoid “compile-time undefined behavior”, the Standard imposes a number of constraints on constexpr constructors and their types to make sure that no data member or base-class sub-object is left uninitialized
 ----------
 When using rvalue references as return types, returning temporaries or function local variables still creates a dangling reference, just like with lvalue references. So it is only really applicable if you’re returning something like member variables or reference parameters and you’re moving them out of place. So should you use rvalue return types? I’d say you should only do it if you have an rvalue qualified member function but think about the consequences
 type { string s; auto&& value() { return s; }
@@ -387,6 +473,13 @@ Dynamic initialization of a non-local variable with static storage duration is u
 --------------------
 If the initialization of a non-local variable with static or thread storage duration exits via an exception, std::terminate is called
 -----------
+An aggregate is an array or a class (Clause 9) with
+no user-provided constructors (12.1) (including those inherited (7.3.3) from a base class),
+no private or protected non-static data members (Clause 11),
+no base classes (Clause 10) and
+no virtual functions (10.3), and
+no virtual, private or protected base classes (10.1).
+
 In all cases, if the empty pair of braces {} is used and T is an aggregate type, aggregate-initialization is performed instead of value-initialization
 
 (1)T t, new T - default intialization(calls default constructor / set intermediate values - like not good ones)! static and per thread variables will get zero-initialized!
@@ -736,7 +829,7 @@ int&& d = 0;
 f(a) -> T deduced to int& and param type to int&
 f(b) -> T deduced to int& and paramt type to int&
 f(c) -> T deduced to const int& and param type to const int&
-f(12) -> T deduced to int&& and param type to int&&
+f(12) -> T deduced to int and param type to int&&
 f(d) -> T deduced to int&& and param type to int&&
 
 ------------
@@ -1037,6 +1130,7 @@ struct aligned_union
 			"can't delete an incomplete type");
 		delete _Ptr;
 		}
+If the object being deleted has incomplete class type at the point of deletion, and the complete class has a non-trivial destructor or a deallocation function, the behavior is undefined
 
 (31) Because the default constructor is constexpr, static shared_ptrs are initialized as part of static non-local initialization, before any dynamic non-local initialization begins. This makes it safe to use a shared_ptr in a constructor of any static objec
 
@@ -1274,3 +1368,19 @@ A a1("asdfasdf");
 (65) template< class T, class Compare >
 constexpr T max( std::initializer_list<T> ilist, Compare comp );
 (since C++1
+
+(66) After that, whether or not an exception was thrown by any destructor, the delete expression invokes the deallocation function: either operator delete (for the first version of the expression) or operator delete[] (for the second version of the expression), unless the matching new-expression was combined with another new-expression (since C++14)
+
+In the first alternative (delete object), if the static type of the object to be deleted is different from its dynamic type, the static type shall be a base class of the dynamic type of the object to be deleted and the static type shall have a virtual destructor or the behavior is undefined. !!!!!!!!!!!!!!!!In the second alternative (delete array) if the dynamic type of the object to be deleted differs from its static type, the behavior is undefined!!!!!!!!!!!!!!!!!!! 
+
+REASON: If you have an array of elements of the derived class and assign that to a pointer to an array of the base class, you no longer have any info to tell you what the element size is
+
+(67) Pointer arithmetic does not account for polymorphic object sizes, and attempting to perform pointer arithmetic on a polymorphic object value results in undefined behavior.
+
+The C++ Standard, [expr.sub], paragraph 1 [ISO/IEC 14882-2014], defines array subscripting as being identical to pointer arithmetic. Specifically, it states the following:
+
+The expression E1[E2] is identical (by definition) to *((E1)+(E2)).
+
+Do not use pointer arithmetic, including array subscripting, on polymorphic objects.
+
+(68) vector<T[]> v1(34); Cannot use array in C++ contaienrs because they must be coppieable / moveable and assinable!

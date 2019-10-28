@@ -1,8 +1,8 @@
 A default constructor is trivial if it is not user-provided and if:
-(6.1) — its class has no virtual functions (13.3) and no virtual base classes (13.1), and
-(6.2) — no non-static data member of its class has a default member initializer (12.2), and
-(6.3) — all the direct base classes of its class have trivial default constructors, and
-(6.4) — for all the non-static data members of its class that are of class type (or array thereof), each such class
+(6.1) ï¿½ its class has no virtual functions (13.3) and no virtual base classes (13.1), and
+(6.2) ï¿½ no non-static data member of its class has a default member initializer (12.2), and
+(6.3) ï¿½ all the direct base classes of its class have trivial default constructors, and
+(6.4) ï¿½ for all the non-static data members of its class that are of class type (or array thereof), each such class
 has a trivial default constructor.
 
 
@@ -10,14 +10,14 @@ has a trivial default constructor.
 -----------------------
 An object is created by a definition, by a new-expression, when implicitly changing the active member of a union, or when a temporary object is created ([conv.rval], [class.temporary]
 
-The lifetime of an object or reference is a runtime property of the object or reference. The liftime of an object begins when the space has been allocated for the object and *IF PRESENT*, objects has completed running its NON trivial default constructor/copy/move
+The lifetime of an object or reference is a runtime property of the object or reference. The liftime of an object begins when the space has been allocated for the object and *IF PRESENT*, objects has completed running its NON trivial default constructor/copy/move. If object is trivial then it lifetime begins when storage for the object is allocated.
 
 The lifetime of an object o of type T ends when:
 if T is a class type with a non-trivial destructor ([class.dtor]), the destructor call starts, OR the storage which the object occupies is released, or is reused by an object that is not nested within o
 
-If a complete object is created ([expr.new]) in storage associated with another object e of type “array of N unsigned char” or of type “array of N std?::?byte” ([cstddef.syn]), that array provides storage for the created object if:
+If a complete object is created ([expr.new]) in storage associated with another object e of type ï¿½array of N unsigned charï¿½ or of type ï¿½array of N std?::?byteï¿½ ([cstddef.syn]), that array provides storage for the created object if:
 
-If the subobject contains a reference member or a const subobject, the name of the original subobject cannot be used to access the new object ([basic.life]). ?—?end note?] [?Example:
+If the subobject contains a reference member or a const subobject, the name of the original subobject cannot be used to access the new object ([basic.life]). ?ï¿½?end note?] [?Example:
 
 struct X { const int n; };
 union U { X x; float f; };
@@ -47,7 +47,7 @@ struct B { vritual f();}; //non trivial defualt constructor because of virtual t
 struct D1 : B { void f(); };
 struct D2 : B { void f(); };
 void B::mutate() {
-  new (this) D2;    // reuses storage — ends the lifetime of *this
+  new (this) D2;    // reuses storage ï¿½ ends the lifetime of *this
   f();  //not ok, object stroage was reused by another *type*(D2)!
     However this is well defined! (new (this) D2)->f() 
 }
@@ -55,7 +55,7 @@ B* b = new D1;
 
 struct C {f(); mutate()};
 void C::mutate() {
-  new (this) C;    // reuses storage — ends the lifetime of *this
+  new (this) C;    // reuses storage ï¿½ ends the lifetime of *this
   f();  // ok, object stroage is of the same class!
 }
 
@@ -108,8 +108,8 @@ struct D : A, B {
 };
 
 B::B(V* v, A* a) {
-  typeid(*this);        // type_­info for B
-  typeid(*v);           // well-defined: *v has type V, a base of B yields type_­info for B
+  typeid(*this);        // type_ï¿½info for B
+  typeid(*v);           // well-defined: *v has type V, a base of B yields type_ï¿½info for B
   typeid(*a);           //*a IS ***STILL UNDER CONSTRUCTION BECAUSE IT WAS PASSAED FROM D!*** undefined behavior: type A not a base of B
   dynamic_cast<B*>(v);  // well-defined: v of type V*, V base of B results in B*
   dynamic_cast<B*>(a);  // undefined behavior, a has type A*, A not a base of B

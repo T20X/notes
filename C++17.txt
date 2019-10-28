@@ -73,7 +73,7 @@ std::visit(overload(
 
 Pack expansions in using declarations - short and compact syntax with variadic templates.
 Custom template argument deduction rules - that allows converting a list of lambdas into a list of base classes for the overloaded class.
-Extension to aggregate Initialization - the overload pattern uses a constructor to initialise, but we don’t have to specify it in the class. Before C++17 it wasn’t possible
+Extension to aggregate Initialization - the overload pattern uses a constructor to initialise, but we donï¿½t have to specify it in the class. Before C++17 it wasnï¿½t possible
 
 
 10. Aggregate initialization for base classes is now possible!
@@ -92,3 +92,12 @@ void transmogrify(std::vector<C>& out)
 { fill out...}
 
 in c++17 out can be returned by value as copy ellison is now guaranteed
+
+14. template <auto v> struct S;                 // type of v is deduced
+    template <auto x> constexpr auto constant = x;
+    // List of heterogeneous constant values
+  // same as template <auto v1, auto v2, auto v3, ...>
+  template <auto... vs> struct value_list { };
+
+  // List of homogeneous constant values
+template <auto v1, decltype(v1)... vs> struct typed_value_list { };

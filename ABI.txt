@@ -68,3 +68,44 @@ add new, data members to an existing class.
 change the order of non-static data members in a class.
 change the type of the member, except for signedness
 remove existing non-static data members from an existing clas
+-------------
+Array Operator new Cookies
+When operator new is used to create a new array, a cookie is usually stored to remember the allocated length (number of array elements) so that it can be deallocated correctly.
+
+Specifically:
+
+No cookie is required if the array element type T has a trivial destructor (12.4 [class.dtor]) and the usual (array) deallocation function (3.7.3.2 [basic.stc.dynamic.deallocation]) function does not take two arguments.
+(Note: if the usual array deallocation function takes two arguments, then it is a member function whose second argument is of type size_t. The standard guarantees (12.5 [class.free]) that this function will be passed the number of bytes allocated with the previous array new expression.)
+
+No cookie is required if the new operator being used is ::operator new[](size_t, void*).
+Otherwise, this ABI requires a cookie, setup as follows:
+The cookie will have size sizeof(size_t).
+Let align be the maximum alignment of size_t and an element of the array to be allocated.
+Let padding be the maximum of sizeof(size_t) and align bytes.
+The space allocated for the array will be the space required by the array itself plus padding bytes.
+The alignment of the space allocated for the array will be align bytes.
+The array data will begin at an offset of align bytes from the space allocated for the array.
+The cookie will be stored in the sizeof(size_t) bytes immediately preceding the array data.
+These rules have the following consequences:
+
+The array elements and the cookie are all aligned naturally.
+Padding will be required if sizeof(size_t) is smaller than the array element alignment, and if present will precede the cookie.
+Given the above, the following is pseudocode for processing new(ARGS) T[n]:
+
+  if T has a trivial destructor (C++ standard, 12.4/3)
+    padding = 0
+  else if we're using ::operator new[](size_t, void*)
+    padding = 0
+  else
+    padding = max(sizeof(size_t), alignof(T))
+
+  p = operator new[](n * sizeof(T) + padding, ARGS)
+  p1 = (T*) ( (char *)p + padding )
+
+  if padding > 0
+    *( (size_t *)p1 - 1) = n
+
+  for i = [0, n)
+    create a T, using the default constructor, at p1[i]
+
+  return p1
