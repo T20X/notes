@@ -1,4 +1,4 @@
-1.
+﻿1.
 ---------------
 STRUCTUREDED BINDINGS
 ----------------
@@ -60,9 +60,9 @@ All side effects of argument evaluations are sequenced before the function is en
 f<10>();               // deduces int
 
 9. Pack expansions in using declarations - short and compact syntax with variadic templates
+
 template<class... Ts> struct overload : Ts... { using Ts::operator()...; };
 template<class... Ts> overload(Ts...) -> overload<Ts...>;
-
 std::variant<int, float> intFloat { 0.0f };
 std::visit(overload(
     [](const int& i) { ... },

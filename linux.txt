@@ -4,6 +4,8 @@ nm --demangle *.o - provides are list of needed symbols!
  T - regular defined symbol!
 -----------------------------
 
+readelf a.out -sSr
+
 ss -4 state listening -- all the listeningfor ipv4
 netstat -4 -a -- all the connections for ipv4
 arp -av

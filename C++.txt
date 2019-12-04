@@ -1,4 +1,71 @@
-﻿
+﻿   SmartPtr& operator=(SmartPtr&& other) {
+        if (this == &other) return *this;
+        DeletionPolicy::operator=(std::move(other));
+        MovePolicy::operator=(std::move(other));
+        p_ = other.p_;
+        other.release();
+        return *this;
+    }
+    ------------------------------
+be carefull with modulo like - (%,mod) operations.
+
+-3 % 5 = -3
+-3 % 3 = 0
+
+don't mix unsigned with singed with singed! int a;unsigned int b;
+a % b - > undefined behaviour, correct thing to do is int a % (int)b
+-------------------------
+The lifetime extension works only once—the reference bound to a temporary object extends its lifetime. Another reference that's bound to the first one does nothing else and may be left dangling if the object is destroyed. Therefore, if the policy object needs to be stored as a data member of the smart pointer, it has to be copied
+
+The behavior is undefined if more than one replacement is provided in the program for any of the replaceable allocation function, or if a replacement is defined with the inline specifier. The program is ill-formed if a replacement is defined in namespace other than global namespace, or if it is defined as a static non-member function at global scope.
+
+
+class SmartPtr
+{
+  const Big& b_;
+  SmartPtr(const Big& b = Big()):b_(b) // b_ is a dangling reference
+  
+---------------
+Non-template functioon overloading rules summary
+----------------
+when considering non-member, non-template functions, the compiler will look for all functions with the given name (operator+, in our case), then check if they accept the right number of parameters (possibly considering default arguments), then check if, for each such function, for each of its parameters, a conversion from the supplied argument to the specified parameter type exists (the rules on which conversions, exactly, are considered, and again fairly complex, but let's say that both user-given implicit conversions and built-in conversions such as non-const to const are considered). If this process yields only one function, that function is called (otherwise the compiler either selects the best overload or complains that several candidates are equally possible and the call is ambiguous)
+
+----------
+Template function overloading rules
+--------
+For template functions, this process would again yield an almost unlimited number of candidates—every template function with the name operator+() would have to be instantiated on every known type just to check if enough type conversions are available to make it work. Instead, a much simpler process is attempted—in addition to all non-template functions described in the previous paragraph (in our case, none), the compiler also considers instantiations of template functions with the given name (again, operator+) and the types of all parameters equal to the types of the function arguments at the call site (so-called trivial conversions, like adding a const, are allowed)
+----------------
+template <typename T> class C
+ { 
+    friend T;
+    template <typename U>  friend C<U> operator+(const C<U>& lhs, const C<U>& rhs)
+     {    return C<U>(lhs.x_ + rhs.x_);   }
+ };
+
+ template<typename, typename> friend class ConversionPolicy;
+------------------------------
+        void (isInteger<int>::*ptr)() = &isInteger<int>::require; 
+        isInteger<int> v2;
+        (v2.*ptr)();
+------
+C++11 ONLY guarantees that llist(c++17), vector(c++17), forward_list, unique_ptr<incomplete_type> and shared_ptr<incomplete_type> will work, although there are strict limits. For example wherever ~unique_ptr() is executed, the type has to be complete there. But you can usually outline such code to a source and #include the complete type at that point
+
+----------------------------------------
+Call lambda as if member function pointer
+----------------------------------------
+
+int first = 5;
+auto lambda = [=](int x, int z) {
+    return x + z + first;
+};
+int(decltype(lambda)::*ptr)(int, int)const = &decltype(lambda)::operator();
+std::cout << "test = " << (lambda.*ptr)(2, 3) << std::endl;
+--------------------
+int numerator, denominator;
+double r = (double)numerator / denominator; <---- needs converstion to double otherwise int will be produced
+----------------------------
+It should be clear after reading the last section that this is an example of method chaining, and a more general one than what we saw earlier—each method returns an object of the same type, but not the same object. The difference between chaining and cascading is very clear in this example—a cascade of methods would filter and sort the original collection (assuming we decided to support such operations).
+------------------------------------
 the difference between these two kinds of initialization:
 
 T v1 = u; // copy-initialization
@@ -407,13 +474,16 @@ refrences are not really values, they just an alias to another object!
 --------------------------------
  it currently unusable in constexpr evaluations:
 
-Destructors cannot be constexpr.
-Dynamic memory allocation/deallocation isn't available.
-In-place construction using placement-new isn't available.
+Destructors cannot be constexpr - available in C++20
+Dynamic memory allocation/deallocation isn't available - available in C++20
+In-place construction using placement-new isn't available - available in C++20
 ---------------
+To catch all allocations / deallocations, just override malloc and free in your own libarary. And by loading these with LD_PRELOAD your malloc and free will be executed rather than the standard one. It turns out that malloc and free are specifically designed in glibc to allow this and the stock calloc manages to call your imported malloc. Don't try this with any other functions. It won't work so good
+
 class MyHeap {   
    public:    ...   
-    void* allocate(size_t size);    void deallocate(void* p);    
+    void* allocate(size_t size);   
+     void deallocate(void* p);    
    ...};
 
     void* operator new(size_t size, MyHeap* heap) {    return heap->allocate(size);}

@@ -178,3 +178,6 @@ Move assignment operator. Replaces the contents with those of other using move s
 
 (34)  with rbegin() we must add one before converting to a forward iterator to get an iterator that's valid 
     -- but with rend() we must not add one before converting to get a valid iterator.
+
+(35) 
+A value-initialized ForwardIterator behaves like the past-the-end iterator of some unspecified empty container: it compares equal to all value-initialized ForwardIterators of the same type

@@ -1,4 +1,108 @@
-﻿  ---------
+﻿     template <typename T,
+          typename DebugPolicy = NoDebug
+         >
+class SmartPtrAdapter : 
+public SmartPtr<T, DeleteByOperator<T>, MoveNoCopy,
+                   WithRelease, DebugPolicy>
+{
+    using SmartPtr<T, DeleteByOperator<T>, MoveNoCopy,
+                      WithRelease, DebugPolicy>::SmartPtr;
+}
+
+Better in C++11
+
+template <typename T,
+          typename DebugPolicy = NoDebug
+         >
+using SmartPtrAdapter = 
+    SmartPtr<T, DeleteByOperator<T>, MoveNoCopy, WithRelease, DebugPolicy>;
+    
+     --------------------
+     template <typename T> class C {
+    int x_;
+    public:
+    C(int x) : x_(x) {}
+    friend C operator+(const C& lhs, const C& rhs) { defines non-template functions at the CLASS scope!
+        return C(lhs.x_ + rhs.x_); 
+    }
+
+    static non-member functions can be generated in a similar manner, but the binary operators cannot be static functions—the standard explicitly forbids it
+
+    ----------------
+      template<typename _Alloc2, typename _Tp>
+    static auto
+    _S_destroy(_Alloc2& __a, _Tp* __p, int)
+    noexcept(noexcept(__a.destroy(__p)))      <-- getting called if _a got destroy() function
+    -> decltype(__a.destroy(__p))
+    { __a.destroy(__p); }
+
+      template<typename _Alloc2, typename _Tp>
+    static void
+    _S_destroy(_Alloc2&, _Tp* __p, ...)
+    noexcept(noexcept(__p->~_Tp()))
+    { __p->~_Tp(); }
+
+        template <class C>
+    constexpr auto func(C v, int) -> decltype(v.require(), void()) {
+        return {};       
+    }
+
+    template <class C>
+    constexpr void func(C v, ...) { 
+        //static_assert(false,"Type does not satisfy concept!");      
+        &C::_____invalid_use;
+    }
+
+    template <class T>
+    constexpr auto _func(T t) {
+        return func(t, 0);
+    }return func(t, 0);
+    }
+
+        _func(isInteger<int>());
+        _func(isInteger<double>()); //!fails!
+------------------------
+        //NOTE: Op<T> can be written as
+      //template <typename U>
+          using Op = typename U::function;
+          struct S
+          { void function() {} }
+          __detected_or_t<Op, _Alloc>
+          }
+
+          
+__detected_or_t - returns true or false if Op<T> is validly defined
+  ---------------------------
+  template <class T>
+struct B
+{
+    static T v;
+}; 
+
+template <typename T>
+T B<T>::v = 0;  --each template instantiation will have its own static variable
+-----
+  //partial binder!
+  template <template <class...> class F, class... TS>
+  struct part_call
+  {
+    template <class... US>
+    using type = typename F<TS...,US...>::type;
+  }
+
+  template <template <class...> class F, class... TP>
+  constexpr bool find_if(type_list<TS...> tp>
+  {
+    bool bp[] = {F<TS>::value...} # calls part_call<....>::type<TS>
+    ....    
+  }
+
+  find_if<part_call<is_base_of, std::exception>::type>(tp);
+
+  ---------------
+  structs - functions in metaprogramming
+  types - values in metaprogramming
+  ---------
   template <auto v> struct S;                 // type of v is deduced
     template <auto x> constexpr auto constant = x;
     // List of heterogeneous constant values
@@ -791,3 +895,17 @@ legacy like SFINAE
 
 37. how to call templated constructor from base class!
 using __uniq_ptr_impl<_Tp, _Dp>::__uniq_ptr_impl;
+
+38. template adaptor
+template <typename T>
+struct DeleteMyHeap : public DeleteHeap<T, MyHeap> {
+    using DeleteHeap<T, MyHeap>::DeleteHeap;
+};
+
+template <class <typename> class C, class T>
+ostream& operator<<(ostream& o, const C<T>& v)
+{
+}
+
+operator<<(cout, DeleteMyHeap<int>()) // works!
+

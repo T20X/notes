@@ -1,4 +1,24 @@
-﻿0/0 will give a nan for floating points which is not comparable!
+﻿Negative exponents could pose a problem in comparisons.
+
+For example (with two's complement):
+
+ 	Sign	Exponent	Mantissa
+1.0 × 2-1	0	11111111	0000000 00000000 00000000
+1.0 × 2+1	0	00000001	0000000 00000000 00000000
+With this representation, the first exponent shows a "larger" binary number, making direct comparison more difficult.
+
+To avoid this, Biased Notation is used for exponents.
+
+If the real exponent of a number is X then it is represented as (X + bias)
+
+IEEE single-precision uses a bias of 127. Therefore, an exponent of
+
+-1 is represented as -1 + 127 = 126 = 011111102
+ 0 is represented as  0 + 127 = 127 = 011111112
++1 is represented as +1 + 127 = 128 = 100000002
++5 is represented as +5 + 127 = 132 = 100001002
+---------------------------------------------
+0/0 will give a nan for floating points which is not comparable!
 12/0 is kind of ok for floating points as the result would be just infinity
 -------------
 f the number is not normalized, then you can subtract 1 from the exponent while multiplying the mantissa by the base, and get another floating point number with the same value. Normalization consists of doing this repeatedly until the number is normalized. Two distinct normalized floating point numbers cannot be equal in value.

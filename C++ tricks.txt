@@ -30,3 +30,13 @@ public:
 
 (2)  template <typename T> struct array_struct { T data_[N] {}; }; - value initializes array!
    
+
+   (3) speed up io
+    static const auto io_sync_off = []()
+{
+	// turn off sync
+	std::ios::sync_with_stdio(false);
+	// untie in/out streams
+	std::cin.tie(nullptr);
+	return nullptr;
+}();

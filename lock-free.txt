@@ -82,7 +82,7 @@ Say
 (Ln)
 (S)
 (L1)--------------------
-(S)		      | in this range both L1 and `L1 can slide as long as they dont' collied!
+(S)		      | in this range both L1 and `L1 can slide as long as they dont' cross!
 atomic_thread_fence(memory_order_aqcuire)
 (S)		      | 	
 (`L1)--------------------- 
