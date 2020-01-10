@@ -1,9 +1,25 @@
+
+----
+add new repo to ububtu
+----
+sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable"
+
+ sudo systemctl status docker
+
+-------------
 nm --demangle *.o - provides are list of needed symbols!
  U - undefined symbol,  main executable needs it from somewhere else
  W - symbol is defined, but with inline!
  T - regular defined symbol!
 -----------------------------
 
+---------
+vmstat 1
+
+ r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
+ 0  0      0 4392000 248460 1923536    0    0     0     0  179  279  0  0 100  0  0
+ 0  0      0 4392000 248460 1923536    0    0     0     0  178  272  0  0 100  0  0
+-----------
 readelf a.out -sSr
 
 ss -4 state listening -- all the listeningfor ipv4
@@ -110,3 +126,22 @@ HUGETLB_PATH=/mnt/huge
 
 
 Currently, the stack cannot be backed by huge pages
+
+
+---------------
+Namespace isolation
+Main article: Linux namespaces
+While not technically part of the cgroups work, a related feature of the Linux kernel is namespace isolation, where groups of processes are separated such that they cannot "see" resources in other groups. For example, a PID namespace provides a separate enumeration of process identifiers within each namespace. Also available are mount, user, UTS, network and SysV IPC namespaces.
+
+The PID namespace provides isolation for the allocation of process identifiers (PIDs), lists of processes and their details. While the new namespace is isolated from other siblings, processes in its "parent" namespace still see all processes in child namespaces—albeit with different PID numbers.[22]
+Network namespace isolates the network interface controllers (physical or virtual), iptables firewall rules, routing tables etc. Network namespaces can be connected with each other using the "veth" virtual Ethernet device.[23]
+"UTS" namespace allows changing the hostname.
+Mount namespace allows creating a different file system layout, or making certain mount points read-only.[24]
+IPC namespace isolates the System V inter-process communication between namespaces.
+User namespace isolates the user IDs between namespaces.[25]
+Cgroup namespace[26]
+Namespaces are created with the "unshare" command or syscall, or as new flags in a "clone" syscall.[27]
+
+The "ns" subsystem was added early in cgroups development to integrate namespaces and control groups. If the "ns" cgroup was mounted, each namespace would also create a new group in the cgroup hierarchy. This was an experiment that was later judged to be a poor fit for the cgroups API, and removed from the kernel.
+
+Linux namespaces were inspired by the more general namespace functionality used heavily throughout Plan 9 from Bell Labs.[28]

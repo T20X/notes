@@ -14,6 +14,8 @@ Radix tree
   PATRICIA 
   HAT-trie
 --------
+In graph theory, a bridge, isthmus, cut-edge, or cut arc is an edge of a graph whose deletion increases its number of connected components.[1] Equivalently, an edge is a bridge if and only if it is not contained in any cycle. A graph is said to be bridgeless or isthmus-free if it contains no bridges.
+--------------------
 BTREE
          Split!
  p1 p2      p1 (`p2) \ p2

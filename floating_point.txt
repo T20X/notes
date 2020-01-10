@@ -1,4 +1,43 @@
-﻿Negative exponents could pose a problem in comparisons.
+﻿rint on the other hand uses custom rounding mode set by fesetround! Note that by default it is FE_TONEAREST (with half EVEN).
+
+For setting rounding mode through assembly, you may need to resort to assembly. In this case, you may want to set the rounding for both the x87 unit (via the fldcw instruction) and SSE (via the ldmxcsr instruction)
+
+
+float       round ( float arg );
+float       roundf( float arg );
+(1)	(since C++11)
+double      round ( double arg );
+Computes the nearest integer value to arg (in floating-point format), rounding halfway cases away from zero, regardless of the current rounding mode.
+
+If no errors occur, the nearest integer value to arg, rounding halfway cases away from zero, is returned.
+For the std::round function:
+The current rounding mode has no effect.
+If arg is ±∞, it is returned, unmodified
+If arg is ±0, it is returned, unmodified
+If arg is NaN, NaN is returned
+For std::lround and std::llround functions:
+FE_INEXACT is never raised
+The current rounding mode has no effect.
+If arg is ±∞, FE_INVALID is raised and an implementation-defined value is returned
+If the result of the rounding is outside the range of the return type, FE_INVALID is raised and an implementation-defined value is returned
+If arg is NaN, FE_INVALID is raised and an implementation-defined value is returned
+
+HALF EVEN rounding - it rounds towards nearest value and if both are equidistant then it rounds towards an even number. Not present in C++ standart. 
+--->GNU<----: In this mode results are rounded to the nearest representable value. If the result is midway between two representable values, the even representable is chosen. Even here means the lowest-order bit is zero
+
+-------------------------
+The feenableexcept() function unmasks the floating-point exceptions represented by excepts. The future floating-point operations that produce excepts will trap, and a SIGFPE will be delivered to the process.
+
+->>>>>> excetions can  be thrown as signals! NOT TRHOWING BY DEFAULT <<<<<---
+or with  as normal c++ exceptions
+GNU libc function feenableexcept() enables trapping of the floating-point exceptions, which generates the signal SIGFPE. If the compiler option -fnon-call-exceptions was used, the handler for that signal may throw a user-defined C++ exception.
+-------------------------------------
+
+The fedisableexcept() function masks the floating-point exceptions represented by excepts. All exceptions are masked by default.
+
+The fegetexcept() function returns the current exception mask.
+---------
+Negative exponents could pose a problem in comparisons.
 
 For example (with two's complement):
 
@@ -20,6 +59,31 @@ IEEE single-precision uses a bias of 127. Therefore, an exponent of
 ---------------------------------------------
 0/0 will give a nan for floating points which is not comparable!
 12/0 is kind of ok for floating points as the result would be just infinity
+----------bits
+-fno-signaling-nans
+-fno-trapping-math
+
+IEEE standard recommends that implementations allow trap handlers to handle exceptions like divide by zero and overflow. This flags assumes that no use-visible trap will happen.
+
+-funsafe-math-optimizations - These optimizations break the laws of floating-point arithmetic and may replace them with the laws of ordinary infinite-precision arithmetic:
+
+Due to roundoff errors the associative law of algebra do not necessary hold for floating point numbers and thus expressions like (x + y) + z are not necessary equal to x + (y + z).
+
+-ffinite-math-only - Special quantities such as inf or nan are assumed never to appear, this saves the time spent looking for them and handling them appropriately. For example, should x−x always be equal to 0.0?
+
+-fno-errno-math
+
+disables setting of the errno variable as required by C89/C99 on calling math library routines. For Fortran this is the default.
+
+-fcx-limited-range
+
+causes the range reduction step to be omitted when performing complex division. This uses a/b=((ar∗br+ai∗bi)/t)+i((ai∗br−ar∗bi)/t) with t=br∗br+bi∗bi and might not work well on arbitrary ranges of the inputs.
+
+-fno-rounding-math
+
+-fno-signed-zeros
+Due to roundoff errors the associative law of algebra do not necessary hold for floating point numbers and thus expressions like (x + y) + z are not necessary equal to x + (y + z).
+-------------
 -------------
 f the number is not normalized, then you can subtract 1 from the exponent while multiplying the mantissa by the base, and get another floating point number with the same value. Normalization consists of doing this repeatedly until the number is normalized. Two distinct normalized floating point numbers cannot be equal in value.
 -------------
@@ -102,3 +166,32 @@ important it is to consider this kind of problem.
 � A method of calculation can be stable (meaning that it tends to reduce rounding errors) or
 unstable (meaning that rounding errors are magnified). Very often, there are both stable and
 unstable solutions for a problem.
+
+-------------------
+In addition GCC offers the -ffast-math flag which is a shortcut for several options, presenting the least conforming but fastest math mode. It enables -fno-trapping-math, -funsafe-math-optimizations, -ffinite-math-only, -fno-errno-math, -fno-signaling-nans, -fno-rounding-math, -fcx-limited-range and -fno-signed-zeros. Each of these flags violates IEEE in a different way. -ffast-math also may disable some features of the hardware IEEE implementation such as the support for denormals or flush-to-zero behavior. An example for such a case is x86_64 with it's use of SSE and SSE2 units for floating point math. The flags under -ffast-math can be divided into four categories according to the different aspect of IEEE they violate; as described in the following table:
+
+Category
+
+Flags
+
+Comments
+
+Trap handlers and exceptions
+
+-fno-trapping-math, -fno-signaling-nans
+
+IEEE standard recommends that implementations allow trap handlers to handle exceptions like divide by zero and overflow. This flags assumes that no use-visible trap will happen.
+
+Rounding
+
+-fno-rounding-math
+
+IEEE has four rounding modes. This flag assumes that the rounding mode is round to nearest.
+
+Languages and compilers
+
+-funsafe-math-optimizations
+
+Due to roundoff errors the associative law of algebra do not necessary hold for floating point numbers and thus expressions like (x + y) + z are not necessary equal to x + (y + z).
+
+Special quantities (Nans, signed zeros and infinity)

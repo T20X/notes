@@ -1,4 +1,18 @@
-﻿     template <typename T,
+﻿template <class T>
+struct Base {
+    struct Node  {
+        int i = 0;
+    };
+};
+
+template <class T>
+struct D : public Base<T> {
+    using typename Base<T>::Node;
+    array<Node,10> n;
+};
+
+===================================     
+     template <typename T,
           typename DebugPolicy = NoDebug
          >
 class SmartPtrAdapter : 

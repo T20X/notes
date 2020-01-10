@@ -1,4 +1,11 @@
-﻿   SmartPtr& operator=(SmartPtr&& other) {
+﻿    An operator ∇ is left-associative if a ∇ b ∇ c = (a ∇ b) ∇ c, and right-associative if a ∇ b ∇ c = a ∇ (b ∇ c). Mathematically, addition and multiplication are both left- and right-associative—it doesn’t matter whether you start multiplying arguments from the left or from the right. But in C++, addition and multiplication are specified as left-associative so that the language can guarantee the order of evaluation for the expression.
+
+This still doesn’t mean C++ guarantees the order of evaluation of the arguments in most cases; it just guarantees the order in which the operator will be applied to them. For example, in the expression a * b * c (where a, b, and c are nested expressions), you don’t know which one will be evaluated first, but you know exactly the order in which the multiplication will be performed: the product of a and b will be multiplied by c.a 
+----------------------
+    std::fpclassify
+    Categorizes floating point value arg into the following categories: zero, subnormal, normal, infinite, NAN, or implementation-defined category.
+    ------------------
+   SmartPtr& operator=(SmartPtr&& other) {
         if (this == &other) return *this;
         DeletionPolicy::operator=(std::move(other));
         MovePolicy::operator=(std::move(other));
