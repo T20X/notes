@@ -2,3 +2,14 @@ watch -n 1 grep 'bar' /proc/interrupt
 cat /proc/cmdline
 chrt -p <pid> - get scheduling process policy
 lstopo -c -v - numa diagram with devices
+
+----
+ubuntu console mode
+--------
+
+GRUB_CMDLINE_LINUX_DEFAULT="text"
+GRUB_TERMINAL=console
+sudo update-grub
+sudo systemctl set-default multi-user.target
+
+UNDO -> sudo systemctl set-default graphical.targe
