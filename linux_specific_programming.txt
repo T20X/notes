@@ -1,1 +1,137 @@
-1. /proc/self/fd - can store tmp files binded to the lifetime of an application
+﻿__cxa_atexit() will call the destructor of the static of a dynamic library when this dynamic library is unloaded before the program exi
+----------------
+Among the APIs subsequently listed are write() and writev(2).  And
+       among the effects that should be atomic across threads (and
+       processes) are updates of the file offset.  However, on Linux before
+       version 3.14, this was not the case: if two processes that share an
+       open file description (see open(2)) perform a write() (or writev(2))
+       at the same time, then the I/O operations were not atomic with
+       respect updating the file offset, with the result that the blocks of
+       data output by the two processes might (incorrectly) overlap.  This
+       problem was fixed in Linux 3.14.
+
+       POSIX requires that a read(2) that can be proved to occur after a
+       write() has returned will return the new data.  Note that not all
+       filesystems are POSIX conforming
+
+       On Linux, write() (and similar system calls) will transfer at most
+       0x7ffff000 (2,147,479,552) bytes, returning the number of bytes
+       actually transferred.  (This is true on both 32-bit and 64-bit
+       systems.)
+
+       An error return value while performing write() using direct I/O does
+       not mean the entire write has failed. Partial data may be written and
+       the data at the file offset on which the write() was attempted should
+       be considered inconsistent
+
+----------------
+ There are maximum AIO request queue sizes for each specific device (see the /sys/block/[disk]/queue/nr_requests documentation and the un(der) documented /sys/block/[disk]/device/queue_depth) AND a system global maximum number of AIO requests (see the /proc/sys/fs/aio-max-nr documentation) within the kernel. Making I/O back-up and exceed the size of the kernel queues leads to blocking.
+
+----------------
+
+       The three system calls splice(), vmsplice(2), and tee(2), provide
+       user-space programs with full control over an arbitrary kernel
+       buffer, implemented within the kernel using the same type of buffer
+       that is used for a pipe.  In overview, these system calls perform the
+       following tasks:
+
+       splice()    moves data from the buffer to an arbitrary file
+                   descriptor, or vice versa, or from one buffer to another.
+
+       tee(2)      "copies" the data from one buffer to another.
+
+       vmsplice(2) "copies" data from user space into the buffer.
+
+       sendfile (in, out) in must not be a socket! since 2.6.33 out may be not socket!
+       
+
+       Though we talk of copying, actual copies are generally avoided.  The
+       kernel does this by implementing a pipe buffer as a set of reference-
+       counted pointers to pages of kernel memory.  The kernel creates
+       "copies" of pages in a buffer by creating new pointers (for the
+       output buffer) referring to the pages, and increasing the reference
+       counts for the pages: only pointers are copied, not the pages of the
+       buffer
+
+----------------
+https://github.com/littledan/linux-aio
+Linux The Asynchronous Input/Output (AIO) interface allows many I/O requests to be submitted in parallel without the overhead of a thread per request. The purpose of this document is to explain how to use the Linux AIO interface, namely the function family io_setup, io_submit, io_getevents, io_destroy. Currently, the AIO interface is best for O_DIRECT access to a raw block device like a disk, flash drive or storage arr
+
+In case all the above seems like a lot of work, the OS already provides all of the three techniques rolled together into a highly tuned implementation which is better known as memory maps: 4Kb aligned i/o, O_DIRECT, never extending the file, all async i/o. On a 64 bit system, simply fallocate the file to a very large amount and mmap it into memory. Read and write as you see fit. If your i/o patterns confuse the kernel page algorithms which can happen, you may need a touch of madvise() here and there to encourage better behaviour. Less is more with madvise(), trust me
+
+Firstly, O_APPEND or the equivalent FILE_APPEND_DATA on Windows means that increments of the maximum file extent (file "length") are atomic under concurrent writers. This is guaranteed by POSIX, and Linux, FreeBSD, OS X and Windows all implement it correctly. Samba also implements it correctly, NFS before v5 does not as it lacks the wire format capability to append atomically. So if you open your file with append-only, concurrent writes will not tear with respect to one another on any major OS 
+
+However concurrent reads to atomic appends may see torn writes depending on OS, filing system, and what flags you opened the file with - the increment of the maximum file extent is atomic, but the visibility of the writes with respect to reads may or may not be atomic
+
+Linux  4.2 No O_DIRECT - 1 byte is atomic only
+Linux 4.2 with O_DIRECT - 4K potentially any size! Earlier version of Linux only 4K were atomic!
+
+       An error return value while performing write() using direct I/O does
+       not mean the entire write has failed. Partial data may be written and
+       the data at the file offset on which the write() was attempted should
+       be considered inconsistent
+
+What does O_DIRECT really mean?
+It's a hint that you want your I/O to bypass the Linux kernel's cache. Like to send it directly to disk controller!
+O_DIRECT requires that I/O occur in multiples of 512 bytes and from memory aligned on a 512-byte boundary because O_DIRECT performs direct memory access (DMA) straight to the backing store, bypassing any intermediate buffers. Performing unaligned transfers would require "fixing up" the I/O by explicitly aligning the user-space buffer and zeroing out the slack (the space between the end of the buffer and the next 512 byte multiple), obviating the benefits of O_DIRECT.
+
+Here's another way to look at it: The "beauty" of O_DIRECT (such as it is) is that it cuts out the VM from the I/O process. No copying from user to kernel-space, no page cache, no pages period. But this means all the little things that the kernel handles for you�alignment being the biggest�you, the user, now need to handle. The underlying backing store expects everything in sectors, so you need to talk in sectors, too.
+
+That is why the magic number isn't always 512 bytes. It is the sector size of the underlying block device. This number is almost always 512 bytes for a standard hard drive, but it can vary. For example, ISO 9660, the standard format of CD-ROMs, sports 2048 byte sectors. You can use the BLKSSZGET ioctl to obtain a backing store's sector size. Portable code should use the value returned from this ioctl and not hard-code 512 bytes
+
+*********Low latency disk I/O strategies**************
+Firstly, Linux KAIO (io_sLinux KAIOubmit) is almost always blocking unless O_DIRECT is on and no extent allocation is required, and if O_DIRECT is on you need to be reading and writing 4Kb multiples on 4Kb aligned boundaries, else you force the device to do a read-modify-write. You therefore will gain nothing using Linux KAIO unless you rearchitect your application to be O_DIRECT and 4Kb aligned i/o friendly.
+
+Secondly, never ever extend an output file during a write, you force an extent allocation and possibly a metadata flush. Instead fallocate the file's maximum extent to some suitably large value, and keep an internal atomic counter of the end of file. That should reduce the problem to just extent allocation which for ext4 is batched and lazy - more importantly you won't be forcing a metadata flush. That should mean KAIO on ext4 will be async most of the time, but unpredictably will synchronise as it flushes delayed allocations to the journal.
+
+Thirdly, the way I'd probably approach your problem is to use atomic append (O_APPEND) without O_DIRECT nor O_SYNC, so what you do is append updates to an ever growing file in the kernel's page cache which is very fast and concurrency safe. You then, from time to time, garbage collect what data in the log file is stale and whose extents can be deallocated using fallocate(FALLOC_FL_PUNCH_HOLE) so physical storage doesn't grow forever. This pushes the problem of coalescing writes to storage onto the kernel where much effort has been spent on making this fast, and because it's an always forward progress write you will see writes hit physical storage in a fairly close order to the sequence they were written which makes power loss recovery straightforward. This latter option is how databases do it and indeed journalling filing systems do it, and despite the likely substantial redesign of your software you'll need to do this algorithm has been proven the best balance of latency to durability in a general purpose problem case.
+
+In case all the above seems like a lot of work, the OS already provides all of the three techniques rolled together into a highly tuned implementation which is better known as memory maps: 4Kb aligned i/o, O_DIRECT, never extending the file, all async i/o. On a 64 bit system, simply fallocate the file to a very large amount and mmap it into memory. Read and write as you see fit. If your i/o patterns confuse the kernel page algorithms which can happen, you may need a touch of madvise() here and there to encourage better behaviour. Less is more with madvise(), trust me.
+
+An awful lot of people try to duplicate mmaps using various O_DIRECT algorithms without realising mmaps already can do everything you need
+
+---------------------------------
+
+(1) /proc/self/fd - can store tmp files binded to the lifetime of an application
+
+(2)
+posix_memaling allocated memory from the heap given an alingment req!
+     malloc just gives the memory from heap. It alinges on 8 byte on 64 bit. It can revert back
+     to mmap if the size is too big. Also it may tranparently use huge pages!
+     mmap allocates from kernel! 
+
+(3) int madvise(void *addr, size_t length, int advice);
+   gives the kernel an advice on how the memory will be used!
+
+(4) mlock - page faults all the process addres spsace!
+
+
+(5) 
+his also means that if I manually change the clock (or the date) of my system, this change will
+ have repercussions on the value returned by clock_gettime(CLOCK_REALTIME, &ts).Note that this
+ is also true for time changes made by NTP. Thus, the time given by the CLOCK_REALTIME clock is not ~monotonic~, as it is not necessarily monotonically increasing in time,
+ and can go backwards and forwards.
+
+The elapsed time since boot is independent from the wall clock time. If I change the clock of my system, 
+the value given by the CLOCK_MONOTONIC clock is still relative to the boot time, which still hasn't changed.
+
+CLOCK_REALTIME (CAN MOVE FORWARD AND BAKCKWARDS)	Represents wall-clock time. Can be both stepped and slewed by time adjustment code (e.g., NTP, PTP). Leap seconds also affect it.
+CLOCK_REALTIME_COARSE (CAN MOVE FORWARD AND BAKCKWARDS)	A lower-resolution version of CLOCK_REALTIME. Is affected by leap seconds
+
+CLOCK_MONOTONIC (ONLY FORWARD CAN MOVE)	Represents the interval from an abitrary time. Can be slewed but not stepped by time adjustment code. As such, it can only move forward, not backward. Still affected by PTP.
+CLOCK_MONOTONIC_COARSE	A lower-resolution version of CLOCK_MONOTONIC.
+CLOCK_MONOTONIC_RAW	A version of CLOCK_MONOTONIC that can neither be slewed nor stepped by time adjustment code. But still may get slower/quicker behind real-time as PTP does good job to avoid that in CLOCK_MONOTONIC counter.
+
+CLOCK_BOOTTIME	A version of CLOCK_MONOTONIC that additionally reflects time spent in suspend mode. Only available in newer (2.6.39+) kernels.
+
+clocks.c
+                    clock	       res (ns)	           secs	          nsecs
+             gettimeofday	          1,000	  1,391,886,268	    904,379,000
+           CLOCK_REALTIME	              1	  1,391,886,268	    904,393,224
+    CLOCK_REALTIME_COARSE	        999,848	  1,391,886,268	    903,142,905
+          CLOCK_MONOTONIC	              1	        136,612	    254,536,227
+      CLOCK_MONOTONIC_RAW	    870,001,632	        136,612	    381,306,122
+   CLOCK_MONOTONIC_COARSE	        999,848	        136,612	    253,271,977
+
+CLOCK_MONOTONIC and CLOCK_MONOTONIC_COARSE shall be the fastest!
+Well, that depends. CLOCK_MONOTONIC_RAW does avoid NTP slewing, but NTP doesn't just adjust the time scale to adjust for offsets - it also attempts to correct for frequency error in your system clock itself. If you use CLOCK_MONOTONIC_RAW, you don't get that correction; you get something that on desktop hardware can easily be tens of ppm off from actual time. Of course, your MONOTONIC_RAW clock is still subject to the vagaries of physics; as temperature or system load changes, depending on the quality of your time source, you might get significant changes in the rate of CLOCK_MONOTONIC_RAW as well (which NTP will correct for in CLOCK_MONOTONIC, given enough time to adjust).

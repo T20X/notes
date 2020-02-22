@@ -1,3 +1,14 @@
+? : can disable RVO
+multiple return statements can disable RVO
+returning passed argument can disable RVO
+----------------
+auto may improve perfomance because there are not implicit conversions involved
+-------------
+    workPerThread = workPerThread & ~(pageSz - 1); IS FAST ALTERNATIVE TO
+    workPerThread = (workPerThread / pageSz) * pageSz;
+
+----------------------------------------------
+std::to_string relies on the current locale for formatting purposes, and therefore concurrent calls to std::to_string from multiple threads may result in partial serialization of calls. C++17 provides std::to_chars as a higher-performance locale-independent alternative.
 --------------------------------------------------
 pow can be slow massively
 --------------------------------------------------
@@ -36,13 +47,56 @@ Pause prevents speculative execution, eliminating the branch misprediction penal
 trivial classes/structs can be copied with memcpy which is an important optimization!
 pair and tuple are not trivial classes!
 
+A type that is trivial can be statically initialized
 standart layoout classes can be used in other programming languages!
+(gcc does not allow __attribute__((__packed__)) on structs that
+ * contain non-POD data)
 
+Trivial class req (can be statically initialized and memcpy optimized)
+--------------
+It has no virtual functions
+It has no virtual base classes
 Every copy constructor is trivial or deleted
 Every move constructor is trivial or deleted
 Every copy assignment operator is trivial or deleted
 Every move assignment operator is trivial or deleted
 at least one copy constructor, move constructor, copy assignment operator, or move assignment operator is non-deleted
 Trivial non-deleted destructor
-This implies that the class has no virtual functions or virtual base classes.
 
+
+Standart Layout class (can be used in C)
+---------
+It has no virtual functions
+It has no virtual base classes
+All its non-static data members have the same access control (public, private, protected)
+All its non-static data members, including any in its base classes, are in the same one class in the hierarchy
+The above rules also apply to all the base classes and to all non-static data members in the class hierarchy
+It has no base classes of the same type as the first defined non-static data member
+-----------------------
+restrict
+-------------
+In the C programming language, as of the C99 standard, restrict is a keyword that can be used in pointer declarations. The restrict keyword is a declaration of intent given by the programmer to the compiler. It says that for the lifetime of the pointer, only the pointer itself or a value directly derived from it (such as pointer + 1) will be used to access the object to which it point
+
+If the compiler knows that there is only one pointer to a memory block, it can produce better optimized code. For instance:
+
+void updatePtrs(size_t *ptrA, size_t *ptrB, size_t *val)
+{
+  *ptrA += *val;
+  *ptrB += *val;
+}
+In the above code, the pointers ptrA, ptrB, and val might refer to the same memory location, so the compiler may generate less optimal code:
+
+The restrict keyword only affects pointers of compatible types (e.g. two int*) because the strict aliasing rules says that aliasing incompatible types is undefined behavior by default, and so compilers can assume it does not happen and optimize away
+
+---------
+Branch elimination techniques!
+------
+(1) r = (A >= B) ? CONST 1 : CONST2
+
+xor ebx, ebx ; Clear ebx (X in the C code)
+cmp A, B
+setge bl ; When ebx = 0 or 1
+; OR the complement condition
+sub ebx, 1 ; ebx=11...11 or 00...00
+and ebx, CONST3; CONST3 = CONST1-CONST2
+add ebx, CONST2; ebx=CONST1 or CONST2

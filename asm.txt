@@ -1,0 +1,74 @@
+---
+ALINGMENT
+---
+standard guarantees that the union & struct itself will be aligned to the size of the largest
+ element
+16-byte stack alignment is mandatory!
+----
+
+REGISTERS
+---
+rax..rdx - general purpose! (Accumulator, Base, Counter, Data)
+GS register stores the base address for per-cpu are
+---
+STACK
+---
+16-byte stack alignment is mandatory!
+----
+params
+---------          <--- frame pointer!
+return adddress
+-------
+locals
+----               < -- stack pointer!
+
+r12 - temporary register free to use in just current subroutine! gets cleared before 
+subrouting calls
+
+rbp is the frame pointer on x86_64. In your generated code,
+ it gets a snapshot of the stack pointer (rsp) so that when adjustments are made 
+to rsp (i.e. reserving space for local variables or pushing values on to the stack), 
+local variables and function parameters are still accessible from a constant offset from rbp.
+A lot of compilers offer frame pointer omission as an optimization option; this will make the
+ generated assembly code access variables relative to rsp instead and free up rbp as another
+ general purpose register for use in function
+
+
+G
+-----
+In common usage, the word size refers to the size of a processor register.
+ On a 32 bit processor, this will be 32 bits. On a 64 bit processor, this will be 64 bits
+----------------
+
+----
+FUNCTION CALL on x64
+---
+User-level applications use as integer registers for passing the sequence
+%rdi, %rsi, %rdx, %rcx, %r8 and %r9. The kernel interface uses %rdi,
+%rsi, %rdx, %r10, %r8 and %r9.
+2. A system-call is done via the syscall instruction. The kernel destroys
+registers %rcx and %r11.
+3. The number of the syscall has to be passed in register %rax.
+4. System-calls are limited to six arguments, no argument is passed directly on
+the stack.
+5. Returning from the syscall, register %rax contains the result of the
+system-call. A value in the range between -4095 and -1 indicates an error,
+it is -errno.
+6. Only values of class INTEGER or class MEMORY are passed to the kernel
+
+CC dictates how the stack is used. Contract between caller and callee on x86:
+
+    * after call instruction:
+          o %eip points at first instruction of function
+          o %esp+4 points at first argument
+          o %esp points at return address 
+    * after ret instruction:
+          o %eip contains return address
+          o %esp points at arguments pushed by caller
+          o called function may have trashed arguments
+          o %eax contains return value (or trash if function is void)
+          o %ecx, %edx may be trashed
+          o %ebp, %ebx, %esi, %edi must contain contents from time of call 
+    * Terminology:
+          o %eax, %ecx, %edx are "caller save" registers
+          o %ebp, %ebx, %esi, %edi are "callee save" registers

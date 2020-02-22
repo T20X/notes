@@ -1,45 +1,54 @@
-The SYSENTER instruction is part of the "Fast System Call" facility introduced on the Pentium® II processor. The SYSENTER instruction is optimized to provide the maximum performance for transitions to protection ring 0 (CPL = 0). The SYSENTER instruction sets the following registers according to values specified by the operating system in certain model-specific registers.
 
-CS register set to the value of (SYSENTER_CS_MSR)
+linux-vdso is not a shared libarry on a disk, linux kernel bakes it on the fly!
 
-EIP register set to the value of (SYSENTER_EIP_MSR)
+GS register stores the base address for per-cpu are
 
-SS register set to the sum of (8 plus the value in SYSENTER_CS_MSR)
+Latency 5-10microseconds
 
-ESP register set to the value of (SYSENTER_ESP_MSR)
-
-Looks like processor is trying to help us. Let's look at SYSEXIT also very quickly:
-
-The SYSEXIT instruction is part of the "Fast System Call" facility introduced on the Pentium® II processor. The SYSEXIT instruction is optimized to provide the maximum performance for transitions to protection ring 3 (CPL = 3) from protection ring 0 (CPL = 0). The SYSEXIT instruction sets the following registers according to values specified by the operating system in certain model-specific or general purpose registers.
-
-CS register set to the sum of (16 plus the value in SYSENTER_CS_MSR)
-
-EIP register set to the value contained in the EDX register
-
-SS register set to the sum of (24 plus the value in SYSENTER_CS_MSR)
-
-ESP register set to the value contained in the ECX register
-
+IA32_LSTAR MSR - register container kernel entyry code (Code and stack selctors) to handle sys calss
+Modern linxu uses SYSCALL and SYSRET INSTRUCTIONS!
 ------------------
 
-Linux sets up these registers during initialization itself.
+vDSO loads dynamically and implements four system calls:
+__vdso_clock_gettime;
+__vdso_getcpu;
+__vdso_gettimeofday;
+__vdso_time
 
-/usr/src/linux/arch/i386/kernel/sysenter.c:
-     36         wrmsr(MSR_IA32_SYSENTER_CS, __KERNEL_CS, 0);
-     37         wrmsr(MSR_IA32_SYSENTER_ESP, tss->esp1, 0);
-     38         wrmsr(MSR_IA32_SYSENTER_EIP, (unsigned long) sysenter_entry, 0);
-Please note that 'tss' refers to the Task State Segment (TSS) and tss->esp1 thus points to the kernel mode stack. [4] explains the use of TSS in linux as:
-
-The x86 architecture includes a specific segment type called the Task State Segment (TSS), to store hardware contexts. Although Linux doesn't use hardware context switches, it is nonetheless forced to set up a TSS for each distinct CPU in the system. This is done for two main reasons:
-
-- When an 80 x 86 CPU switches from User Mode to Kernel Mode, it fetches the address of the Kernel Mode stack from the TSS.
-
-- When a User Mode process attempts to access an I/O port by means of an in or out instruction, the CPU may need to access an I/O Permission Bitmap stored in the TSS to verify whether the process is allowed to address the port.
-
+VDSO maps memory in shared form! And allows those sys call
+executions to happen in the user space!
 
 --------------------
-Userland processes (or C library on their behalf) call __kernel_vsyscall to execute system calls. Address of __kernel_vsyscall is not fixed. Kernel passes this address to userland processes using AT_SYSINFO elf parameter. AT_ elf parameters, a.k.a. elf auxiliary vectors, are loaded on the process stack at the time of startup, alongwith the process arguments and the environment variables. Look at [1] for more information on Elf auxiliary vectors.
+ebfore sys call linux would store stack pointer to TSS(Task Stae Segment - onnly one per CPU!)
 
-After moving to this address, registers %ecx, %edx and %ebp are saved on the user stack and %esp is copied to %ebp before executing sysenter. This %ebp later helps kernel in restoring userland stack back. After executing sysenter instruction, processor starts execution at sysenter_entry. sysenter_entry is defined in /usr/src/linux/arch/i386/kernel/entry.S as: (See my comments in [ ])
+ENTRY(entry_SYSCALL_64)
 
+  movq	%rsp, PER_CPU_VAR(rsp_scratch) - store RSP into TSS 
+ movq	PER_CPU_VAR(cpu_current_top_of_stack), %rsp -  and then load kernel RSP 
 
+ * SYSCALL instructions can be found inlined in libc implementations as
+ * well as some other programs and libraries.  There are also a handful
+ * of SYSCALL instructions in the vDSO used, for example, as a
+ * clock_gettimeofday fallback.
+ *
+ * 64-bit SYSCALL saves rip to rcx, clears rflags.RF, then saves rflags to r11,
+ * then loads new ss, cs, and rip from previously programmed MSRs.
+ * rflags gets masked by a value from another MSR (so CLD and CLAC
+ * are not needed). SYSCALL does not save anything on the stack
+ * and does not change rsp.
+ *
+ * Registers on entry:
+ * rax  system call number
+ * rcx  return address
+ * r11  saved rflags (note: r11 is callee-clobbered register in C ABI)
+ * rdi  arg0
+ * rsi  arg1
+ * rdx  arg2
+ * r10  arg3 (needs to be moved to rcx to conform to C ABI)
+ * r8   arg4
+ * r9   arg5
+ * (note: r12-r15, rbp, rbx are callee-preserved in C ABI)
+ *
+ * Only called from user space.
+
+Note that it also switches to kernel's stack!

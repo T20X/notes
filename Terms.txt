@@ -1,0 +1,37 @@
+virtual function - enables overriding implementation of a function in the derived class by calling it from the base class interface
+------------------
+Next time somebody tells you that you should never use multiple inheritance, look them straight in the eye and say, “One size does not fit all.” If they respond with something about their bad experience on their project, look them in the eye and repeat, slower this time, “One size does not fit all.”
+---------------------
+An object's class defines how the object is implemented .The class defines object's internal state and the implementation of its operations.
+
+In contrast, an object's type only refers to its interface - a set of requests to which it can respond.
+An object can have many types, and objects of different classes can have the same type.
+
+------------
+An object, in C++, is a region of storage that has
+
+- size (can be determined with sizeof);
+- alignment requirement (can be determined with alignof);
+- storage duration (automatic, static, dynamic, thread-local);
+- lifetime (bounded by storage duration or temporary);
+type;
+- value (which may be indeterminate, e.g. for default-initialized non-class types);
+optionally, a name.
+----------------
+closure: an unnamed function object capable of capturing variables in scope
+------------------
+an object is a storage where value lives
+-------------
+An entity is a value, object, reference, structured binding, function, enumerator, type, class member, bit-field, template, template specialization, namespace, or pack
+
+Every name that denotes an entity is introduced by a declaration
+-------------
+An expression is a sequence of operators and operands that specifies a computation. An expression can result in a value and can cause side effects
+------------------
+The object representation of an object of type T is the sequence of N unsigned char objects taken up by the object of type T, where N equals sizeof(T). The value representation of an object of type T is the set of bits that participate in representing a value of type T. Bits in the object representation that are not part of the value representation are padding bits
+------------
+An object type is a (possibly cv-qualified) type that is not a function type, not a reference type, and not cv void.
+-------------------------------
+Operators can be overloaded, that is, given meaning when applied to expressions of class type or enumeration type
+
+

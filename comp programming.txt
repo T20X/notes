@@ -1,1 +1,5 @@
 Sqrt decomposition
+complate search
+
+-----------
+string s {"aa\n\t"} has only 3 chars! s[2]=='\n';

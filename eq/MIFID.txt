@@ -28,6 +28,8 @@ overall EU trading in a financial instrument carried out under those waivers sha
 
 no pre-trade reports for NOT LIQUID instruemnts and trade reporting can be deffered
 
+Order Management Facility (OMF)
+Orders held in an order management facility of the trading venue pending disclosure. It allows iceberg orders! But they needto be at lest 10K euro for stocks quotes in euro and ESMA publishes thresholds yearly for other currencies
 ---------------------
 MTF
 -------------------------------

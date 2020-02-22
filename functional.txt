@@ -1,3 +1,43 @@
+﻿mathemetically function is two set pair - mapping one set of values into another!
+-----------
+fundamental intuition of functional design is to figure out mathematical essense of a program and then implement discovered interface in C++ for efficiency
+-----------------
+In the functional world, building new types from old ones is usually done through two operations: sum and product (these new types are thus called algebraic). A product of two types A and B is a new type that contains an instance of A and an instance of B (it’ll be a Cartesian product of the set of all values of type A and the set of all values of B)
+
+The sum type of types A and B is a type that can hold an instance of A or an instance of B, but not both at the same time
+-------------------
+This concept of creating a new function object from an existing one by fixing one or more of its arguments to a specific value is called *****partial function application******
+------------
+In addition to creating a class, evaluating the lambda expression also creates an instance of that class called a ****closure****: an object containing some state or environment along with code that should be executed on that state
+-------------
+It’s important to note that a generic lambda is a class on which the call operator is templated, not a class template that has a call operator. The lambda will deduce the type for each of its arguments that were declared as auto when it’s called, not when it’s constructed, and the same lambda can be used on completely different types
+----------------------
+Classes with the overloaded call operator are often called ***functors****
+Using duck-typing (if it walks like a duck and quacks like a duck, it’s a duck), we can say that anything that can be called like a function is a function object
+----------------------
+Functional programming is a style of programming that emphasizes the evaluation of expressions, rather than execution of commands. The expressions in these languages are formed by using functions to combine basic values. A functional language is a language that supports and encourages programming in a functional style.
+-----------------------
+Broadly speaking, FP is a style of programming in which the main program building blocks are functions as opposed to objects and procedures. A program written in the functional style doesn’t specify the commands that should be performed to achieve the result, but rather defines what the result is
+-------------------------
+This difference is the origin of the terms imperative and declarative programming. Imperative means you command the computer to do something by explicitly stating each step it needs to perform in order to calculate the result. Declarative means you state what should be done, and the programming language has the task of figuring out how to do it
+---------------------------------------------------
+he main idea when writing programs in the functional style—use abstractions that let you define the intent instead of specifying how to do something
+----------------------------
+The benefit of this solution is that you have fewer state variables to worry about, and you can begin to express the higher-level intent of a program instead of specifying the exact steps it needs to take to find the result
+-----------------------
+One of the most significant sources of software bugs is the program state. It’s difficult to keep track of all possible states a program can be in. The OOP paradigm gives you the option to group parts of the state into objects, thus making it easier to manage. But it doesn’t significantly reduce the number of possible states
+--------------
+It would be inefficient and counterproductive to write code in the imperative style first and then change it bit by bit until it became functional. Instead, you should think about problems differently. Instead of thinking of the algorithm steps, you should consider what the input is, what the output is, and which transformations you should perform to map one to the other
+---------------------------
+Functions that take other functions as arguments or that return new functions are called higher-order functions
+------------------------------
+although similar, currying and partial function application have their advantages and disadvantages. And both have their use cases. Partial function application is useful when you have a specific function whose arguments you want to bind. In this case, you know how many arguments the function has, and you can choose exactly which arguments you want bound to a specific value. Currying is particularly useful in generic contexts when you can be given a function with any number of arguments. In this case, std::bind isn’t useful, because if you don’t know how many arguments a function has, you can’t know how many arguments you need to bind to a placeholder; you don’t even know how many placeholders you’ll need
+------------------------------
+Remeber!
+template <template < class...> class A,   class B>
+struct test1;
+using test1_short = test1<std::tuple <- /*class tempalte*/, std::tuple<int,int,int> /*just class!*/>;
+
 1.
    // Variadic template for currying
     template<typename Func, typename... Args>
@@ -50,97 +90,148 @@ template<class T>
 class A<T, typename std::enable_if<std::is_floating_point<T>::value>::type> {
 }; // specialization for floating point types
 
-6.
- template<class T,
-         typename std::enable_if<
-             !std::is_trivially_destructible<T>{} &&
-             (std::is_class<T>{} || std::is_union<T>{}),
-            int>::type = 0>
-void destroy(T* t)
 
-7.
 
-    template <typename C, 
-        typename = void_t<>> 
-        struct is_iterable 
-        : std::false_type {}; 
+6. - Types are first-class values inside compile-time programs.
+    - Functions at compile time live in a world where no side effects can occur
+    - As per our first axiom, the only interesting values in metaprogramming are types. Thus, c    ompile-time functions are components that map types to other types.
+    - compile-time containers must be types that contain zero or more other types.
+    - Any template class accepting a variable number of type parameters can be considered a type container
 
-        template <typename C> 
-        struct is_iterable< 
-        C, void_t<decltype(*begin(std::declval<C>())), 
-        decltype(end(std::declval<C>()))>> 
-        : std::true_type{};
+   -  A metafunction is a class template or a template alias whose parameters are all types
+   - A quoted metafunction is a class with a public metafunction member called fn, for example
+    struct Q1 { template<class...> using fn = void; }
+    - Dealing with compile-time containers requires no loops. Try to express your algorithm as much as possible as a direct manipulation of parameter packs.
 
-8. template <typename T, typename... Args>
-std::unique_ptr<T> make_unique_helper(std::false_type, Args&&... args) {
-    return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+ If you want to make state changes in a pure way, you need to make every change explici
+
+A class template F is a functor if it has a transform (or map) function defined on it (see figure 10.1). The transform function takes an instance f of a type F<T1> and a function t: T1 → T2, and it returns a value of type F<T2>. This function can have multiple forms, so we’ll use the pipe notation from chapter 7 for clarity.
+std:optional is a functor for example! We can define transform on it as below:
+
+template <typename T1, typename F>auto transform(const std::optional<T1>& opt, F f)
+   -> decltype(std::make_optional(f(opt.value())))   
+{ 
+   if (opt) 
+   {
+       return std::make_optional(f(opt.value()));   
+   } 
+   else
+   {    return {}; 
+   }
 }
 
-template <typename T, typename... Args>
-std::unique_ptr<T> make_unique_helper(std::true_type, Args&&... args) {
-   static_assert(std::extent<T>::value == 0,
-       "make_unique<T[N]>() is forbidden, please use make_unique<T[]>().");
 
-   typedef typename std::remove_extent<T>::type U;
-   return std::unique_ptr<T>(new U[sizeof...(Args)]{std::forward<Args>(args)...});
+
+This is where monads come into play. A monad M<T> is a functor that has an additional function defined on it—a function that removes one level of nesting:join: M<M<T>> → M<T>
+vector, optional, futures, ranges are examples of monadas
+
+Functors are collection-like structures that know how to apply a transformation function on their contents.
+
+Monads know everything that functors do, but they have two additional operations: they let you create monadic values from normal values, and they can flatten out nested monadic values.
+
+First note that being a monad is not a property of a type, but of a type constructor
+
+ monad's general utility rather lies in simplifying a program's structure and improving separation of concerns through abstraction
+
+Monads apply a function that returns a wrapped value to a wrapped value
+
+Functors allow you to easily handle and transform wrapper types, whereas monads let you compose functions that return wrapper types. It’s often useful to think about monads as boxes. But use the term box loosely, to cover cases such as the continuation monad—a box that will eventually contain data.You can open a box in the real world to see what’s inside, but this isn’t the case with monads. In the general case, you can only tell the box what to do with the value(s) it has—you can’t always access the value directly.
+
+"For a monad m, a value of type m a represents having access to a value of type a within the context of the monad.
+like "optional int" (m a)
+
+You can—and this is a more common way to define monads. You can say that a monad M is a wrapper type that has a constructor (a function that constructs an instance of M<T> from a value of type T) and an mbind function (it’s usually called just bind, but we’ll use this name so it doesn’t get confused with std::bind), which is a composition of transform and join:construct : 
+
+T → M<T>mbind     : (M<T1>, T1 → M<T2>/*transform*/) → M<T2>
+m:M<T> , a:T
+mbind(construct(a), f)) == f(a) // f: T-> M<T>
+mbind(m, construct) = m;
+
+template <typename T, typename F>
+auto mbind(const std::optional<T>& opt, F f)    -> decltype(f(opt.value()))
+    ①  {   
+ if (opt) {        return f(opt.value());    ②      }
+ else {        return {};    ③      }
 }
 
-template <typename T, typename... Args>
-std::unique_ptr<T> make_unique(Args&&... args) {
-   return make_unique_helper<T>(std::is_array<T>(), std::forward<Args>(args)...);
+std::optional<std::string> current_login();
+std::optional<std::string> user_full_name();
+std::optional<std::string> to_html();
+std::optional<std::string> current_user_html()
+{  
+  return mbind(
+      mbind(current_login, user_full_name), to_html);
 }
 
-9. 
+7. he first intuition we might have coming from our runtime experience is to find a way to “loop” over types as we repeatedly call push_back. Even if it’s a correct implementation, we need to fight this compulsion of thinking with loops. Loops over types will require a linear number of intermediate types to be computed, leading to unsustainable compilation times. The correct way of handling this use case is to find a natural way to exploit the variadic nature of our containers.
 
-template<class... _Types> inline
-	constexpr tuple<typename _Unrefwrap<_Types>::type...>
-		make_tuple(_Types&&... _Args)
-	{	// make tuple from elements
-	typedef tuple<typename _Unrefwrap<_Types>::type...> _Ttype;
-	return (_Ttype(_STD forward<_Types>(_Args)...));
-	}
+8.
 
-10. default template argument - typename = std::enable_if_t<std::is_integral<Integer>::value>
-     default template arguments are not part of function template's signature
+    template <template <class...> class A, template <class...> class F, class... T>              
+    struct my_transform <A<T...>, F> { using r = A<typename F<T>::type...>;  };
+    using resutlt_of_transform = my_transform<std::tuple<int, int, int>, std::add_pointer>::r;
 
-11. A substitution failure is any situation when the type or expression above would be ill-formed (with a required diagnostic), if written using the substituted argument
+    *VS*
 
-12. The compiler does overload resolution before it even looks at specialisations
+    template <template <class...> class F>
+    struct lambda
+    {         
+         template <class... Args>
+         struct apply
+         {
+            using type = typename F<Args...>::type;
+         };
+    };
+    
+    template <class A, class F>
+     struct my_transform2;
 
-Only the failures in the types and expressions in the immediate context of the function type or its template parameter types or its explicit specifier (since C++20) are SFINAE errors. If the evaluation of a substituted type/expression causes a side-effect such as instantiation of some template specialization, generation of an implicitly-defined member function, etc, errors in those side-effects are treated as hard errors
+     template <template <class...> class A,
+         class F, class... T>
+     struct my_transform2 <A<T...>, F>
+     {
+         using type = A< typename F::template apply<T>::type ... >;
+     };
 
-13. decval - Converts any type T to a reference type, making it possible to use member functions in decltype expressions without the need to go through constructors
+    using resutlt_of_transform2 = my_transform2<
+          std::tuple<int, int, int>,
+          lambda<std::add_pointer>
+        >::type;
 
-14. 
-template <class C, class F>
-auto test(C c, F f) -> decltype((void)(c.*f)(), void())
-{ std::cout << "Reference overload called\n"; }
+9.     template <typename It, typename FilterFunc>
+    std::vector<std::string> names3(std::vector<std::string> prevNames, It front, It back, FilterFunc f)
+    {
+        if (front == back) return prevNames;
+        if (f(*front)) prevNames.push_back(name(front));
+        return names3(std::move(prevNames), next(front), back, f); #move their avoid copies!
+    }
+10. Instead of creating types that can be implicitly converted to function pointers, C++ provides a much nicer way to create new types that behave like functions: by creating classes and overloading their call operators
 
-template <class C, class F>
-auto test(C c, F f) -> decltype((void)((c->*f)()), void())
-{ std::cout << "Pointer overload called\n"; }
+11. 
+Instead of creating the class template, you can make the call operator a template member function, as shown in the following listing (and found in the book’s sample code in example:older-than-generic/main.cpp). This way, you won’t need to specify the type when you instantiate the older_than function object, and the compiler will automatically deduce the type of the argument when invoking the call operator
 
-auto enableIfSINAFE(Container& v) -> decltype(enable_if_t<is_same<Iter, random_access_iterator_tag>::value>(), void())
-auto enableIfSINAFE(Container& v) -> decltype(enable_if_t<is_same<Iter, bidirectional_iterator_tag>::value>(), void())
+class older_than {
+public:
+    older_than(int limit): m_limit(limit) {    }  
+  template <typename T>  
+  bool operator()(T&& object) const   {   
+      return std::forward<T>(object).age()> m_limit;  // we forward becayse age() function may have ovelaod for lvalues and rvalues refrences!
+     }
+private:   
+ int m_limit;
+};
 
-template <class _Ty1>
-class = enable_if_t<_Is_swappable<_Ty1>::value && _Is_swappable<_Ty2>::value>>
-void f()
-16. 
-template< class... >
-using void_t = void;
-(since C++17)
-This metafunction is used in template metaprogramming to detect ill-formed types in SFINAE context
+12. you can use a lambda to achieve the same effect while keeping the code localized and not polluting the program namespace
 
-// primary template handles types that have no nested ::type member:
-template< class, class = std::void_t<> >
-struct has_type_member : std::false_type { };
- 
-// specialization recognizes types that do have a nested ::type member:
-template< class T >
-struct has_type_member<T, std::void_t<typename T::type>> : std::true_type { };
-OR
-template< class T >
-struct has_type_member<T, std::void_t<decltype(T::member)> : std::true_type { };
+13.[]—A lambda that doesn’t use any variable from the surrounding scope. These lambdas don’t have any internal state and can be implicitly cast to ordinary function pointers.
 
-
+14. Lambdas can create boilerplate code. Instead one may just write a function object by hand !
+15. Laze evaluation function object class template
+ template <typename F>
+class lazy_val
+ {
+private: 
+   F m_computation;
+   mutable decltype(m_computation()) m_cache;
+   mutable std::once_flag m_value_flag;public:  
+   operator const decltype(m_computation())& () const

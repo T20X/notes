@@ -1,0 +1,20 @@
+docker is pretty much as fast as native kernel. it allows creatings isolated containers ( can be another linux itself) with applications and configurations! They can be stopped / started / edited etc...
+
+It works in Linux through kernel namespaces and cgroups so not much overhead is expected apart from possibly shared filesystem
+
+
+Service discovery is one component of an overall strategy aimed at making container deployments scalable and flexible. Service discovery is used so that containers can find out about the environment they have been introduced to without administrator intervention. They can find connection information for the components they must interact with, and they can register themselves so that other tools know that they are available. These tools also typically function as globally distributed configuration stores where arbitrary config settings can be set for the services operating in your infrastructure.
+
+Some of the responsibilities of service discovery stores are:
+
+Allowing applications to obtain the data needed to connect with to the services they depend on.
+Allowing services to register their connection information for the above purpose.
+Providing a globally accessible location to store arbitrary configuration data.
+Storing information about cluster members as needed by any cluster management software.
+Some popular service discovery tools and related projects are:
+
+etcd: service discovery / globally distributed key-value store
+consul: service discovery / globally distributed key-value store
+zookeeper: service discovery / globally distributed key-value store
+crypt: project to encrypt etcd entries
+confd: watches ke

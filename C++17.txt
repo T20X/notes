@@ -1,0 +1,103 @@
+﻿1.
+---------------
+STRUCTUREDED BINDINGS
+----------------
+std::map myMap;    
+for (const auto & [k,v] : myMap) 
+{ // k - key   // v - value }
+}
+
+auto& [ refA, refB, refC, refD ] = myTuple;
+auto [a, b] = myPair;
+
+EVENT STRUCTS!
+struct S { int x1 : 2; volatile double y1; };
+S f();
+const auto [ x, y ] = f();
+
+---------------------
+2. NEW IF STATEMENT
+----------------
+if (auto val = GetValue(); condition(val))    
+    // on success  
+else   
+    // on false... 
+val is visible only inside the if and else statements, so it doesn't 'leak
+
+----------------
+3. INLINE VARIABLES
+----------------
+
+-----------
+4. THIS BY VALUE
+------
+This can now be copied instead of using this pointer! Note that class copy 
+constructor would be called
+  auto f1 = [*this](){}
+
+-----------
+5. std::raw_storage_iterator
+-------------
+
+----------------
+6. pointers
+---------------
+integer represention of a pointer might not be the same but sequence  as the pointer itself
+
+ it is ok to convert a pointer to integer and then integer back to pointer. But modifying that integer in the middle is kind of on the endge according to c++ standarrt!
+---------------
+
+7. Since C++17, the evaluation order of operands of operator << is strictly from left to right, and operands of overloaded operator share the same evaluation order as those of the bulit-in one
+  Postfix expressions are evaluated from left to right. This includes functions calls and member
+selection expressions.
+? Assignment expressions are evaluated from right to left. This includes compound assignments.
+? Operands to shift operators are evaluated from left to righ
+
+All side effects of argument evaluations are sequenced before the function is entered
+
+8. template <auto value> void f() { }
+
+f<10>();               // deduces int
+
+9. Pack expansions in using declarations - short and compact syntax with variadic templates
+
+template<class... Ts> struct overload : Ts... { using Ts::operator()...; };
+template<class... Ts> overload(Ts...) -> overload<Ts...>;
+std::variant<int, float> intFloat { 0.0f };
+std::visit(overload(
+    [](const int& i) { ... },
+    [](const float& f) { ... },
+  ),
+  intFloat;
+);
+
+Pack expansions in using declarations - short and compact syntax with variadic templates.
+Custom template argument deduction rules - that allows converting a list of lambdas into a list of base classes for the overloaded class.
+Extension to aggregate Initialization - the overload pattern uses a constructor to initialise, but we don�t have to specify it in the class. Before C++17 it wasn�t possible
+
+
+10. Aggregate initialization for base classes is now possible!
+struct A0 {  A0(int) {}};
+struct A : A0 {  A(int):A0(1) {} };
+struct B {   B(int){} };
+struct D : A, B {};
+ D d1{1,2}; //WORKS NOW in C++17!
+
+11.  constexpr lambdas do work now!
+12. in C++ now prvalues(values not having a name) are defined now. Bascially this
+auto x = T(); x will get constructed like T()! Even if copy constructor for T is deleted!
+
+13.
+void transmogrify(std::vector<C>& out) 
+{ fill out...}
+
+in c++17 out can be returned by value as copy ellison is now guaranteed
+
+14. template <auto v> struct S;                 // type of v is deduced
+    template <auto x> constexpr auto constant = x;
+    // List of heterogeneous constant values
+  // same as template <auto v1, auto v2, auto v3, ...>
+  template <auto... vs> struct value_list { };
+
+  // List of homogeneous constant values
+template <auto v1, decltype(v1)... vs> struct typed_value_list { };

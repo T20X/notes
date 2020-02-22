@@ -1,0 +1,2 @@
+1. NUMA autobalancing. Be carefull! it may increase minor page faults for memory access by keep moving 
+processes close to NUMA memory!

@@ -13,3 +13,151 @@ sudo update-grub
 sudo systemctl set-default multi-user.target
 
 UNDO -> sudo systemctl set-default graphical.targe
+=======
+
+----
+add new repo to ububtu
+----
+sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable"
+
+ sudo systemctl status docker
+
+-------------
+nm --demangle *.o - provides are list of needed symbols!
+ U - undefined symbol,  main executable needs it from somewhere else
+ W - symbol is defined, but with inline!
+ T - regular defined symbol!
+-----------------------------
+
+---------
+vmstat 1
+
+ r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
+ 0  0      0 4392000 248460 1923536    0    0     0     0  179  279  0  0 100  0  0
+ 0  0      0 4392000 248460 1923536    0    0     0     0  178  272  0  0 100  0  0
+-----------
+readelf a.out -sSr
+
+ss -4 state listening -- all the listeningfor ipv4
+netstat -4 -a -- all the connections for ipv4
+arp -av
+cat /proc/pid/env - env variables process run with!
+cat /proc/pid/limits - process limits
+cat /proc/pid/smaps - nice memory stats!
+nc - arbitrary TCP/UDP connection listeners/publishers
+ 
+awk '{print $1, $NF}' // $NF - line number!
+watch -n 1 grep 'bar' /proc/interrupt
+cat /proc/cmdline
+chrt -p <pid> - get scheduling process policy
+lstopo -c -v - numa diagram with devices
+sysctl -A | grep "sched" | grep -v "domain"
+ ps -o min_flt,maj_flt,cmd,args,uid,gid 1 - track page faults
+The virtual memory statistics can be monitored by looking for the pgfault value in 
+the /proc/vmstat file
+For a particular process PID, use the cat command to view the /proc/PID/stat file. 
+The relevant entries in this file are:
+Field 2 - filename of the executable
+Field 10 - number of minor page faults
+Field 12 - number of major page faults
+-------------
+BUILD KERNEL
+
+apt-get install dctrl-tools
+bizon and flex packages are not installed ! whiule building linux kernek for 18.04 ubuntu
+
+fakeroot make-kpkg --initrd --revision=1.0.custom kernel_image
+ dpkg -i ../linux-image-4.18.0_1.0.custom_amd64.deb
+then select from the boot menu
+-----
+A tickless kernel is an operating system kernel in which timer interrupts
+ do not occur at regular intervals, but are only delivered as required
+
+It seems in Kernel 4.19 and 4.20, the residual 1HZ tick can be removed in NOHZ Full mode when running a task on the CPU.
+
+I tried that, but the 1 HZ tick is still there.  I am thinking maybe I missed some steps.
+
+Here are what I did:
+
+ 1. Set  CONFIG_NOHZ_FULL=y,   CONFIG_RCU_FAST_NO_HZ=y, CONFIG_RCU_NOCB_CPU=y
+
+ 2. Set boot parameters: GRUB_CMDLINE_LINUX_DEFAULT="quiet splash isolcpus=nohz,domain,1-3 nohz=on nohz_full=1-3  rcu_nocbs=1-3 intel_pstate=disable irqaffinity=0 nmi_watchdog=0 nosoftlockup
+
+3. Modify /sys/devices/virtual/workqueue/cpumask to 1
+
+4. systemctl stop irqbalance
+
+5. Turn off turbo mode, P state, and hythreading in BIOS
+
+Has anybody ever tried this? What did I miss?
+
+
+
+-----
+HUGE PAGES!!!
+------
+
+grep -B 11 'KernelPageSize: 2048 kB' /proc/[PID]/smaps \ | grep "^Size:" \ | awk 'BEGIN{sum=0}{sum+=$2}END{print sum/1024}'
+
+sudo grep huge /proc/*/numa_maps
+/proc/4131/numa_maps:80000000 default file=/anon_hugepage\040(deleted) huge anon=4 dirty=4 N0=3 N1=1
+/proc/4131/numa_maps:581a00000 default file=/anon_hugepage\040(deleted) huge anon=258 dirty=258 N0=150 N1=108
+/proc/4131/numa_maps:7f6c40400000 default file=/anon_hugepage\040(deleted) huge
+/proc/4131/numa_maps:7f6ce5000000 default file=/anon_hugepage\040(deleted) huge anon=1 dirty=1 N0=1
+/proc/4153/numa_maps:80000000 default file=/anon_hugepage\040(deleted) huge anon=7 dirty=7 N0=6 N1=1
+/proc/4153/numa_maps:581a00000 default file=/anon_hugepage\040(deleted) huge anon=265 dirty=265 N0=162 N1=103
+/proc/4153/numa_maps:7f3dc8400000 default file=/anon_hugepage\040(deleted) huge
+/proc/4153/numa_maps:7f3e00600000 default file=/anon_hugepage\040(deleted) huge anon=1 dirty=1 N0=1
+
+grep HugePages /proc/meminfo
+AnonHugePages:   1079296 kB
+HugePages_Total:    4096
+HugePages_Free:     3560
+HugePages_Rsvd:      234
+HugePages_Surp:        0
+
+
+numactl -m <node-list> echo 20 >/proc/sys/vm/nr_hugepages_mempolicy - allocates 20 huge pages on numa node-list!
+
+If the user applications are going to request huge pages using mmap system call, then it is required that system administrator mount a file system of type hugetlbfs
+cat /sys/devices/system/node/node*/meminfo | fgrep Huge - check Huge pages per NUMA node!
+ mount -t hugetlbfs -o  uid=maine, gid=maine, size=1G none /mnt/huge - mount huge page!
+ umount  /mnt/huge/
+
+ But need to use libhugfefs API in order to discover mounts!
+
+hugectl --heap=2M --$shm ./app
+ hugectl will work for shared memory, heap, data, code segments(if linked propertly..)..but not for sbrk and mmap(unless variab! in fact it hooks __morecore gblic function (the one which calls sbrk) to allocate memory from huge pages!
+
+By default, the hugepage heap does not shrink.  To enable hugepage heap
+shrinking, set HUGETLB_MORECORE_SHRINK=yes.  NB: We have been seeing some
+unexpected behavior from glibc's malloc when this is enabled
+
+Intead of hugectl, one can just set env variables
+HUGETLB_DEBUG=1
+HUGETLB_MORECORE=yes
+HUGETLB_SHM=yes
+HUGETLB_SHARE=1
+HUGETLB_PATH=/mnt/huge
+
+
+Currently, the stack cannot be backed by huge pages
+
+
+---------------
+Namespace isolation
+Main article: Linux namespaces
+While not technically part of the cgroups work, a related feature of the Linux kernel is namespace isolation, where groups of processes are separated such that they cannot "see" resources in other groups. For example, a PID namespace provides a separate enumeration of process identifiers within each namespace. Also available are mount, user, UTS, network and SysV IPC namespaces.
+
+The PID namespace provides isolation for the allocation of process identifiers (PIDs), lists of processes and their details. While the new namespace is isolated from other siblings, processes in its "parent" namespace still see all processes in child namespaces—albeit with different PID numbers.[22]
+Network namespace isolates the network interface controllers (physical or virtual), iptables firewall rules, routing tables etc. Network namespaces can be connected with each other using the "veth" virtual Ethernet device.[23]
+"UTS" namespace allows changing the hostname.
+Mount namespace allows creating a different file system layout, or making certain mount points read-only.[24]
+IPC namespace isolates the System V inter-process communication between namespaces.
+User namespace isolates the user IDs between namespaces.[25]
+Cgroup namespace[26]
+Namespaces are created with the "unshare" command or syscall, or as new flags in a "clone" syscall.[27]
+
+The "ns" subsystem was added early in cgroups development to integrate namespaces and control groups. If the "ns" cgroup was mounted, each namespace would also create a new group in the cgroup hierarchy. This was an experiment that was later judged to be a poor fit for the cgroups API, and removed from the kernel.
+
+Linux namespaces were inspired by the more general namespace functionality used heavily throughout Plan 9 from Bell Labs.[28]

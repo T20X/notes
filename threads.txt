@@ -1,0 +1,24 @@
+1. thread created will be destroy when going out of scope. Callign detach will prevent it!
+2. lock_guard is a lightway to take ownership of a mutex! There is no transfer once the mutex ownership 
+has been taken!
+adopt_lock_t only!
+2. unique_lock can optinally have the ownership of the mutex. and the ownership can be moved away from it!at a cost of having an extra flag to say if the mutex is being owned or not. Also it can provide deffered locking! no luxury of lock/unlock/try_lock functions eather!..
+ defer_lock_t	do not acquire ownership of the mutex
+try_to_lock_t	try to acquire ownership of the mutex without blocking
+adopt_lock_t	assume the calling thread already has ownership of the mutex
+    // lock both mutexes without deadlock
+    std::lock(from.m, to.m);
+    // make sure both already-locked mutexes are unlocked at the end of scope
+    std::lock_guard<std::mutex> lock1(from.m, std::adopt_lock);
+    std::lock_guard<std::mutex> lock2(to.m, std::adopt_lock); 
+// equivalent approach:
+//    std::unique_lock<std::mutex> lock1(from.m, std::defer_lock);
+//    std::unique_lock<std::mutex> lock2(to.m, std::defer_lock);
+//    std::lock(lock1, lock2);
+3. scoped_lock (c++17)
+When a scoped_lock object is created, it attempts to take ownership of the mutexes it is given. When control leaves the scope in which the scoped_lock object was created, the scoped_lock is destructed and the mutexes are released, in reverse order. If several mutexes are given, deadlock avoidance algorithm is used as if by std::lock.
+4. std::lock (mutexes...)  locks given mutex using deadlock detection algo!
+5. for condition variables only unique_lock will work as it needs to unlock the mutex automatically.
+6. thread_local vairables can be static as well! When thread exits they are destoryed as well!
+7. std::once_flag flag1, flag2; 
+  void simple_do_once(){ std::call_once(flag1, [](){ std::cout << "Simple example: called once\n"; }); }

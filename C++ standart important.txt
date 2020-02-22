@@ -1,0 +1,155 @@
+A default constructor is trivial if it is not user-provided and if:
+(6.1) � its class has no virtual functions (13.3) and no virtual base classes (13.1), and
+(6.2) � no non-static data member of its class has a default member initializer (12.2), and
+(6.3) � all the direct base classes of its class have trivial default constructors, and
+(6.4) � for all the non-static data members of its class that are of class type (or array thereof), each such class
+has a trivial default constructor.
+
+
+[object.lifetime]
+-----------------------
+An object is created by a definition, by a new-expression, when implicitly changing the active member of a union, or when a temporary object is created ([conv.rval], [class.temporary]
+
+The lifetime of an object or reference is a runtime property of the object or reference. The liftime of an object begins when the space has been allocated for the object and *IF PRESENT*, objects has completed running its NON trivial default constructor/copy/move. If object is trivial then it lifetime begins when storage for the object is allocated.
+
+The lifetime of an object o of type T ends when:
+if T is a class type with a non-trivial destructor ([class.dtor]), the destructor call starts, OR the storage which the object occupies is released, or is reused by an object that is not nested within o
+
+If a complete object is created ([expr.new]) in storage associated with another object e of type �array of N unsigned char� or of type �array of N std?::?byte� ([cstddef.syn]), that array provides storage for the created object if:
+
+If the subobject contains a reference member or a const subobject, the name of the original subobject cannot be used to access the new object ([basic.life]). ?�?end note?] [?Example:
+
+struct X { const int n; };
+union U { X x; float f; };
+void tong() {
+  U u = {{ 1 }};
+  u.f = 5.f;                          // OK, creates new subobject of u ([class.union])
+  X *p = new (&u.x) X {2};            // OK, creates new subobject of u
+  assert(p->n == 2);                  // OK
+  assert(*std::launder(&u.x.n) == 2); // OK
+  assert(u.x.n == 2);                 // undefined behavior, u.x does not name new subobject
+}
+
+- the lifetime of e has begun and not ended, and
+- the storage for the new object fits entirely within e, and
+- there is no smaller array object that satisfies these constraints.
+
+Unless an object is a bit-field or a base class subobject of zero size, the address of that object is the address of the first byte it occupies. Two objects a and b with overlapping lifetimes that are not bit-fields may have the same address if one is nested within the other, or if at least one is a base class subobject of zero size and they are of different types; otherwise, they have distinct addresses.5
+
+[?Example:
+
+static const char test1 = 'x';
+static const char test2 = 'x';
+const bool b = &test1 != &test2;      // always true
+
+
+struct B { vritual f();}; //non trivial defualt constructor because of virtual table pointer
+struct D1 : B { void f(); };
+struct D2 : B { void f(); };
+void B::mutate() {
+  new (this) D2;    // reuses storage � ends the lifetime of *this
+  f();  //not ok, object stroage was reused by another *type*(D2)!
+    However this is well defined! (new (this) D2)->f() 
+}
+B* b = new D1;
+
+struct C {f(); mutate()};
+void C::mutate() {
+  new (this) C;    // reuses storage � ends the lifetime of *this
+  f();  // ok, object stroage is of the same class!
+}
+
+If a program ends the lifetime of an object of type T with static, thread, or automatic storage duration and if T has a non-trivial destructor,42 the program must ensure that an object of the original type occupies that same storage location when the implicit destructor call takes place; otherwise the behavior of the program is undefined
+
+Creating a new object within the storage that a const complete object with static, thread, or automatic storage duration occupies, or within the storage that such a const object used to occupy before its lifetime ended, results in undefined behavior. [?Example:
+
+If a program ends the lifetime of an object of type T with static, thread, or automatic storage duration and if T has a non-trivial destructor,42 the program must ensure that an object of the original type occupies that same storage location when the implicit destructor call takes place; otherwise the behavior of the program is undefined.
+
+For an object with a non-trivial constructor, referring to any non-static member or base class of the object before the constructor begins execution results in undefined behavior. For an object with a non-trivial destructor, referring to any non-static member or base class of the object after the destructor finishes execution results in undefined behavio
+struct W { int j; };
+struct X : public virtual W { };
+struct Y {
+  int* p;
+  X x;
+  Y() /*******constructor execution begins*****/: p(&x.j) {   // undefined, x is not yet constructed
+    
+
+
+------------------------
+Cannot re-create const in const!
+-------------------------
+Creating a new object within the storage that a const complete object with static, thread, or automatic storage duration occupies, or within the storage that such a const object used to occupy before its lifetime ended, results in undefined behavior. [?Example:
+struct B {
+  B();
+  ~B();
+};
+
+const B b;
+
+void h() {
+  b.~B();
+  new (const_cast<B*>(&b)) const/*const in const is not allowed*/ B;     // undefined behavior
+
+---------------------------------
+
+
+struct V {
+  virtual void f();
+};
+
+struct A : virtual V { };
+
+struct B : virtual V {
+  B(V*, A*);
+};
+
+struct D : A, B {
+  D() : B((A*)this, this) { }
+};
+
+B::B(V* v, A* a) {
+  typeid(*this);        // type_�info for B
+  typeid(*v);           // well-defined: *v has type V, a base of B yields type_�info for B
+  typeid(*a);           //*a IS ***STILL UNDER CONSTRUCTION BECAUSE IT WAS PASSAED FROM D!*** undefined behavior: type A not a base of B
+  dynamic_cast<B*>(v);  // well-defined: v of type V*, V base of B results in B*
+  dynamic_cast<B*>(a);  // undefined behavior, a has type A*, A not a base of B
+
+------------------
+The storage duration is the property of an object that defines the minimum potential lifetime of the storage containing the object. The storage duration is determined by the construct used to create the object and is one of the following:
+- static storage duration
+- thread storage duration
+- automatic storage duration
+- dynamic storage duration
+
+When storage for an object with automatic or dynamic storage duration is obtained, the object has an indeterminate value, and if no initialization is performed for the object, that object retains an indeterminate value until that value is replaced ([expr.ass]). [?Note: Objects with static or thread storage duration are zero-initialized, see
+
+If a variable with automatic storage duration has initialization or a destructor with side effects, an implementation shall not destroy it before the end of its block nor eliminate it as an optimization, even if it appears to be unused, except that a class object or its copy/move may be eliminated as specified i
+
+--------------
+Every value computation and side effect associated with a full-expression is sequenced before every value computation and side effect associated with the next full-expression to be evaluate
+
+When calling a function (whether or not the function is inline), every value computation and side effect associated with any argument expression, or with the postfix expression designating the called function, is sequenced before execution of every expression or statement in the body of the called function
+
+A discarded-value expression is an expression that is used for its side-effects only. The value calculated from such expression is discarded. Such expressions include the full expression of any expression statement, the left-hand argument of the built-in comma operator, or the argument of a cast-expression that casts to the type void.
+
+----------
+Operator overloading shall not modify the rules for the built-in operators, that is, for operators applied to types for which they are defined by this Standard
+------------------
+An aggregate is one of the following types:
+
+array type
+class type (typically, struct or union), that has
+no private or protected direct (since C++17
+no user-provided, inherited, or explicit constructors (explicitly defaulted or deleted constructors are allowed)
+no virtual, private, or protected (since C++17) base classes
+no virtual member functions
+no default member initializers
+
+--------------
+A literal type is one whose layout can be determined at compile time. The following are the literal types:
+
+void
+scalar types
+references
+Arrays of void, scalar types or references
+A class that has a trivial destructor, and one or more constexpr constructors that are not move or copy constructors. Additionally, all its non-static data members and base classes must be literal types and not volatile.

@@ -1,0 +1,93 @@
+﻿
+(1) negative integers are represented as two's complemented
+first normal ingteger is inverted! then + 1
+for example 
+1100 -> 0011 -> 0011 + 1 -> 0100
+
+(2) 
+
+This prediction has two aspects: predicting whether a conditional jump will be taken or not, and predicting the target address that a conditional or unconditional jump goes to.
+
+The microarchitecture tries to overcome this problem by feeding the most probable branch into the pipeline and execute it speculatively. Speculative execution means that the instructions are decoded and executed, but the results are not retired into the permanent register file, and memory writes are pending until the branch instruction is finally resolved. If it turns out that the guess was wrong and the wrong branch was executed speculatively, then the pipeline is flushed, the results of the speculative execution are discarded and the other branch is fed into the pipeline. This is called a branch misprediction, and the result is that several clock cycles are wasted. The number of wasted clock cycles is approximately equal to the length of the pipeline.
+
+The time that is wasted in case of a branch misprediction is equal to the number of stages in the pipeline from the fetch stage to the execute stage. Modern microprocessors tend to have quite long pipelines so that the misprediction delay is between 10 and 20 clock cycles.
+
+Some processors allow branch prediction hints to be inserted into the code to tell whether the static prediction should be taken or not taken. The Intel Pentium 4 accepts branch prediction hints, but this feature was abandoned in later Intel processors
+
+(3) Instructions are split into μops
+  -  The instruction ADD [MEM1],EAX may generate three μops: one for reading from memory, one for adding, and one for writing the result back to memory
+The advantage of this is that the μops can be executed out of order
+
+(4) There are plenty temporary registers CPU can use! We cannot afford the luxury of using a new register for every calculation. But the microprocessor has plenty of temporal registers to use. The microprocessor can rename any of these temporary registers to represent a logical register such as EAX.
+
+(5) Branch Target Buffer (BTB) stores the target address of all jumps. The target address is stored in the BTB the first time an unconditional jump is executed and the first time a conditional jump is taken. The second time the same jump is executed, the target address in the BTB is used for fetching the predicted target into the pipeline, even though the true target is not calculated until the jump reaches the execution stage. The predicted target is very likely to be correct for unconditional jumps, but not certain, because the BTB may not be big enough to contain all jumps in a program, so different jumps may replace each other's entries in the BTB
+
+(6)
+first concept to understand is the simplest branch prediction teqnique - saturation count!
+it has 4 states:
+ - stongly not taken (if set we don't follow branch)
+ - weakly not taken (if set we don't follow branch)
+ - weakly taken (if set we follow branch)
+ - strongly taken (if set we  follow branch)
+
+two level adaptive branch predictor
+branch history register - tracks the last N last branch historical info - 0(miss), 1(hit)
+Say for N=2, 00 - last two were misses, 01 - miss then hit!
+pattern history table - for each value combination that branch history register can have, it would store saturating count state!  There are 2^N items in pattern history table
+
+for pattern 01010101, entries for 00 and 11 are not even used from pattern history table!
+
+Any repetitive pattern with a period of n+1 or less can be predicted perfectly after a warm-up time no longer than three periods. A repetitive pattern with a period p higher than n+1 and less than or equal to 2n can be predicted perfectly if all the p n-bit subsequences are different.
+(Example : With n = 4, we can predict the repetitive pattern 000011-000011-000011 with period 6, because the six 4-bit subsequences: 0000, 0001, 0011, 0110, 1100, 1000, are all different.)
+
+The PMMX, PPro, P2 and P3 all use a two-level adaptive predictor with n = 4. This requires 36 bits of storage for each branch: two bits for each of the 16 counters in the pattern history table, and 4 bits for the branch history register.
+
+Since the storage requirement for the two-level predictor grows exponentially with the number of history bits n, there is a practical limit to how big we can make n. One way of overcoming this limitation is to share the branch history register and the pattern history table among all the branches rather than having one set for each branch.
+Imagine a two-level predictor with a global branch history register, storing the history of the last n branches, and a shared pattern history table. The prediction of a branch is made on the basis of the last n branch events. Some or all of these events may be occurrences of the same branch. If the innermost loop in a program contains m conditional jumps, then the prediction of a branch within this loop can rely on floor(n/m) occurrences of the same branch in the branch history register, while the rest of the entries come from other branches. If this is enough for defining the pattern of this branch, or if it is highly correlated with the other branches, then we can expect the prediction rate to be good. Many modern processors use variants of this method with values of n from 8 to 16.
+
+The disadvantage of using global tables is that branches that behave differently may share the same entry in the global pattern history table. This problem can be reduced by storing a biasing bit (saturating counter really) for each branch. The biasing bit indicates whether the branch is mostly taken or not taken. The predictors in the pattern history table now no longer indicate whether the branch is predicted to be taken or not, but whether it is predicted to go the same way or the opposite way of the biasing bit.
+
+The literature recommends that the index into the pattern history table is generated by an XOR combination of the history bits and the branch address. However, my experimental results do not confirm such a design. The indexing function in figure 3.3 may be a more complex hashing function of the history and the branch address, or it may involve the branch target address, BTB entry address or trace cache address
+---------------
+A hybrid predictor, also called combined predictor, implements more than one prediction mechanism. The final prediction is based either on a meta-predictor that remembers which of the predictors has made the best predictions in the past, or a majority vote function based on an odd number of different predictors
+---------------
+
+(7) A loop with a high period and several branches inside the loop body would require a very long history table and many entries in the pattern history table for making good predictions in a two-level predictor. The best solution to this problem is to use a different prediction method for loops, called a loop counter or switch counter. A counter counts the period n (like how many iterations was taken) the first time the loop is executed. On subsequent executions, the repetition count is compared with n and the loop is predicted to exit when the count equals the period.
+(BECAUSE it would need to warm up to predict something like this perfectly 000000000001) that 1 is the compare to terminate the loop which would be activated once!
+It is like all those branches in loop would have some pattern and we just predict if branches are taken at certain loop iteration!
+
+So loop prediction techni will ask for BTB entry and store there below:
+- whether the branch has loop behavior or not, 
+- whether the branch is taken or not taken at loop exit
+- the period,
+- the current repetition count
+- and the branch target.
+
+(8) processors make only one BTB entry for an indirect jump or call. This means that it will always be predicted to go to the same target as it did last time.
+17
+As object oriented programming with polymorphous classes has become more common, there is a growing need for predicting indirect calls with multiple targets. This can be done by assigning a new BTB entry for every new jump target that is encountered. The history buffer and pattern history table must have space for more than one bit of information for each jump incident in order to distinguish more than two possible targets
+
+(9) Modern Intel CPUs
+The high throughput for taken branches of one per clock was observed for up to 128 branches with no more than one branch per 16 bytes of code. If there is more than one branch per 16 bytes of code then the throughput is reduced to one jump per two clock cycles. If there are more than 128 branches in the critical part of the code, and if they are spaced by at least 16 bytes, then apparently the first 128 branches have the high throughput and the remaining have the low throughput.
+These observations may indicate that there are two branch prediction methods: a fast method tied to the μop cache and the instruction cache, and a slower method using a branch target buffer.
+
+The branch misprediction penalty varies a lot. It was measured to 15 - 20 clock cycles.
+
+(10) TSS (Task State Segment) - hardware struct per process!
+Linux just uses it per CPU and all the processes share it (including kernel)!
+
+This containns!
+The stack pointer addresses for each privilege level.
+Pointer Addresses for the Interrupt Stack Table (The inner-level stack pointer section above, discusses the need for this).
+Offset Address of the IO permission bitmap
+
+
+The IST mechanism provides up to seven IST pointers in the TSS. The pointers are referenced by an interrupt-gate 
+descriptor in the interrupt-descriptor table (IDT); see Figure 6-7. The gate descriptor contains a 3-bit IST index 
+field that provides an offset into the IST section of the TSS. Using the IST mechanism, the processor loads the 
+value pointed by an IST pointer into the RSP.
+When an interrupt occurs, the new SS selector is forced to NULL and the SS selector’s RPL field is set to the new 
+CPL. The old SS, RSP, RFLAGS, CS, and RIP are pushed onto the new stack. Interrupt processing then proceeds as 
+normal.
+
+(11) memory is not fast enough to feed data to all CPUs. Say 2 cores writing data  > 8K chunks of data in the loop can saturate the whole bus
