@@ -101,3 +101,13 @@ in c++17 out can be returned by value as copy ellison is now guaranteed
 
   // List of homogeneous constant values
 template <auto v1, decltype(v1)... vs> struct typed_value_list { };
+
+
+15. auto for non template type parameter
+
+template <auto func>
+auto make_lambda();
+You could use it like this:
+
+bool foo(int);
+auto lambda = make_lambda<foo>();

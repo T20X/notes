@@ -1,4 +1,35 @@
-﻿template <class T>
+﻿typedef void (*delete_int_t)(int*);
+void delete_int(int* p) { delete p; }
+SmartPtr<int, delete_int_t> p(new int(42), delete_int);
+
+A template instantiation is also a function and can be used in the same way:
+template <typename T> void delete_T(T* p) { delete p; }
+SmartPtr<int, delete_int_t> p(new int(42), delete_T<int>);
+
+------------------------
+    template <class... I> is not iqual index_sequence<I...>!
+    index_sequence is template <class... I> index_sequence! so basically class... I can be deduced from index sequence type
+    ------------------
+    A non-type template-parameter shall have one of the following (optionally cv-qualified) types:
+(4.1) — integral or enumeration type,
+(4.2) — pointer to object or pointer to function,
+(4.3) — lvalue reference to object or lvalue reference to function,
+(4.4) — pointer to member,
+(4.5) — std::nullptr_t.
+------------------------------
+    size_t... SZ - this can be made with just std::make_index_sequence<N>
+    ----------------
+    template <class IS, class... T>
+     struct indexed_types;
+    template <size_t... SZ, class... T>  <---SUPER TRICK because SZ is concrete type, it possible to have another variadic pack after it!
+     struct indexed_types<std::index_sequence<SZ...>,T...> : IndexedType<IS, T>...
+    {
+
+    };   
+
+-----------
+
+template <class T>
 struct Base {
     struct Node  {
         int i = 0;

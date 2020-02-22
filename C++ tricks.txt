@@ -40,3 +40,19 @@ public:
 	std::cin.tie(nullptr);
 	return nullptr;
 }();
+
+(3) super cool move assingment! allocating in this won't be always standart complying though!
+struct A
+{
+  ~A() noexcept;
+  A(A&&) noexcept;
+  A& operator=(A&& o)
+  {
+    static_assert(noexcept(~A()));
+    static_assert(noexcept(A(std::move(o)));
+    o.~A();
+    return *::new(static_cast<void*>(this)) (std::move(o));
+  }
+}
+
+(4) sstd::function<void(std::string &, char)> p2 = &std::string::push_back;

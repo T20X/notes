@@ -1,0 +1,2 @@
+docker exec -it some-cassandra bash - acccess bash shell inside docker container!
+

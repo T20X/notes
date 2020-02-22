@@ -1,3 +1,7 @@
 -fuse-cxa-atexit
 ----------------
  Register destructors for objects with static storage duration with the __cxa_atexit  function rather than the atexit function. This option is required for fully standards- compliant handling of static destructors, but only works if your C library supports  __cxa_atexit. Normal atexit does not handle shared library unloading and has limit of  32 calls!
+
+ -ftime-report
+ --------
+ provide hunderds of paramters containing how much each step of the build took!

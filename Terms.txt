@@ -1,6 +1,8 @@
+open/closed principle of the software designâ€”a class (or another unit of code, such as a module) should be closed for modifications; once the class presents an interface to its clients, the clients come to depend on this interface and the functionality it provides
+--------------
 virtual function - enables overriding implementation of a function in the derived class by calling it from the base class interface
 ------------------
-Next time somebody tells you that you should never use multiple inheritance, look them straight in the eye and say, “One size does not fit all.” If they respond with something about their bad experience on their project, look them in the eye and repeat, slower this time, “One size does not fit all.”
+Next time somebody tells you that you should never use multiple inheritance, look them straight in the eye and say, ï¿½One size does not fit all.ï¿½ If they respond with something about their bad experience on their project, look them in the eye and repeat, slower this time, ï¿½One size does not fit all.ï¿½
 ---------------------
 An object's class defines how the object is implemented .The class defines object's internal state and the implementation of its operations.
 

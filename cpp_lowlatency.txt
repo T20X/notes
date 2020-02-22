@@ -31,6 +31,13 @@ _COARSE clock_gettime does not do a kernel mode switch
  -ffast-math improves math ops performance by compromising precision. speeds up pow
 ------------------------------
 In order to effectively write your code to take advantage of these rules, when writing if-else or switch statements, check the most common cases first and work progressively down to the least common
+---------------------------
+swtich (num)
+case 1:
+case 2
+case N+1:
+if increasing by step 1 then compiler can easily optimizy it by just applying offset!
+
 --------------------
  static_assert(
       (kMaxCpus & (kMaxCpus - 1)) == 0,

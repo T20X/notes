@@ -1,3 +1,5 @@
+Function parameters are typically passed in registers. See the ABI link at the beginning of this answer for details, but in short, integral types and pointers are passed in registers %rdi, %rsi, %rdx, %rcx, %r8, and %r9, with floating-point arguments in the %xmm0 to %xmm7 registers
+-----------
 C++filt can be used to demangle names
 abidiff can be used to compare two executable on ABI compatibility
 -----------

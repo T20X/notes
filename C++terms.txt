@@ -7,3 +7,8 @@ code is said to be exception safe if it keeps program in a consistent state even
 
 ----------------------------------
 Behaviors are composable if they can be applied to the same object separately
+
+--------------
+what is for a function to be inline!
+(1) linker won't give you single definition error!
+(2) if translation unit does not use inline function it won't include it the object file!

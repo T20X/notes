@@ -1,0 +1,268 @@
+Basic
+----
+- Note that in Python, unlike C, assignment cannot occur inside expressions
+--------------
+>>> import site
+>>> site.getsitepackages()
+[
+  '/System/Library/Frameworks/Python.framework/Versions/3.5/Extras/lib/python',
+  '/Library/Python/3.5/site-packages'
+]
+-------------------------
+python -i -c 'print("ehllo")'
+----------------------
+print("""\
+Usage: thingy [OPTIONS]
+     -h                        Display this usage message
+     -H hostname               Hostname to connect to
+""")
+----
+2*2->>4
+-----------
+>>> text = ('Put several strings within parentheses '
+...         'to have them joined together.')
+>>> text
+'Put several strings within parentheses to have them joined together.
+------------
+word = 'Python'
+the start is always included, and the end always excluded. This makes sure that s[:i] + s[i:] is always equal to s:
+
+>>>
+>>> word[:2] + word[2:]
+'Python'
+------------
+Python strings cannot be changed — they are immutable.
+ lists are a mutable type
+ Concatenating immutable sequences always results in a new object
+ The only operation that immutable sequence types generally implement that is not also implemented by mutable sequence types is support for the hash() built-in
+ Attempting to hash an immutable sequence that contains unhashable values will result in TypeError.
+ ---VARIABLES----
+ The global statement can be used to indicate that particular variables live in the global scope and should be rebound there; the nonlocal statement indicates that particular variables live in an enclosing scope and should be rebound there.
+
+ data attributes correspond to “instance variables” in Smalltalk, and to “data members” in C++. Data attributes need not be declared; like local variables, they spring into existence when they are first assigned to. For example, if x is the instance of MyClass created above, the following piece of code will print the value 16, without leaving a trace:
+
+x.counter = 1
+while x.counter < 10:
+    x.counter = x.counter * 2
+print(x.counter)
+del x.counter
+
+ ----------------TUPLES----------
+ tuples are immutable as strings are!
+ t = 12345, 54321, 'hello!' - tuple
+ t = (1,2,"sd2")
+ >>> empty = ()
+>>> singleton = 'hello',    # <-- note trailing comma
+>>> len(empty)
+0
+>>> len(singleton)
+1
+----------LISTS---------
+Lists and tuples are mostly identical in Python, except that lists are mutable and tuples are immutable. Both lists and tuples can be either homogeneous or heterogeneous
+
+s.copy() - creates a shallow copy of s (same as s[:])
+
+Lists may be constructed in several ways: ->>>
+  Using a pair of square brackets to denote the empty list: []
+  Using square brackets, separating items with commas: [a], [a, b, c]
+  Using a list comprehension: [x for x in iterable]
+  Using the type constructor: list() or list(iterable)
+   - iterable may be either a sequence, a container that supports iteration, or an iterator object;
+   -  If iterable is already a list, a copy is made and returned, similar to iterable[:]
+
+ l=['a','b'] - list
+ p=l - p is a reference to l!
+ (to copy) p=l[:]
+ o=list(range(5))
+ print(o) ->  [0, 1, 2, 3, 4]
+ letters[:] = [] - clear list by replacing all the elements with empty list!
+  l[len(l):]=[1] adds 1 to the list!
+  
+  List comprehensions ->
+  >>> [x for x in vec if x >= 0]
+[0, 2, 4]
+>>> # apply a function to all the elements
+>>> [abs(x) for x in vec]
+[4, 2, 0, 2, 4]
+>>> # call a method on each element
+>>> freshfruit = ['  banana', '  loganberry ', 'passion fruit  ']
+>>> [weapon.strip() for weapon in freshfruit]
+['banana', 'loganberry', 'passion fruit']
+>>> # create a list of 2-tuples like (number, square)
+>>> [(x, x**2) for x in range(6)]
+[(0, 0), (1, 1), (2, 4), (3, 9), (4, 16), (5, 25)]
+-----STRING---------
+
+to concatenate string fast
+- make a list of strings l=["asdf","asdf","sdf"]
+r=str()
+r.join(l)
+-----SETS--------
+Note: to create an empty set you have to use set(), not {}; the latter creates an empty dictionary, a data structure that we discuss in the next section.
+>>> 'crabgrass' in basket
+False
+
+Similarly to list comprehensions, set comprehensions are also supported:
+
+>>>
+>>> a = {x for x in 'abracadabra' if x not in 'abc'}
+>>> a
+{'r', 'd'}
+
+----DICTIONARY----
+The dict() constructor builds dictionaries directly from sequences of key-value pairs:
+
+>>>
+>>> dict([('sape', 4139), ('guido', 4127), ('jack', 4098)])
+{'sape': 4139, 'jack': 4098, 'guido': 4127}
+In addition, dict comprehensions can be used to create dictionaries from arbitrary key and value expressions:
+
+>>>
+>>> {x: x**2 for x in (2, 4, 6)}
+{2: 4, 4: 16, 6: 36}
+When the keys are simple strings, it is sometimes easier to specify pairs using keyword arguments:
+
+>>>
+>>> dict(sape=4139, guido=4127, jack=4098)
+{'sape': 4139, 'jack': 4098, 'guido': 4127}
+
+iterate over a dict!
+>>> knights = {'gallahad': 'the pure', 'robin': 'the brave'}
+>>> for k, v in knights.items():
+...     print(k, v)
+
+----------------
+ a, b = 0, 1 - multiple assingment
+ a=0 and b=1
+ --------------
+ If you need to modify the sequence you are iterating over while inside the loop (for example to duplicate selected items), it is recommended that you first make a copy
+>>> for w in words[:]:  # Loop over a slice copy of the entire list.
+...     if len(w) > 6:
+...         words.insert(0, w)
+
+Loop statements may have an else clause; it is executed when the loop terminates through exhaustion of the list (with for) or when the condition becomes false (with while), but not when the loop is terminated by a break statemen
+
+-----------
+arguments are passed using call by value (where the value is always an object reference, not the value of the object
+functions can be ranamed
+--------------
+The default value is evaluated only once
+def f(a, L=[]):
+    L.append(a)
+    return L
+
+print(f(1))
+print(f(2))
+print(f(3))
+This will print
+
+[1]
+[1, 2]
+[1, 2, 3]
+-------------------(solution)
+def f(a, L=None):
+    if L is None:
+        L = []
+    L.append(a)
+    return L
+
+    ----------
+    Functions can also be called using keyword arguments of the form kwarg=value. For instance, the following function:
+
+def parrot(voltage, state='a stiff', action='voom', type='Norwegian Blue'):
+def cheeseshop(kind, *arguments, **keywords):
+*arguments - tuple
+**keywords - dict
+--------------------
+Unpacking!
+-----------------
+>>> args = [3, 6]
+>>> list(range(*args))            # call with arguments unpacked from a list
+[3, 4, 5]
+>>> d = {"voltage": "four million", "state": "bleedin' demised", "action": "VOOM"}
+>>> parrot(**d)
+
+The statement t = 12345, 54321, 'hello!' is an example of tuple packing: the values 12345, 54321 and 'hello!' are packed together in a tuple. The reverse operation is also possible:
+
+>>>
+>>> x, y, z = t
+
+star unpacking with ignored variables!
+l=(1,1,1,1,(1,1,"sdf"))
+first,*_,(*_,last)=l
+
+unpacking is not just for tuple,lists it also works for any iteratable!
+
+----------
+lambdas
+>>> pairs = [(1, 'one'), (2, 'two'), (3, 'three'), (4, 'four')]
+>>> pairs.sort(key=lambda pair: pair[1])
+>>> pairs
+[(4, 'four'), (1, 'one'), (3, 'three'), (2, 'two')]
+------------
+
+>>> a = [-1, 1, 66.25, 333, 333, 1234.5]
+>>> del a[0]
+>>> a
+[1, 66.25, 333, 333, 1234.5]
+>>> del a[2:4]
+>>> a
+[1, 66.25, 1234.5]
+>>> del a[:]
+>>> a
+[]
+del can also be used to delete entire variables:
+
+>>>
+>>> del a
+Referencing the name a hereafter is an error (at least until another value is assigned to it). We’ll find other uses for del later.
+
+------
+enumerate
+------
+seasons = ['Spring', 'Summer', 'Fall', 'Winter']
+for i,v in seasons:
+ print(i,v)
+
+list(enumerate(seasons, start=1))
+[(1, 'Spring'), (2, 'Summer'), (3, 'Fall'), (4, 'Winter')]
+
+---
+zip
+--
+>>> questions = ['name', 'quest', 'favorite color']
+>>> answers = ['lancelot', 'the holy grail', 'blue']
+>>> for q, a in zip(questions, answers):
+...     print('What is your {0}?  It is {1}.'.format(q, a))
+
+-----CLASSES-------
+__update - just add __ to the data member name to make it private!
+
+----ITERATORS----
+Having seen the mechanics behind the iterator protocol, it is easy to add iterator behavior to your classes. Define an __iter__() method which returns an object with a __next__() method. If the class defines __next__(), then __iter__() can just return self:
+
+class Reverse:
+    """Iterator for looping over a sequence backwards."""
+    def __init__(self, data):
+        self.data = data
+        self.index = len(data)
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self.index == 0:
+            raise StopIteration
+        self.index = self.index - 1
+        return self.data[self.index]
+
+-----------FASTER PYTHON------------------
+PyPy is its own implementation of Python. This basically means that it keeps Python the language and starts over from scratch with everything else. So only pure Python packages work out of the box in PyPy; anything designed to hook into the CPython (i.e., the standard Python) internals requires special effort to accommodate. Even getting NumPy working in PyPy has been a major undertaking, and it still involves some complicated installation instructions. So, your code will run faster in PyPy, but you will also have to forego some of the most important Python tools (for example, SciPy, Matplotlib, and scikit-learn). If you’re doing scientific computing or data science, this probably makes PyPy a non-starter.
+
+Cython is a way to use a Python-like syntax to generate C code that can be compiled and then called from Python. So the Cython workflow is not entirely convenient: you have to learn the Cython syntax, you have to run a command to generate your C file, and then compile it and load it into your Python session. Furthermore, not all Python features are supported in Cython. Because Cython is compiled ahead of time, you have to decide your function’s argument types in advance. Also, there can be portability issues to resolve when using Cython, because the C code might need to be compiled on the system where it’s going to run.
+
+Numba is a just-in-time (JIT) compiler for Python. When a Numba function is called for the first time, the function is compiled into machine code (for the given argument types) and stored. Subsequent calls with the same argument types use the machine code and are therefore very fast. Unlike PyPy and Cython, Numba is an actual Python package: you can simply decorate any function you want to compile, and that’s it. However, as for Cython, not every feature of Python is supported. And Numba requires a local installation of LLVM (the framework used by Numba to perform compilation). Furthermore, because the compilation happens at run time, the first function call can be slower than usual.
+
+As for performance, from the comparisons I’ve seen I think Numba tends to be slightly faster than Cython, and both are significantly faster than PyPy (but remember that PyPy implements the full Python language, while Numba and Cython restrict the language). I re-ran the simple benchmark here and got 4000 milliseconds (CPython), 50 milliseconds (PyPy*), 5 milliseconds (Numba), and 6 milliseconds (Cython). Serious benchmarking is hard work, so take this with a grain of salt.
+
+In summary, PyPy is useful only when you’re sure you don’t want any of the packages that don’t work with PyPy, whereas the choice between Cython and Numba is essentially a choice between ahead-of-time compilation and just-in-time compilation. I’d say that Numba is more convenient overall for personal use, but Cython might be better if you’re going to be calling the same functions repeatedly from many different Python sessions, or if portability is a concern and LLVM is an unacceptable dependency.

@@ -1,4 +1,9 @@
+---------------------------
 SFINAE only works in the template context, so the member function itself has to be a template
+SFINAE only works if the functions can make it in the overload set!
+    for example this won't work
+        explicit operator->()
+        operator->()
 -------------------
 the overload resolution is done only on the basis of the function declaration—the parameters, the default arguments, and the return type (the latter is not used to deduce types or select a better overload, but still undergoes type substitution and is covered by SFINAE)
 --------------
