@@ -1,4 +1,30 @@
-﻿    it is possible to forward declare class inside namespeace but need to do liek below
+﻿In ISO C and C++, you can freely use inline void f(void) {} in header files -- although for different reasons!
+
+In ISO C, it does not provide an external definition at all. In ISO C++ it does provide an external definition; however C++ has an additional rule (which C doesn't), that if there are multiple external definitions of an inline function, then the compiler sorts it out and picks one of them.
+
+extern inline void f(void); in a .c file in ISO C is meant to be paired with the use of inline void f(void) {} in header files. It causes the external definition of the function to be emitted in that translation unit. If you don't do this then there is no external definition, and so you may get a link error (it is unspecified whether any particular call of f links to the external definition or not).
+
+In other words, in ISO C you can manually select where the external definition goes; or suppress external definition entirely by using static inline everywhere; but in ISO C++ the compiler chooses if and where an external definition would g
+
+
+    static inline function make sense because then if a function is declared just inline in more then one translation unit, then if it is called from another translation unit, it would violate ODR without diagnostic!
+
+    A.cpp
+      inline int foo() { return 0; }
+    B.cpp 
+        inline int foo() { return 1; }
+    main.cpp
+     extern int foo();
+     ...
+     foo() = ? could be randomly 0/1 depending on how compiler built it!
+
+    Also static inline will make sure that no function is even generated!
+
+
+C++ does not allow types and pointers/referenes to objects or functions with internal linkage (static) to be used as template parameters. Replacing static with anonymous namespace still "hides" the things from other translation units but they keep external linkage (mostly) and can so be used as template arguments
+
+    ------------------------
+    it is possible to forward declare class inside namespeace but need to do liek below
     namespace test
     {
        class Strategy;

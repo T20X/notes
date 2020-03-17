@@ -152,3 +152,8 @@ we are interested in the other case: the address is not valid, there
 is no vma that contains this address. In this case, the kernel jumps
 to the bad_area label.
 
+---------
+in modern malloc, when 2 threads call malloc at the same time, memory is allocated immediately, since each thread maintains a separate heap, and their own freelist chunk data structure
+
+
+

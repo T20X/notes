@@ -2,7 +2,15 @@
 (1) negative integers are represented as two's complemented
 first normal ingteger is inverted! then + 1
 for example 
+
+(invert the number from negative to positive example)
 1100 -> 0011 -> 0011 + 1 -> 0100
+
+(invert the number from positive to negative example)
+0100 -> 1011 -> 1011 + 1 -> 1100
+         
+
+ in two's-complement addition and subtraction work exactly the same on both signed and unsigned numbers
 
 (2) 
 

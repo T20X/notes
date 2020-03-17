@@ -15,6 +15,7 @@ struct state
   StatePtr on_event(const event_connecting& e) ...
   StatePtr on_event(const event_connected& e) ...
 }
+
 template <State>
 struct event 
 {

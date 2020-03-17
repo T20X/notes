@@ -51,4 +51,9 @@ ENTRY(entry_SYSCALL_64)
  *
  * Only called from user space.
 
+RCX and r11 are changed by syscall instruction!
+
+ The following registers should hold its arguments: rdi, rsi, rdx, r10, r8, and r9.
+System call cannot accept more than six argument
+
 Note that it also switches to kernel's stack!
