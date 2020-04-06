@@ -1,3 +1,15 @@
+
+
+xor rax, rax - quick way to zero something!
+
+------------------------------
+Big endian multibyte numbers are stored in memory starting with the most significant bytes.
+
+Little endian multibyte numbers are stored in memory starting with the least significant bytes.
+
+The advantage of little endian is that we can discard the most significant bytes effectively converting the number from a wider format to a narrower one, like 8 bytes.
+
+-------------------------------
 syscall leaves rcx and r11 changed
 
 message: db 'hello, world!', 10(special character to denote the end of line)
@@ -83,8 +95,35 @@ standard guarantees that the union & struct itself will be aligned to the size o
 16-byte stack alignment is mandatory!
 ----
 
+------
+SEGMENTS and GDT
+-------------
+You can’t change cs directly
+
+Each of segment registers cs, ds, ss, es, gs, and fs stores so-called segment selector , containing an index in a special segment descriptor table and a little additional information
+
+
+This way we could create numerous segments with various permissions and use RPL values in segment selectors to define which of them are accessible to us right now (given our privilege level)
+
+Privilege levels are the same thing as protection rings!
+
+For example, we are currently in ring0 and ds= 0x02. Even though the lowest two bits of cs and ss are 0 (as we are inside ring0), we can’t access data in a segment with privilege level higher than 2 (like 1 or 0)
+
+If you try, for instance, to load a new value into a segment register, the CPU needs to perform safety and access control checks to see whether you're actually entitled to access that specific memory area
+
+You might think that every memory transaction needs another one now to read GDT contents. This is not true: for each segment register there is a so-called shadow register, which cannot be directly referenced. It serves as a cache for GDT contents. It means that once a segment selector is changed, the corresponding shadow register is loaded with the corresponding descriptor from GDT. Now this register will serve as a source of all information needed about this segment.
+
+(PROTECTED MODE) Linear address = segment base (taken from system table) + offset
+(REAL MODE) physical address = segment base * 16 + offset
+(REAL MODE) All memory addressing through main segment registers (cs, ds, es, and ss) do not consider the GDT values of base and offset anymore. The segment base is always fixed at 0x0 no matter the descriptor contents; the segment sizes are not limited at all. The other descriptor fields, however, are not ignored
+
 REGISTERS
 ---
+GDTR is a register to store GDT address and size.
+
+GS is commonly used as a pointer to a thread local storage (TLS) 
+
+
  RIP register
   . It is a 64-bit register, which always stores an address of the next instruction to be executed. Branching instructions (e.g., jmp) are in fact modifying it. So, every time any instruction is being executed, rip stores the address of the next instruction to be execute
 
@@ -132,6 +171,8 @@ A lot of compilers offer frame pointer omission as an optimization option; this 
  generated assembly code access variables relative to rsp instead and free up rbp as another
  general purpose register for use in function
 
+ The first six arguments are passed in rdi, rsi, rdx, rcx, r8, and r9, respectively. The rest is passed on to the stack in reverse order
+
 
 G
 -----
@@ -145,6 +186,23 @@ FUNCTION CALL on x64
 User-level applications use as integer registers for passing the sequence
 %rdi, %rsi, %rdx, %rcx, %r8 and %r9. The kernel interface uses %rdi,
 %rsi, %rdx, %r10, %r8 and %r9.
+
+If you change rbx, rbp, rsp, or r12-r15, change them back!
+If you need any other register to survive function call, save it yourself before calling!
+
+So, the pattern of calling a function is as follows:
+1. Save all caller-saved registers you want to survive function call (you can use push for that). Caller saved registers are all NOT these ones 
+rbx, rbp, rsp, r12-r15
+
+2. Store arguments in the relevant registers (rdi, rsi, etc.).
+3. Invoke function using call.
+4. After function returns, rax will hold the return value.
+5. Restore caller-saved registers stored before the function cal
+
+----
+SYSTEM CALL
+---
+
 2. A system-call is done via the syscall instruction. The kernel destroys
 registers %rcx and %r11. syscall leaves rcx and r11 changed
 3. The number of the syscall has to be passed in register %rax.
@@ -185,6 +243,9 @@ It loads a register with either an immediate value or a value read from memory
 It stores the content of a register to memory
 It stores the immediate value to memory
 
+mov rsi, [rax]—copies memory contents (8 sequential bytes) starting at address, stored in rax, into rsi
+
+
 MOVZX: This is less powerful than MOV by means of addressing modes, as it may only transfer data from register to register or from memory to register, but it has its special feature--the value being transferred is converted to a wider (one that uses more bits) one and is zero extended. As to the addressing modes supported by this instruction, it may only do the following:
 It moves the byte value from register or memory to a word-sized register and extends the resulting value with zeroes (one byte would be added)
 It moves byte value from register or memory to a double word-sized register, in which case three bytes would be added to the original value and the value itself would be extended with zeroes
@@ -195,3 +256,35 @@ MOVSX: is similar to MOVZX; however, the extended bits are filled with the sign 
 BSWAP/MOVBE: The BSWAP instruction is the easiest way to switch the endianness of a value; however, it is not really a transfer instruction as it only rearranges data within a register. The BSWAP instruction only works on 32/64-bit operands. MOVBE is a more convenient instruction for swapping byte order as it also moves data between the operands. This instruction works on 16, 32, and 64-bit operands. It cannot move data from register to register.
 
 POP: This retrieves values previously stored on stack. The only operand of this instruction is the destination where the value should be stored, and it may be a register or a location in memory. This instruction increments the stack pointer register as well.
+
+LEA:
+; rsi <- address of label 'codes', a number
+mov rsi, codes
+
+; rsi <- memory contents starting at 'codes' address
+; 8 consecutive bytes are taken because rsi is 8 bytes long
+mov rsi, [codes]
+
+; rsi <- address of 'codes'
+; in this case it is equivalent of mov rsi, codes
+; in general the address can contain several components
+lea rsi, [codes]
+
+; rsi <- memory contents starting at (codes+rax)
+mov rsi, [codes + rax]
+
+; rsi <- codes + rax
+; equivalent of combination:
+; -- mov rsi, codes
+; -- add rsi, rax
+; Can't do it with a single mov!
+lea rsi, [codes + rax]
+
+CMP:
+    cmp byte [rdi+rax], 0 ; Check if the current symbol is null-terminator.
+                          ; We absolutely need that 'byte' modifier since
+                          ; the left and the right part of cmp should be
+                          ; of the same size. Right operand is immediate
+                          ; and holds no information about its size,
+                          ; hence we don't know how many bytes should be
+                          ; taken from memory and compared to zero

@@ -1,3 +1,7 @@
+
+cat /proc/pid/sched
+se.wait_max - time in milleseconds for max interval from the time the thread was placed in the run queue until it was picked up by CPU for execution
+
 SCHED_FIFO runs indefinitely
 SCHED_RR runs for a time slice - 100ms defualt
 ---------------------

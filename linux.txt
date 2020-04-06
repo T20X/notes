@@ -1,3 +1,6 @@
+load average - the average number of threads (running+waiting) for CPU for 1, 5, 15 minutes
+-------------
+
 watch -n 1 grep 'bar' /proc/interrupt
 cat /proc/cmdline
 chrt -p <pid> - get scheduling process policy

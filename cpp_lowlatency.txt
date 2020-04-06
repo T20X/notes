@@ -1,3 +1,5 @@
+The data interdependencies between instructions stall the pipeline, decreasing performance. The worst cases occur when the same register is read and modified by several consecutive instructions (think about rflags!)
+-----------------
 ? : can disable RVO
 multiple return statements can disable RVO
 returning passed argument can disable RVO

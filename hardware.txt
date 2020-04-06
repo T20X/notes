@@ -1,6 +1,6 @@
 ﻿
 (1) negative integers are represented as two's complemented
-first normal ingteger is inverted! then + 1
+first normal ingteger is inverted (OR for postive just STARTING AFTER the most rightmost 1 ! then + 1)
 for example 
 
 (invert the number from negative to positive example)

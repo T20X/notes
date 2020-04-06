@@ -1,3 +1,8 @@
+Then 48 bits of virtual address are transformed into 52 bits of physical address with the help of special tables
+---------------------
+cat /proc/bud.. can give memory fragmentation stats
+numastat gives memory stats per Numa node
+-----------------------
 Since meltdown patch, now user-space and kernel-space live are not shared and they use diffrent memory page ranges! AMD don't suffer from it
 -------------
 Modern x86 microarchitectures have dedicated page-walk hardware. They can even speculatively do page-walks to load TLB entries before a TLB miss actually happen. Skylake can even have two page walks in flight at once.

@@ -212,4 +212,36 @@ Program headers map sections into segment like this! (the order does matter and 
 01732000-01753000 rw-p 00000000 00:00 0    
 
 
+objdump -t symbols.o - symbold table of the object file!
+Disassembly of section .text:
+0000000000000000 <_start-0x28>:
+   0:   48 b8 00 00 00 00 00      movabs rax,0x0
+   7:   00 00 00
+   a:   48 b8 00 00 00 00 00      movabs rax,0x0
+   11:  00 00 00
+   14:  48 b8 00 00 00 00 00      movabs rax,0x0
+   1b:  00 00 00
+   1e:  48 ba 00 00 00 00 00      movabs rdx,0x0
+   25:  00 00 00
+0000000000000028 <_start>:
+   28:  c3                        ret
+0000000000000029 <textlabel>:
+The mov operand in section .text with offsets 0 and 14 relative to section start should be datavar1 address , but it is equal to zero! The same thing happened with bssvar. It means that the linker has to change compiled machine code, filling the right absolute addresses in instruction arguments. To achieve that, for each symbol all references to it are remembered in relocation table . As soon as the linker understands what its true virtual address will be, it goes through the list of symbol occurrences and fills in the holes.
 
+A separate relocation table exists for each section in need of one.
+
+To see the relocation tables use readelf --relocs. See Listing 5-25.
+
+Listing 5-25. readelf_relocs
+> readelf --relocs  main.o
+Relocation section '.rela.text' at offset 0x440 contains 4 entries:
+  Offset          Info       Type            Sym. Value    Name+Addend
+000000000002  000200000001 R_X86_64_64       0000000000000000 .data + 0
+00000000000c  000300000001 R_X86_64_64       0000000000000000 .bss + 0
+
+000000000016  000300000001 R_X86_64_64       0000000000000000 .bss + 2000000
+000000000020  000200000001 R_X86_64_64       0000000000000000 .data + 8
+
+
+
+readelf --dyn-syms libso.so

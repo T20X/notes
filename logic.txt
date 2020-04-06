@@ -1,0 +1,17 @@
+istinost / lognost vyskazyvaniyy mogno dokazat impericheski ili logicheski!
+
+
+the most important in logic not have have contradictions in propositions and then interpretation can be found. basically no need to prove thrusness, but need to make sure there are no contradictions
+
+axioms should be independent. no axiom should be inferred from another axioms!
+
+formal systems describes sets of:
+1) working objects from which output objects can be produced
+2) rules on deriving output objects from the working objects using the rigrously declared rules.
+basically it is syntax, but not semantics. and formal system can live without any sense.
+
+function superposition - g(x1,x2...xn) = h(f(x1)..) all xN from g must be in h for the superposition to be valid
+
+
+T1: razlogenie funciy logiki algebry
+f(x1,x2,x3...xn) = x1 * f(1,x2,x3...xn) + ¬x1 * f(0,x2,x3...xn)

@@ -15,4 +15,36 @@ Since the shell will have to expand the $(cat file) command substitution complet
 while read -r line; do ...; done <file
 This will process file line by line (but do read Understanding "IFS= read -r line").
 
+----------
+
+sudo apt-cache policy openssl
+sudo apt-get install package=version
+
+----
+shared libraries can be configured at /etc/ld.so.conf.d
+so no LD_LIBRARY_PATH is required
+
+
+-------
+e.g sudo nano /etc/netplan/02-netcfg.yaml
+
+Enter the following to configure a static IP of 192.168.56.12 where enp0s3 is the name of your host-only adapter.
+
+network:
+    version: 2
+    renderer: networkd
+    ethernets:
+        enp0s3:
+            addresses:
+                - 192.168.56.12/24
+            dhcp4: no
+Then run the following two commands:
+
+sudo netplan generate
+sudo netplan apply
+
+------
+# /sbin/ifconfig <interface> up
+# /sbin/ifconfig <interface> down
+
 

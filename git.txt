@@ -1,8 +1,113 @@
-    Make a new repo
-   ---------------
+﻿
+s: dose_cross.txt ₽ vim.txt S questions.txt & gittxt
+clone branch
+git checkout -b bugfix/EU_2.5.x_LIQ_69S4 origin/EU_2.5.x
+git push origin bugfix/EU_2.5.x_LI(i_6954
+git branch --set-upstream-to»origin/feature/LIQ_7414
+git checkout -b feature/EU_2.14.x_7063 release/EU_2.14.x
+revert last commit
+git reset --hard HEAD~1
+super hard reset
+git reset --hard origin/feature/LIQ-8712
+git sort by date
+—........-.......-/k
+git log --tags --decorate --simplify-by-decoration|grep ''commit | grep tag|sed -e ’$/*.*: //’ -e ’s/)$//’ -e ’s/,.•$//*|tac | grep EU
+tag create
+git tag EU_clang_jpbx
+git push origin --tags
+git push --delete origin EU_clang_jpbx
+git tag --delete EU_clang_jpbx
+tags opps
+linal Help
+git.txt - code (Workspace) - Visual Studio Code
+- dose_cross.txt =r vim.txt =r questions.txt в gittxt
+3	--------
+4	git show refs/tags/EU_2.5.15.14 5
+16	checkout tag
+17	---------------
+18	git checkout tags/EU_2.5.15.12
+19	git branch --contains tags/EU_04.01.01.i6
+10
+И -------
+reset local branch just like remote 43
 
-git init
-git add README.md
-git commit -m "first commit"
-git remote add origin https://github.com/T20X/notes.git
-git push -u origin master
+63
+git fetch origin
+git reset --hard origin/master
+git log
+git log master...uve_cfg_jpbx_closecross - commits on uve_cfg_|pbx_closecross branch since it was forked off master git checkout --ours lio/market data/imni/«■«
+LabsMDListener.cpp
+--ours liq/market.data/impl/sr.labs/SRgit
+
+from what they are during a merge
+git
+log -p - test/ [logs for just that directory]
+git set trackig branch
+anch set-upstream-to-origin/feature/EMEA_3PBX_LIQ_7276
+git branch -d branch_name
+64
+inal Help
+git.txt - code (Workspace) - Visual Studio Code
+□
+£ dose_cross.txt ? vim.txt S questions.txt
+5 gittxt x
+5 7
+8
+9 e ri Г2 n 74
+merge
+git checkout --theirs ../platforms/vars.common - resolve a conflict by reverting back to theirs file
+git checkout --ours ../platforms/vars.common - resolve a conflict by reverting back to theirs file
+liq/market_data/impl/sr.labs/SRLabsMDListener.cpp resolve conflict between private and master branch \\\\
+git checkout featurel git rebase master
+75	nly rebase private branches (i.e. that only exist in your local repo and haven't been shared with others). Rebasing shared branches would “break" the copies other people may have.
+76	if you want to integrate changes from a branch (whether it's master or another branch) into a branch that is public (e.g. you * ve-ypushed the branch to open a pull request, but there are now conflicts with master and you need to update your branch to resolve those conflicts)
+you'll need to merge them in (e.g. with git merge master as in ^Sven's answer).
+77	you can also merge branches into your local private branches if that's your preference, but be aware that it will result in "foreign" commits in your branch
+78
+
+79
+80
+81 revert
+82
+git reset --hard origin/feature/EU_PR_fix_bzhao // revert allI g t revert --no-commit Cf235dl3f8a8be92911c7118e253d8545baeec41
+03
+86 //reverts commits in a range [OLDER_COMMIT,NEWER_COMMIT)
+git revert OLDER COMMIT*.. NEWER_COWIT
+Ln 18. Cnl ? ^ПЗГОС' 1 I ITC О Л*П1 Г	т__Лк
+inal Help
+gittxt - code (Workspace) - Visual Studio Code
+C
+5 dose_cross.txt =■ vim.txt =• questions.txt	5 gfat x
+git revert -no-commit Cf235dl3f8a8b092911c7118e253d8545baeec41
+//reverts commits in a range (OLDER_COMMIT,NEWER_COMMIT) git revert OLDER_COMMITA..NEWER COMMIT I ) ) find branch tag belongs to
+2 git branch -a --contains EU_04.01.01.09 4
+6
+7
+8
+9
+0
+1
+►2
+IB
+>4
+remove all untracked files
+git clean -fd
+patching
+)5
+56
+37
+export MERGE_TOOLS_DIR-/jpm/ro/3rd/git/2 3 0/x86 libexec/git-core/mergetools /2-3*0/x86-64-linux-2.6-libc6/
+git format-patch ”StdOUt > Pat<hflie.patch
+
+08 09
+10 .11
+95aldd2086390e -stdout > dual dif’
+git am -3 < dual.diff	f --stdout > dual.diff
+112
+113
+git format-patch
+9’'Cei7“^“s64-«do^Tdu!rd“fC75s^'r27977fea8d26751SMeb«e<: git mergetool -tool-vimdiffs ’ ‘-std°ut > dual.diff
+gir mergetool --rooi=vimaitT3
+git config --global core.autocrlf input This will fix any CRLF to LF when you commit.
+git submodule update —init --recursive git pull --recurse-submodules
+■

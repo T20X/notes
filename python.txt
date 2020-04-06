@@ -36,9 +36,9 @@ Python strings cannot be changed — they are immutable.
  Concatenating immutable sequences always results in a new object
  The only operation that immutable sequence types generally implement that is not also implemented by mutable sequence types is support for the hash() built-in
  Attempting to hash an immutable sequence that contains unhashable values will result in TypeError.
- ---VARIABLES----
+ ---VARIABLES-------------------*----
  The global statement can be used to indicate that particular variables live in the global scope and should be rebound there; the nonlocal statement indicates that particular variables live in an enclosing scope and should be rebound there.
-
+------------------------------
  data attributes correspond to “instance variables” in Smalltalk, and to “data members” in C++. Data attributes need not be declared; like local variables, they spring into existence when they are first assigned to. For example, if x is the instance of MyClass created above, the following piece of code will print the value 16, without leaving a trace:
 
 x.counter = 1
@@ -47,7 +47,18 @@ while x.counter < 10:
 print(x.counter)
 del x.counter
 
+
+-----
+CONDITIONS
+---
+The comparison operators in and not in check whether a value occurs (does not occur) in a sequence. The operators is and is not compare whether two objects are really the same object; this only matters for mutable objects like lists.
+
+
+----------------------------------
  ----------------TUPLES----------
+ -----------------------------
+ singleton = 'hello', #tuple with one item
+
  tuples are immutable as strings are!
  t = 12345, 54321, 'hello!' - tuple
  t = (1,2,"sd2")
@@ -77,6 +88,28 @@ Lists may be constructed in several ways: ->>>
  print(o) ->  [0, 1, 2, 3, 4]
  letters[:] = [] - clear list by replacing all the elements with empty list!
   l[len(l):]=[1] adds 1 to the list!
+
+All slice operations return a new list containing the requested elements. This means that the following slice returns a new (shallow) copy of the l
+
+  To iterate over the indices of a sequence, you can combine range() and len() as follows:
+
+>>>
+>>> a = ['Mary', 'had', 'a', 'little', 'lamb']
+>>> for i in range(len(a)):
+...     print(i, a[i])
+
+When looping through a sequence, the position index and corresponding value can be retrieved at the same time using the enumerate() function.
+
+>>>
+>>> for i, v in enumerate(['tic', 'tac', 'toe']):
+...     print(i, v)
+...
+0 tic
+1 tac
+2 toe
+
+A new built-in function, enumerate(), will make certain loops a bit clearer. enumerate(thing), where thing is either an iterator or a sequence, returns a iterator that will return (0, thing[0]), (1, thing[1]), (2, thing[2]), and so forth
+
   
   List comprehensions ->
   >>> [x for x in vec if x >= 0]
@@ -91,16 +124,31 @@ Lists may be constructed in several ways: ->>>
 >>> # create a list of 2-tuples like (number, square)
 >>> [(x, x**2) for x in range(6)]
 [(0, 0), (1, 1), (2, 4), (3, 9), (4, 16), (5, 25)]
+
+>>> [(x, y) for x in [1,2,3] for y in [3,1,4] if x != y]
+[(1, 3), (1, 4), (2, 3), (2, 1), (2, 4), (3, 1), (3, 4)]
+
+>>> matrix = [
+...     [1, 2, 3, 4],
+...     [5, 6, 7, 8],
+...     [9, 10, 11, 12],
+... ]
+>>> [[row[i] for row in matrix] for i in range(4)]
+[[1, 5, 9], [2, 6, 10], [3, 7, 11], [4, 8, 12]]
+
 -----STRING---------
 
 to concatenate string fast
 - make a list of strings l=["asdf","asdf","sdf"]
 r=str()
 r.join(l)
+>>> word[-1]  # last character
+
 -----SETS--------
 Note: to create an empty set you have to use set(), not {}; the latter creates an empty dictionary, a data structure that we discuss in the next section.
 >>> 'crabgrass' in basket
 False
+
 
 Similarly to list comprehensions, set comprehensions are also supported:
 
@@ -108,6 +156,35 @@ Similarly to list comprehensions, set comprehensions are also supported:
 >>> a = {x for x in 'abracadabra' if x not in 'abc'}
 >>> a
 {'r', 'd'}
+
+To loop over a sequence in sorted order, use the sorted() function which returns a new sorted list while leaving the source unaltered.
+
+>>>
+>>> basket = ['apple', 'orange', 'apple', 'pear', 'orange', 'banana']
+>>> for f in sorted(set(basket)):
+...     print(f)
+...
+apple
+banana
+orange
+pear
+
+---------------
+  DEQUE
+---------------
+
+It is also possible to use a list as a queue, where the first element added is the first element retrieved (“first-in, first-out”); however, lists are not efficient for this purpose. While appends and pops from the end of list are fast, doing inserts or pops from the beginning of a list is slow (because all of the other elements have to be shifted by one).
+
+>>> from collections import deque
+>>> queue = deque(["Eric", "John", "Michael"])
+>>> queue.append("Terry")           # Terry arrives
+>>> queue.append("Graham")          # Graham arrives
+>>> queue.popleft()                 # The first to arrive now leaves
+'Eric'
+>>> queue.popleft()                 # The second to arrive now leaves
+'John'
+>>> queue                           # Remaining queue in order of arrival
+deque(['Michael', 'Terry', 'Graham'])
 
 ----DICTIONARY----
 The dict() constructor builds dictionaries directly from sequences of key-value pairs:
@@ -131,6 +208,14 @@ iterate over a dict!
 >>> for k, v in knights.items():
 ...     print(k, v)
 
+  for kw in keywords:
+        print(kw, ":", keywords[kw])
+
+dic[key] #if key not found then exception KeyError is raised. To avoid that can use
+dic.get(key, def_value) #if key is not found then def_value would be returned or None
+if def_value is ommited
+dictionary.get("bogus", default_value)
+
 ----------------
  a, b = 0, 1 - multiple assingment
  a=0 and b=1
@@ -142,7 +227,10 @@ iterate over a dict!
 
 Loop statements may have an else clause; it is executed when the loop terminates through exhaustion of the list (with for) or when the condition becomes false (with while), but not when the loop is terminated by a break statemen
 
------------
+------------------------
+       FUNCTIONS
+-----------------------
+
 arguments are passed using call by value (where the value is always an object reference, not the value of the object
 functions can be ranamed
 --------------
@@ -166,22 +254,110 @@ def f(a, L=None):
     L.append(a)
     return L
 
+In Python 3.2+ there is an lru_cache decorator which allows us to quickly cache and uncache the return values of a function.
+@lru_cache(maxsize=32)
+def fib(n):
+    if n < 2:
+        return n
+    return fib(n-1) + fib(n-2)
+
+
+----> TyPES CHECKING (not relly enforced but can be hinted)
+
+With the typing module comes with a pretty comprehensive collection of type hints, including:
+
+List, Tuple, Set, Map - for list, tuple, set and map respectively.
+Iterable - useful for generators.
+Any - when it could be anything.
+Union - when it could be anything within a specified set of types, as opposed to Any.
+Optional - when it might be None. Shorthand for Union[T, None].
+TypeVar - used with generics.
+Callable - used primarily for functions, but could be used for other callables.
+These are the most common type hints. A complete listing can be found in the documentation for the typing module.
+
+Here is the old example using the annotation methods introduced in the typing module:
+
+from typing import List
+
+def pick(l: List[int], index: int) -> int:
+    return l[index]
+
+    It is important to note that Python won't raise a TypeError if you pass a float into index, the reason for this is one of the main points in Python's design philosophy: "We're all consenting adults here", which means you are expected to be aware of what you can pass to a function and what you can't. If you really want to write code that throws TypeErrors you can use the isinstance function to check that the passed argument is of the proper type or a subclass of it like this:
+
+def pick(l: list, index: int = 0) -> int:
+    if not isinstance(l, list):
+        raise TypeError
+    return l[index]
+
     ----------
-    Functions can also be called using keyword arguments of the form kwarg=value. For instance, the following function:
+  Functions can also be called using keyword arguments of the form kwarg=value. For instance, the following function:
+
+In a function call, keyword arguments must follow positional arguments
+parrot(state='ok', voltage=10) <---- BAD
 
 def parrot(voltage, state='a stiff', action='voom', type='Norwegian Blue'):
 def cheeseshop(kind, *arguments, **keywords):
 *arguments - tuple
 **keywords - dict
---------------------
-Unpacking!
------------------
+
+cheeseshop(1, 1,1,1, sape=4139, jack=4098, guido=4127)
+d=dict(sape=4139, jack=4098, guido=4127)
+cheeseshop(1, 1,1,1, **d)
+
+
 >>> args = [3, 6]
 >>> list(range(*args))            # call with arguments unpacked from a list
 [3, 4, 5]
 >>> d = {"voltage": "four million", "state": "bleedin' demised", "action": "VOOM"}
 >>> parrot(**d)
 
+---
+FORMATING
+----
+>>> table = {'Sjoerd': 4127, 'Jack': 4098, 'Dcab': 7678}
+>>> for name, phone in table.items():
+...     print(f'{name:10} ==> {phone:10d}')
+...
+Sjoerd     ==>       4127
+Jack       ==>       4098
+Dcab       ==>       7678
+
+'{:-9} YES votes  {:2.2%}'.format(yes_votes, percentage)
+
+-------
+MAP
+----
+items = [1, 2, 3, 4, 5]
+squared = list(map(lambda x: x**2, items))
+
+-----
+FILTER
+------
+number_list = range(-5, 5)
+less_than_zero = list(filter(lambda x: x < 0, number_list))
+print(less_than_zero)
+
+------
+REDUCE
+------
+from functools import reduce
+product = reduce((lambda x, y: x * y), [1, 2, 3, 4])
+
+-----
+GENERATORS
+-----
+it is kind of like iterator, but the trick is that they are created on the fly! and function caller can already collect the results from the first call and then resume until the function ends gracefully!
+
+def reverse(data):
+    for index in range(len(data)-1, -1, -1):
+        yield data[index]
+
+ sum(i*i for i in range(10))                 # sum of squares
+285       
+
+--------------------
+Unpacking!
+-----------------
 The statement t = 12345, 54321, 'hello!' is an example of tuple packing: the values 12345, 54321 and 'hello!' are packed together in a tuple. The reverse operation is also possible:
 
 >>>
@@ -200,6 +376,12 @@ lambdas
 >>> pairs
 [(4, 'four'), (1, 'one'), (3, 'three'), (2, 'two')]
 ------------
+
+>>> def s1(pair):
+...     return pair[0]
+...
+>>> l.sort(key=s)
+
 
 >>> a = [-1, 1, 66.25, 333, 333, 1234.5]
 >>> del a[0]
@@ -255,6 +437,27 @@ class Reverse:
             raise StopIteration
         self.index = self.index - 1
         return self.data[self.index]
+
+
+--------
+MODULES
+-------
+The file name is the module name with the suffix .py appended. Within a module, the module’s name (as a string) is available as the value of the global variable __name__.  
+>>> fibo.__name__
+'fibo'
+But if you run the module as a script, then __name__ would be equal to "__main__"!
+
+sys.path - contains the list of directories when modules are searched for! you can modify the vairable in the program or just change Linux variable PYTHONPATH to add more paths to sys.path
+
+
+------
+ PACKAGE
+ -----
+ __all__ = ["echo", "surround", "reverse"] - used to list the modules within a current directory which would be imported if the package were loaded with star *
+ for example "from equities import *"
+
+If __all__ is not defined, the statement from sound.effects import * does not import all submodules from the package sound.effects into the current namespace; it only ensures that the package sound.effects has been imported (possibly running any initialization code in __init__.py) and then imports whatever names are defined in the package
+
 
 -----------FASTER PYTHON------------------
 PyPy is its own implementation of Python. This basically means that it keeps Python the language and starts over from scratch with everything else. So only pure Python packages work out of the box in PyPy; anything designed to hook into the CPython (i.e., the standard Python) internals requires special effort to accommodate. Even getting NumPy working in PyPy has been a major undertaking, and it still involves some complicated installation instructions. So, your code will run faster in PyPy, but you will also have to forego some of the most important Python tools (for example, SciPy, Matplotlib, and scikit-learn). If you’re doing scientific computing or data science, this probably makes PyPy a non-starter.

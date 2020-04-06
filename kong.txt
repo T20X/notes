@@ -1,0 +1,101 @@
+ plugin which is not associated to any Service, Route or Consumer (or API, if you are using an older version of Kong) is considered "global", and will be run on every request
+
+ GET http://localhost:8001/plugins/enabled
+
+
+ /usr/local/share/lua/5.1/kong/plugins
+
+reload kong! even pugins work!
+ root@8ccccc2ab20e:/var/share# kong prepare -p /usr/local/kong -c /var/share/kong.conf
+root@8ccccc2ab20e:/var/share# kong reload
+
+
+kong prepare -p /usr/local/kong -c /var/share/kong.conf; kong reload
+
+curl -XPATCH localhost:8001/services/grpc \
+  --data id=78bd9a51-5dd7-49b7-91db-d21e9aeccc18 \
+  --data read_timeout=1000
+
+I finally had time to investigate this. A few notes to guide you:
+
+Active Healthchecks are HTTP only. Even though gRPC (in our case) is carried over HTTP, our healthcheck library does not support HTTP2 healthchecking. We do have an interest in extending the healthchecks capabilities, but I cannot provide a timeline (contributions very welcome!)
+For your use-case, you can try Passive Healthchecks, also known as Circuit Breakers (check out the docs here); as the docs mention, it will passively detect when a target has gone unhealthy and mark it as such. It cannot, however, automatically detect when it's back up and mark it healthy. An administrator has to do that manually.
+For example, assuming you have an upstream grpc and two targets on it, the following command would patch it to enable passive healthchecks:
+
+http patch :8001/upstreams/grpc healthchecks.passive.type=tcp healthchecks.passive.unhealthy.timeouts=1 healthchecks.passive.unhealthy.tcp_failures=1 -f
+In this case, if there is a timeout or a tcp connection failure, the target will be market unhealthy. To mark it back healthy, you would have to issue the following request:
+
+http post :8001/upstreams/grpc/targets/500d0b4e-98f7-4c08-873b-e1626b08fd9e/healthy
+Do let me know if you need more help testing this scenario and I will be happy to provide more info.
+
+Thanks and apologies for the time it took me to get around investigating this
+
+----------------------------->ENV VARIABKES HAVE PRIORITY OVER kong.cof!<-------------------------
+
+----
+KEEP ALIVE (WORKS FOR NGINX BUT NOT FOR KONG)
+----
+
+We don't use websocket. But, why is application-level keep alive better? It adds a complexity level to the application to deal with infrastructure setup. – Sumrak May 24 '16 at 21:51
+There are a variety of reasons. The primary reason is that it's better to add completely portable complexity to the application than to demand an unusual system-level configuration that affects everything. A key secondary reason is that using TCP keepalives this way is not guaranteed to work (see, for example, RFC 1122 section 4.2.3.6). TCP keepalives exist as a kludge to work around applications and protocols that weren't designed to work with TCP
+
+  upstream keepalive does not make any sense with kong because there is only one upstream in nginx.
+  upstream kong_upstream {
+    server 0.0.0.1;
+    balancer_by_lua_block {
+        Kong.balancer()
+    }
+
+    # injected nginx_upstream_* directives
+    keepalive_requests 100;
+    keepalive_timeout 60s;
+    keepalive 60;
+}
+and it is on the local box anyway, so keepalive it is pretty much useless!
+
+
+so_keepalive=on|off|[keepidle]:[keepintvl]:[keepcnt]
+this parameter (1.1.11) configures the “TCP keepalive” behavior for the listening socket. If this parameter is omitted then the operating system’s settings will be in effect for the socket. If it is set to the value “on”, the SO_KEEPALIVE option is turned on for the socket. If it is set to the value “off”, the SO_KEEPALIVE option is turned off for the socket. Some operating systems support setting of TCP keepalive parameters on a per-socket basis using the TCP_KEEPIDLE, TCP_KEEPINTVL, and TCP_KEEPCNT socket options. On such systems (currently, Linux 2.4+, NetBSD 5+, and FreeBSD 9.0-STABLE), they can be configured using the keepidle, keepintvl, and keepcnt parameters. One or two parameters may be omitted, in which case the system default setting for the corresponding socket option will be in effect. For example,
+so_keepalive=30m::10
+will set the idle timeout (TCP_KEEPIDLE) to 30 minutes, leave the probe interval (TCP_KEEPINTVL) at its system default, and set the probes count (TCP_KEEPCNT) to 10 probes.
+
+Syntax:	proxy_request_buffering on | off;
+Default:	
+proxy_request_buffering on;
+Context:	http, server, location
+This directive appeared in version 1.7.11.
+
+Enables or disables buffering of a client request body.
+When buffering is enabled, the entire request body is read from the client before sending the request to a proxied server.
+When buffering is disabled, the request body is sent to the proxied server immediately as it is received. In this case, the request cannot be passed to the next server if nginx already started sending the request body.
+When HTTP/1.1 chunked transfer encoding is used to send the original request body, the request body will be buffered regardless of the directive value unless HTTP/1.1 is enabled for proxyin
+
+Syntax:	proxy_send_timeout time;
+Default:	
+proxy_send_timeout 60s;
+Context:	http, server, location
+Sets a timeout for transmitting a request to the proxied server. The timeout is set only between two successive write operations, not for the transmission of the whole request. If the proxied server does not receive anything within this time, the connection is closed
+
+
+Syntax:	proxy_socket_keepalive on | off;
+Default:	
+proxy_socket_keepalive off;
+Context:	http, server, location
+This directive appeared in version 1.15.6.
+Configures the “TCP keepalive” behavior for outgoing connections to a proxied server. By default, the operating system’s settings are in effect for the socket. If the directive is set to the value “on”, the SO_KEEPALIVE socket option is turned on for the socket.
+
+
+# Nginx closes keepalive connections when the
+# worker_connections limit is reached
+
+----------------
+LDAP
+----
+
+ldapsearch -D "cn=admin,dc=planetexpress,dc=com" -w GoodNewsEveryone -p 389 -h localhost -b "dc=planetexpress,dc=com" -s sub "(mail=*)"
+
+ ldapwhoami -vvv -h localhost -p 389 -D "cn=admin,dc=planetexpress,dc=com" -x -w GoodNewsEveryone
+
+------------------
+
+ response = stub.SayHello.with_call(helloworld_pb2.HelloRequest(), metadata = (('authorization', 'LDAP SHViZXJ0IEouIEZhcm5zd29ydGgsb3U9cGVvcGxlOnByb2Zlc3Nvcg=='), ))

@@ -1,2 +1,47 @@
 docker exec -it some-cassandra bash - acccess bash shell inside docker container!
 
+# find ID of your running container:
+docker ps
+
+# create image (snapshot) from container filesystem
+docker commit 12345678904b5 mysnapshot
+
+# explore this filesystem using bash (for example)
+docker run -t -i mysnapshot /bin/bash
+
+sudo docker attach 76debad837d2
+if the container was not started with bash then try starting bash shell inside of it
+sudo docker exec -it <CONTAINER ID/NAME> bash
+
+KONG_PROXY_LISTEN="0.0.0.0:9080 http2"
+You can pass that environment variable using the -e flag in the docker run comman
+
+
+ 
+docker exec 340a09939338 kong reload
+docker image save image_name > image.tar
+
+apt-get update
+apt-get install net-toolsO
+
+There is a nice hack how to pipe host machine environment variables to a docker container:
+env > env_file && docker run --env-file env_file image_name
+Use this technique very carefully, because env > env_file will dump ALL host machine ENV variables to env_file and make them accessible in the running container.
+
+
+COPY env.sh /env.sh
+COPY <filename>.jar /<filename>.jar
+ENTRYPOINT ["/bin/bash" , "-c", "source /env.sh && printenv && java -jar /<filename>.jar"]
+
+#give ARG RAILS_ENV a default value = production
+ARG RAILS_ENV=production
+
+#assign the $RAILS_ENV arg to the RAILS_ENV ENV so that it can be accessed
+#by the subsequent RUN call within the container
+ENV RAILS_ENV $RAILS_ENV
+
+#the subsequent RUN call accesses the RAILS_ENV ENV variable within the container
+RUN if [ "$RAILS_ENV" = "production" ] 
+
+docker inspect 04f0d5637192 - inspect container config
+sudo find /var/lib/docker/containers/ -type f -name "*.log" -delete

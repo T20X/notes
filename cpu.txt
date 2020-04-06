@@ -1,3 +1,12 @@
+
+
+The processor always (even today) starts in real mode. To enter protected mode one has to create GDT and set up gdtr;
+
+------------------------------------------------
+in reality, registers rax, eax, and all others do not exist as fixed physical entities.
+
+The part of a CPU called instruction decoder is constantly translating commands from an older CISC system to a more convenient RISC one. Pipelines allow for a simultaneous execution of up to six smaller instructions. To achieve that, however, the notion of registers should be virtualized. During microcode execution, the decoder chooses an available register from a large bank of physical registers. As soon as the bigger instruction ends, the effects become visible to programmer: the value of some physical registers may be copied to those, currently assigned to be, let’s say, rax
+
 ------
 Skylake
 ---
@@ -66,14 +75,12 @@ MFENCE instructions cannot pass earlier reads or writes.
 For 64 set associative cache having 64 byte cacheline
 [Tag Physical][Index][Offset]
 [31........12][11...6][....]
-|Fully associative| caches have no index and the tag for the given physical address is 
-being compared with each tag at a give cache to find the perfect match. Very difficult
+|Fully associative|(every cache line can map any address!) caches have no index and the tag for the given physical address is being compared with each tag at a give cache to find the perfect match. Very difficult
 and expensive to implement. Basically a given cache line can map to any physical address
 
-|Direct mapped| caches maps index to a tag! Very ineffcient if data is not uniformally
-distrbitued as too much data may be pointing to the same index!
+|Direct mapped| (cache line maps a specific index only)! Very ineffcient if data is not uniformally distrbitued as too much data may be pointing to the same index!
 
-[Set Associative] Full associateive and Direct mapepd combined. basically the same 
+[Set Associative]  Full associateive and Direct mapepd combined. basically the same 
 index can now map to N-way tags!
 -------
 
@@ -179,7 +186,7 @@ write-combining; and
 uncacheable.
 
 direct mapped cached
-fully associative cache
+fully assoc-iative cache
 set associative cache
 
 
