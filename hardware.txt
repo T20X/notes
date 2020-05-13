@@ -1,4 +1,7 @@
 ﻿
+signed integer can be represented as null
+100000000000000000000000  ! actual value is just max (int) + 1
+
 (1) negative integers are represented as two's complemented
 first normal ingteger is inverted (OR for postive just STARTING AFTER the most rightmost 1 ! then + 1)
 for example 

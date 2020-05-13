@@ -1,4 +1,6 @@
 ﻿
+:0Glog - just how git history for a given file!
+
 s: dose_cross.txt ₽ vim.txt S questions.txt & gittxt
 clone branch
 git checkout -b bugfix/EU_2.5.x_LIQ_69S4 origin/EU_2.5.x

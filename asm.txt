@@ -14,6 +14,15 @@ syscall leaves rcx and r11 changed
 
 message: db 'hello, world!', 10(special character to denote the end of line)
 
+--------------
+JUMPS
+-----
+cmd  - just computes arithmetic diffrence and set ZF if it evaluates to 0
+jxxxx set of instructions - do comparions (neeed to use diffrent ones per signed/unsigned) as well as makes a jump by label. NOT function!
+Each Jxxxx function has logical NOT alternative
+for example ja and jna(!ja)
+test - performs bitwise comparison
+
 -------
 STACK
 ----
@@ -144,6 +153,9 @@ The zero flag (ZF) is set when the result of an arithmetic or bitwise operation 
 
 Bit #9 - interrupt enable flag
 The interrup enable flag (IF) defines whether processor will or will not react to incoming interrupts. This flag is only accessible in real mode or at the Ring 0 protection level in other mode
+
+Bit #7 - sign flag
+sets (SF) is operation result is negative
 
 Bit #11 - overflow flag
 The overflow flag (OF) is sometimes perceived as two's complement form of the carry flag, which is not really the case. OF is set when the result of the operation is either too small or too big a number to fit into the destination operand.

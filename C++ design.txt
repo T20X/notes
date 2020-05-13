@@ -1,0 +1,8 @@
+A unit of C++ design is "overload set". 
+Overload set - a collection of function in the same scope (namespace, class, etc) of the same name such that if any is found by name resolution they all will be.
+  Advice:
+---------
+    - if two things do nearly the same thing, name them the same and just use overloading to trigger polymorphism!
+    - if using overloading, the user must figure out what is going on without knowing which overload is called. LIke if you call funciotn "A" it does not matter which of them is going to be called
+
+- if user needs to know which construct is been called, then make it explicit
