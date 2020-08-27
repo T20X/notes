@@ -109,3 +109,6 @@ setge bl ; When ebx = 0 or 1
 sub ebx, 1 ; ebx=11...11 or 00...00
 and ebx, CONST3; CONST3 = CONST1-CONST2
 add ebx, CONST2; ebx=CONST1 or CONST2
+
+--------------
+sprintf the fastest standart way to format double/float to string, but there is a formatter library as well do it even faster!

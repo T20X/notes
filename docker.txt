@@ -1,3 +1,11 @@
+
+WINDOWS INTALL
+----
+C:\Users\mainex\AppData\Roaming\Docker\settings.json
+  "kubernetesEnabled": false
+  ----------
+  
+
 docker exec -it some-cassandra bash - acccess bash shell inside docker container!
 
 # find ID of your running container:

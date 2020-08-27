@@ -1,4 +1,35 @@
-﻿typedef void (*delete_int_t)(int*);
+﻿---------------------
+clang treats alias tempalte as totally diffrent template
+
+template <class T> using vecalias =  std::vector<int>;
+is_same<std::vector, vecalias> == false!
+
+----------------------
+template template classes can alos be specializead
+
+template<typename T, typename S>
+class SomeRandomClass
+{
+    //put something 
+};
+
+template<typename T>
+class MyTemplateClass
+{
+    void DoSomething(T & t) {
+       //...something
+    }
+};
+
+template <>
+template <typename T,typename S>
+class MyTemplateClass <SomeRandomClass<T,S> >
+{
+    void DoSomething(SomeRandomClass<T,S>& t) { /* something */ }
+};
+---------------
+
+typedef void (*delete_int_t)(int*);
 void delete_int(int* p) { delete p; }
 SmartPtr<int, delete_int_t> p(new int(42), delete_int);
 

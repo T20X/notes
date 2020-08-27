@@ -43,7 +43,7 @@ Python strings cannot be changed — they are immutable.
 
 x.counter = 1
 while x.counter < 10:
-    x.counter = x.counter * 2
+    et.counter = x.counter * 2
 print(x.counter)
 del x.counter
 
@@ -438,6 +438,17 @@ class Reverse:
         self.index = self.index - 1
         return self.data[self.index]
 
+-------------
+METAPROGRAMMING
+---------
+to add properties dynamically to Python object, the class needs to be defined first!
+class Foo(objeact):
+  pass
+
+users=dict()
+users["user1"]=Foo()
+users["user1"].p1=1
+users["user1"].s="stasdfasdf"
 
 --------
 MODULES

@@ -1,4 +1,6 @@
-﻿In ISO C and C++, you can freely use inline void f(void) {} in header files -- although for different reasons!
+﻿c++ to_string has 6 decimal point precision by default
+------------------------
+In ISO C and C++, you can freely use inline void f(void) {} in header files -- although for different reasons!
 
 In ISO C, it does not provide an external definition at all. In ISO C++ it does provide an external definition; however C++ has an additional rule (which C doesn't), that if there are multiple external definitions of an inline function, then the compiler sorts it out and picks one of them.
 
