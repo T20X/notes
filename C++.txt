@@ -1,4 +1,10 @@
-﻿c++ to_string has 6 decimal point precision by default
+﻿
+------------------------
+std::isnorm - returns false if double is 0.0!
+---------------------------
+remove_if does not work for associative containers! nothing to move the end for them
+---------------------
+c++ to_string has 6 decimal point precision by default
 ------------------------
 In ISO C and C++, you can freely use inline void f(void) {} in header files -- although for different reasons!
 

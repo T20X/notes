@@ -1,0 +1,5 @@
+C++ got std::relloc function which can just extend the momory without a need to completly free memory! this could ber supper usefull for vector reallocation. That is exactly what Folly's  what fbvector does.
+
+-------------------------
+
+cmake -DBUILD_SHARED_LIBS=ON -DCMAKE_POSITION_INDEPENDENT_CODE=ON

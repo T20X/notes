@@ -1,1 +1,15 @@
 The design of those programs which rely on event-action model has been criticised, and it has been suggested that the event-action model leads programmers to create error-prone, difficult to extend and excessively complex application code.[2] Table-driven state machines have been advocated as a viable alternative.[5] On the other hand, table-driven state machines themselves suffer from significant weaknesses including state explosion phenomena
+
+-------------------------------
+In the synchronous model (or “under synchrony”), there
+are strict timing guarantees on process execution speeds
+and communication delays. Thus, a system or process
+can use the passage of time to infer accurate information. In particular, if a process sends a request to another
+process but the response does not arrive within a known
+period, a timeout occurs and the first process infers that
+the second process crashed.
+In contrast, the asynchronous model is defined by two
+properties:
+A1 There are no timing guarantees, implying processing
+delays and communication delays are arbitrary;
+A2 Crashed and slow processes cannot be distinguished
