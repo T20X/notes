@@ -1,3 +1,4 @@
+clang -v -fsyntax-only -x c++ /dev/null
 find . -regextype posix-extended -regex "./inrush.*log.[0-9]{2}"
 
 python - <<EOF
