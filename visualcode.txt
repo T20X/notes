@@ -1,2 +1,17 @@
+setup for clangD
+
+REALLY ADVICE IS TO INSTALL CLANGD AS PART OF EXTENTION OFFERIN from VS CODE AND THEN JUST REGISTER IT IN CLANGD.PATH
+/********* CUSTOM CLANGD BUILD****/
+mkdir -p /home/maine/workdir/vim/bundle/youcompleteme/third_party/ycmd/third_party/clangd/output/lib/clang/11.0.0
+
+cp -r /home/maine/workdir/vim/bundle/youcompleteme/third_party/ycmd/third_party/clang/lib/clang/11.0.0/*  /home/maine/workdir/vim/bundle/youcompleteme/third_party/ycmd/third_party/clangd/output/lib/clang/11.0.0 
+
+/***** CUSTOM CLANGD BUILD***/
+
+    "clangd.path" : "/home/maine/.vscode-server/data/User/globalStorage/llvm-vs-code-extensions.vscode-clangd/install/11.0.0/clangd_11.0.0/bin/clangd",
+    "clangd.arguments": ["-log=verbose", "-pretty", "--background-index", "--compile-commands-dir=/home/maine/cpp_snippets/build"],
+
+
+
 Ctrl-J - toggles panel
 Crtl-][ - intend right/left
