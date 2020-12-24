@@ -245,3 +245,4 @@ Relocation section '.rela.text' at offset 0x440 contains 4 entries:
 
 
 readelf --dyn-syms libso.so
+readelf -sW a.o | c++filt -t 

@@ -1,6 +1,17 @@
-﻿rint on the other hand uses custom rounding mode set by fesetround! Note that by default it is FE_TONEAREST (with half EVEN).
+﻿Now suppose that the lowest exponent that can be represented is -100. So the smallest number that can be represented in normal form is 1\*10-100. However, if we relax the constraint that the leading bit be a one, then we can actually represent smaller numbers in the same space. Taking a decimal example we could represent 0.1\*10-100. This is called a subnormal number. The purpose of having subnormal numbers is to smooth the gap between the smallest normal number and zero.
+---------------------
+It is very important to realise that subnormal numbers are represented with less precision than normal numbers. In fact, they are trading reduced precision for their smaller size. Hence calculations that use subnormal numbers are not going to have the same precision as calculations on normal numbers. So an application which does significant computation on subnormal numbers is probably worth investigating to see if rescaling (i.e. multiplying the numbers by some scaling factor) would yield fewer subnormals, and more accurate result
+------------------------------------
+https://docs.oracle.com/cd/E19957-01/806-3568/ncgTOC.html
+-------
+std::round only suppports rounding halfway from zero
+std::rint on the other hand uses custom rounding mode set by fesetround! Note that by default it is FE_TONEAREST (with half EVEN).
+
+round()'s rounding is different from the IEEE754 default round to nearest mode with even as a tie-break. Nearest-even avoids statistical bias in the average magnitude of numbers, but does bias towards even numbers
 
 For setting rounding mode through assembly, you may need to resort to assembly. In this case, you may want to set the rounding for both the x87 unit (via the fldcw instruction) and SSE (via the ldmxcsr instruction)
+
+Prefer rint() for performance reasons: gcc and clang both inline it more easily, but gcc never inlines nearbyint() (even with -ffast-math)
 
 
 float       round ( float arg );
@@ -9,18 +20,7 @@ float       roundf( float arg );
 double      round ( double arg );
 Computes the nearest integer value to arg (in floating-point format), rounding halfway cases away from zero, regardless of the current rounding mode.
 
-If no errors occur, the nearest integer value to arg, rounding halfway cases away from zero, is returned.
-For the std::round function:
-The current rounding mode has no effect.
-If arg is ±∞, it is returned, unmodified
-If arg is ±0, it is returned, unmodified
-If arg is NaN, NaN is returned
-For std::lround and std::llround functions:
-FE_INEXACT is never raised
-The current rounding mode has no effect.
-If arg is ±∞, FE_INVALID is raised and an implementation-defined value is returned
-If the result of the rounding is outside the range of the return type, FE_INVALID is raised and an implementation-defined value is returned
-If arg is NaN, FE_INVALID is raised and an implementation-defined value is returned
+
 
 HALF EVEN rounding - it rounds towards nearest value and if both are equidistant then it rounds towards an even number. Not present in C++ standart. 
 --->GNU<----: In this mode results are rounded to the nearest representable value. If the result is midway between two representable values, the even representable is chosen. Even here means the lowest-order bit is zero
@@ -61,21 +61,14 @@ If the real exponent of a number is X then it is represented as (X + bias)
 
 IEEE single-precision uses a bias of 127. Therefore, an exponent of
 
--1 is represented as -1 + 127 = 126 = 011111102
- 0 is represented as  0 + 127 = 127 = 011111112
-+1 is represented as +1 + 127 = 128 = 100000002
-+5 is represented as +5 + 127 = 132 = 100001002
-
-0 and 255 exponent is a special case
-Zero
-Sign bit = 0; biased exponent = all 0 bits; and the fraction = all 0 bits;
-
-Positive and Negative Infinity
-Sign bit = 0 for positive infinity, 1 for negative infinity; biased exponent = all 1 bits; and the fraction = all 0 bits;
-
-NaN (Not-A-Number)
-Sign bit = 0 or 1; biased exponent = all 1 bits; and the fraction is anything but all 0 bits. (NaN's pop up when one does an invalid operation on a floating point value, such as dividing by zero, or taking the square root of a negative number.
-
+0 < e < 255	(-1)s × 2e-127 × 1.f (normal numbers)
+e = 0; f  0 (at least one bit in f is nonzero)	(-1)s × 2-126 × 0.f (subnormal numbers)
+e = 0; f = 0 (all bits in f are zero)	(-1)s × 0.0 (signed zero)
+s = 0; e = 255; f = 0
+(all bits in f are zero)	+INF (positive infinity)
+s = 1; e = 255; f = 0
+(all bits in f are zero)	-INF (negative infinity)
+s = u; e = 255; f  0 (at least one bit in f is nonzero)	NaN (Not-a-Number)
 
 ---------------------------------------------
 0/0 will give a nan for floating points which is not comparable!
@@ -216,3 +209,6 @@ Languages and compilers
 Due to roundoff errors the associative law of algebra do not necessary hold for floating point numbers and thus expressions like (x + y) + z are not necessary equal to x + (y + z).
 
 Special quantities (Nans, signed zeros and infinity)
+
+-------
+Generally, the purpose of a signaling NaN (sNaN) is for debugging. For example, floating-point objects might be initialized to sNaN. Then, if the program fails to one of them a value before using it, an exception will occur when the program uses the sNaN in an arithmetic operation. A program will not produce an sNaN inadvertently; no normal operations produce sNaNs. They are only created specifically for the purpose of having a signaling NaN, not as the result of any arithmetic

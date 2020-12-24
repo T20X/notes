@@ -15,7 +15,12 @@ extern inline void f(void); in a .c file in ISO C is meant to be paired with the
 In other words, in ISO C you can manually select where the external definition goes; or suppress external definition entirely by using static inline everywhere; but in ISO C++ the compiler chooses if and where an external definition would g
 
 
+namespace-scope inline variables are no longer restricted to being const, and constexpr on a namespace-scope variable no longer implies inline. This was mildly controversial, but was adopted nonetheless.
+
     static inline function make sense because then if a function is declared just inline in more then one translation unit, then if it is called from another translation unit, it would violate ODR without diagnostic!
+
+    Remember that static keyword has a different meaning when it comes for a class.
+Edit: As you may know that static function inside a class doesn't have internal linkage, in other words a class cannot have different copies of its static method depending on the translation (.cpp) units.
 
     A.cpp
       inline int foo() { return 0; }
@@ -29,7 +34,18 @@ In other words, in ISO C you can manually select where the external definition g
     Also static inline will make sure that no function is even generated!
 
 
+An inline function or variable (since C++17) with external linkage (e.g. not declared static) has the following additional properties:
+There may be more than one definition of an inline function or variable (since C++17) in the program as long as each definition appears in a different translation unit and (for non-static inline functions and variables (since C++17)) all definitions are identical. For example, an inline function or an inline variable (since C++17) may be defined in a header file that is #include'd in multiple source files.
+It must be declared inline in every translation unit.
+It has the same address in every translation unit.
+
+If an inline function or variable (since C++17) with external linkage is defined differently in different translation units, the behavior is undefined
+
 C++ does not allow types and pointers/referenes to objects or functions with internal linkage (static) to be used as template parameters. Replacing static with anonymous namespace still "hides" the things from other translation units but they keep external linkage (mostly) and can so be used as template arguments
+
+inline marks the symbol WEAK, which hints linker to choose arbitary one of definition in object files
+static marks the symbol LOCAL, which restricts the symbol in current translation unit, and the linker may keep multiple instances of (possibly different) definition.
+static inline generally works as static, but the inline keyword suggest compiler trying to inline this function
 
     ------------------------
     it is possible to forward declare class inside namespeace but need to do liek below

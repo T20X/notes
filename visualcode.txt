@@ -1,5 +1,5 @@
 setup for clangD
-
+t
 REALLY ADVICE IS TO INSTALL CLANGD AS PART OF EXTENTION OFFERIN from VS CODE AND THEN JUST REGISTER IT IN CLANGD.PATH
 /********* CUSTOM CLANGD BUILD****/
 mkdir -p /home/maine/workdir/vim/bundle/youcompleteme/third_party/ycmd/third_party/clangd/output/lib/clang/11.0.0
@@ -14,4 +14,11 @@ cp -r /home/maine/workdir/vim/bundle/youcompleteme/third_party/ycmd/third_party/
 
 
 Ctrl-J - toggles panel
-Crtl-][ - intend right/left
+Crtl-][ - intend right/lef
+
+----
+clangd
+----
+
+symbol search
+Ctrl+P (:[line number], @[local symbol], #[global symbol])
