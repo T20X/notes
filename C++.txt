@@ -1,4 +1,4 @@
-﻿
+﻿you can make your ::operator new and ::operator delete private to your library by building with -fvisibility=hiddnen and explicitly marking the functions you do want to export with __attribute__((visibility("default")))
 ------------------------
 std::isnorm - returns false if double is 0.0!
 ---------------------------

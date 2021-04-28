@@ -55,6 +55,65 @@ Linger off means that close() doesn't block. Linger on with a positive timeout m
 
 Setting SO_LINGER with a positive timeout does exactly one thing. It enables close() to block for up to that timeout while there is any outbound pending data still in flight. If you don't modify it, the default is for the close() to be asynchronous, which means the application can't tell whether any data still in flight got sent.
 
+
+TIME_WAIT exists for a reason (to ensure that stray packets from old connections don't interfere with new connections)
+
+--------
+RENTR
+----
+The code which calls write (or other blocking operations) has to be aware of EINTR. If a signal occurs during a blocking operation, then the operation will either (a) return partial completion, or (b) return failure, do nothing, and set errno to EINTR.
+int total = 0;
+while(size > 0) {
+    int written = write(filedes, buf, size);
+    if (written == -1) {
+        if (errno == EINTR) continue;
+        return (total == 0) ? -1 : total;
+    }
+    buf += written;
+    total += written;
+    size -= written;
+}
+return total; // bytes written
+
+---
+close
+---
+It is probably unwise to close file descriptors while they may be
+       in use by system calls in other threads in the same process.
+       Since a file descriptor may be reused, there are some obscure
+       race conditions that may cause unintended side effects.
+
+On Linux (and possibly some other systems), the behavior is
+       different.  the blocking I/O system call holds a reference to the
+       underlying open file description, and this reference keeps the
+       description open until the I/O system call completes.  (See
+       open(2) for a discussion of open file descriptions.)  Thus, the
+       blocking system call in the first thread may successfully
+       complete after the close() in the second threa
+
+       Retrying the close() after a failure return is the wrong thing to
+       do, since this may cause a reused file descriptor from another
+       thread to be closed
+
+              A careful programmer will check the return value of close(),
+       since it is quite possible that errors on a previous write(2)
+       operation are reported only on the final close() that releases
+       the open file description. 
+
+              A careful programmer who wants to know about I/O errors may
+       precede close() with a call to fsync(2).
+
+       The EINTR error is a somewhat special case.  Regarding the EINTR
+       error, POSIX.1-2008 says:
+
+              If close() is interrupted by a signal that is to be
+              caught, it shall return -1 with errno set to EINTR and the
+              state of fildes is unspecified.
+
+              As Allbery said, the POSIX EINTR semantics are not really possible on Linux. The file descriptor passed to close() is de-allocated early in the processing of the system call and the same descriptor could already have been handed out to another thread by the time close() returns. The Linux behavior could be changed if there were a sufficiently good reason to do so, but, so far, that reason has been elusive.
+
+So the POSIX-suggested handling of an EINTR, which is to retry the close(), could actually be quite dangerous on Linux. For that reason, Mark Mentovai suggested a change to the glibc manual to avoid recommending retrying close() on Linux.
+
 -------------
 Kerbores
 ---------------
