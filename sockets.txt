@@ -60,3 +60,7 @@ The term "window" on the transmitter side represents the logical boundary of the
 SACKs work by appending to a duplicate acknowledgment packet a TCP option containing a range of noncontiguous data received. In other words, it allows the client to say "I only have up to packet #1 in order, but I also have received packets #3 and #4". This allows the server to retransmit only the packet(s) that were not received by the client.
 
 Support for SACK is negotiated at the beginning of a TCP connection; if both hosts support it, it may be used
+
+----------------
+
+netdev_max_backlog - 2000 default per CPU queue to sore data from NIC and push it to sockets

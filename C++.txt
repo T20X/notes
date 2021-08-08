@@ -1,4 +1,35 @@
-﻿you can make your ::operator new and ::operator delete private to your library by building with -fvisibility=hiddnen and explicitly marking the functions you do want to export with __attribute__((visibility("default")))
+﻿bad_alloc can also happen because of heap corruption
+-----------
+structured binding is just a way to introduce refrences to destructured elements it is pointing to
+auto [a,b] = f();
+
+it really does this under the hood
+auto _e_hidden_ = f();
+auto& a = std::get<0>(_e_hidden_)
+auto& b = std::get<0>(_e_hidden_)
+-------------------O
+ADL is been performed for unqualified calls (and for explicit templates since C++20).
+ADL considers only function arguments, not template arguments
+say f<A::X>() won't look at A::X for us because of template argument
+
+From the set of argument types in the call, we break each type down further. Each argument type produces zero or more associated types and associated namespaces, via a complicated ad-hoc process.
+ For the simplest cases, you can think of it as essentially “write down the name of the type as unambiguously as possible and then extract all the class-names and all the innermost namespace-names from that string
+
+An argument of type SomeClass::NestedClassOrEnum gives us two associated types: SomeClass::NestedClassOrEnum itself, and the class SomeClass of which it is a member.
+
+----------------------
+name lookup in C++ works from innermost scope to outtermost scope. for example if you do this
+void f()
+
+void p()
+{
+  using other::f;
+  f();
+}
+
+Then compiler won't even look at f() from above, but rather would execute other::f;
+-------------
+you can make your ::operator new and ::operator delete private to your library by building with -fvisibility=hiddnen and explicitly marking the functions you do want to export with __attribute__((visibility("default")))
 ------------------------
 std::isnorm - returns false if double is 0.0!
 ---------------------------
@@ -8,11 +39,14 @@ c++ to_string has 6 decimal point precision by default
 ------------------------
 In ISO C and C++, you can freely use inline void f(void) {} in header files -- although for different reasons!
 
-In ISO C, it does not provide an external definition at all. In ISO C++ it does provide an external definition; however C++ has an additional rule (which C doesn't), that if there are multiple external definitions of an inline function, then the compiler sorts it out and picks one of them.
+In ISO C, it does not provide an external definition at all. In ISO C++ it does provide an external definition; however C++ has an additional rule (which C doesn't), that if there are multiple external definitions of an inline function,
+ then the compiler sorts it out and picks one of them.
 
-extern inline void f(void); in a .c file in ISO C is meant to be paired with the use of inline void f(void) {} in header files. It causes the external definition of the function to be emitted in that translation unit. If you don't do this then there is no external definition, and so you may get a link error (it is unspecified whether any particular call of f links to the external definition or not).
+extern inline void f(void); in a .c file in ISO C is meant to be paired with the use of inline void f(void) {} in header files. It causes the external definition of the function to be emitted in that translation unit.
+ If you don't do this then there is no external definition, and so you may get a link error (it is unspecified whether any particular call of f links to the external definition or not).
 
-In other words, in ISO C you can manually select where the external definition goes; or suppress external definition entirely by using static inline everywhere; but in ISO C++ the compiler chooses if and where an external definition would g
+In other words, in ISO C you can manually select where the external definition goes; or suppress external definition entirely by using static inline everywhere;
+ but in ISO C++ the compiler chooses if and where an external definition would g
 
 
 namespace-scope inline variables are no longer restricted to being const, and constexpr on a namespace-scope variable no longer implies inline. This was mildly controversial, but was adopted nonetheless.
@@ -35,7 +69,8 @@ Edit: As you may know that static function inside a class doesn't have internal 
 
 
 An inline function or variable (since C++17) with external linkage (e.g. not declared static) has the following additional properties:
-There may be more than one definition of an inline function or variable (since C++17) in the program as long as each definition appears in a different translation unit and (for non-static inline functions and variables (since C++17)) all definitions are identical. For example, an inline function or an inline variable (since C++17) may be defined in a header file that is #include'd in multiple source files.
+There may be more than one definition of an inline function or variable (since C++17) in the program as long as each definition appears in a different translation
+ unit and (for non-static inline functions and variables (since C++17)) all definitions are identical. For example, an inline function or an inline variable (since C++17) may be defined in a header file that is #include'd in multiple source files.
 It must be declared inline in every translation unit.
 It has the same address in every translation unit.
 

@@ -56,7 +56,40 @@ Linger off means that close() doesn't block. Linger on with a positive timeout m
 Setting SO_LINGER with a positive timeout does exactly one thing. It enables close() to block for up to that timeout while there is any outbound pending data still in flight. If you don't modify it, the default is for the close() to be asynchronous, which means the application can't tell whether any data still in flight got sent.
 
 
-TIME_WAIT exists for a reason (to ensure that stray packets from old connections don't interfere with new connections)
+When a TCP connection is closed cleanly, the end that initiated the close ("active close") ends up with the connection sitting in TIME_WAIT for several minutes. So if your protocol is one where the server initiates the connection close, and involves very large numbers of short-lived connections, then it might be susceptible to this problem. An application level protocol sitting on top of TCP should be designed in such a way that the client always initiates the connection close. That way, the TIME_WAIT will sit at the client doing no harm. Remember as it says in "UNIX Network Programming" third edition (Stevens et al) page 203: "The TIME_WAIT state is your friend and is there to help us. Instead of trying to avoid the state, we should understand it
+
+Note that it is very unlikely that delayed segments will cause problems like this. Firstly the address and port of each end point needs to be the same; which is normally unlikely as the client's port is usually selected for you by the operating system from the ephemeral port range and thus changes between connections. Secondly, the sequence numbers for the delayed segments need to be valid in the new connection which is also unlikely. However, should both of these things occur then TIME_WAIT will prevent the new connection's data from being corrupted.
+
+shutdown(SHUT_RD): seem not to have _any_ side effects. you can totally still recv() on that socket. Kerrisk writes 61.6.6: "However if the peer application subsequently writes data on its socket, then it is still possible to read that data on the local socket". Basically, SHUT_RD makes recv() return 0. That's all it does.
+
+The normal TCP termination sequence looks like this (simplified):
+
+We have two peers: A and B
+
+A calls close()
+A sends FIN to B
+A goes into FIN_WAIT_1 state
+B receives FIN
+B sends ACK to A
+B goes into CLOSE_WAIT state
+A receives ACK
+A goes into FIN_WAIT_2 state
+B calls close()
+B sends FIN to A
+B goes into LAST_ACK state
+A receives FIN
+A sends ACK to B
+A goes into TIME_WAIT state
+B receives ACK
+B goes to CLOSED state – i.e. is removed from the socket tables
+
+
+SO_SNDTIMEOUT and SO_REDVTIMEOUT could be used for blocking sockeets to control timeouts on send and recv! if you doing blocking UDP then EGAIN error will indicate timeout!
+
+in linux closing socket descriptor in another thread has not effect on select
+
+it is not good to receive on the same socket from multiple threads as this will cause lock contention over a socket buffe, but recent kernel feature called SO_REUSEPORT can allow multiple processes /threads to share the load
+by having dedicated UDP buffers for each!
 
 --------
 RENTR
@@ -141,3 +174,5 @@ The SS decrypts the ticket (message E) using its own secret key to retrieve the 
 Message H: the timestamp found in client's Authenticator (plus 1 in version 4, but not necessary in version 5[6][7]), encrypted using the Client/Server Session Key.
 The client decrypts the confirmation (message H) using the Client/Server Session Key and checks whether the timestamp is correct. If so, then the client can trust the server and can start issuing service requests to the server.
 The server provides the requested services to the client.
+
+-
