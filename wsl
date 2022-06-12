@@ -1,0 +1,16 @@
+1. sudo apt install openssh-server
+2. /etc/ssh/sshd_config
+
+...STUFF ABOVE THIS...
+Port 2222
+#AddressFamily any
+ListenAddress 0.0.0.0
+#ListenAddress ::
+
+...STUFF BELOW  THIS...
+
+3. sudo ssh-keygen -A
+4. service ssh start
+5.  run cmd.exe as administrator and execute this 
+netsh interface portproxy add v4tov4 listenaddress=0.0.0.0 listenport=2222 connectaddress=172.30.188.35 connectport=2222
+6. sudo /etc/init.d/ssh restart

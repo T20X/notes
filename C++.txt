@@ -6,7 +6,7 @@ auto [a,b] = f();
 it really does this under the hood
 auto _e_hidden_ = f();
 auto& a = std::get<0>(_e_hidden_)
-auto& b = std::get<0>(_e_hidden_)
+auto& b = std::get<1>(_e_hidden_)
 -------------------O
 ADL is been performed for unqualified calls (and for explicit templates since C++20).
 ADL considers only function arguments, not template arguments
@@ -16,6 +16,22 @@ From the set of argument types in the call, we break each type down further. Eac
  For the simplest cases, you can think of it as essentially “write down the name of the type as unambiguously as possible and then extract all the class-names and all the innermost namespace-names from that string
 
 An argument of type SomeClass::NestedClassOrEnum gives us two associated types: SomeClass::NestedClassOrEnum itself, and the class SomeClass of which it is a member.
+When ADL performs lookup in an associated class type, what it’s considering are the (namespace-scope) friends of that class. It won’t consider the member functions of that class — not even the static member functions
+
+perhaps most importantly, ADL won’t kick in if the thing being called is not a function! That is, before we do ADL for a call to f, we’ll do an ordinary unqualified lookup of f, which means we’ll look in our current scope and all enclosing scopes. If this ordinary unqualified lookup finds something called f, and that f is not a function (or a function template), then we’ll just use that f; we won’t let ADL drag in any other namespaces. It’s only if we find a function (or function template) named f, or if we don’t find anything at all, that we’ll move on to argument-dependent lookup
+
+ADL isn't a fallback mechanism to use when "normal" overload resolution fails, functions found by ADL are just as viable as functions found by normal lookup
+
+ALD looks up argument type after all lookups have been done:"using",templates,extra namespace references etc
+
+
+if ADL finds something which is not a function, ADL will stop completely
+
+So in short, since unqualified lookup will always search in the global namespace, ADL will never apply to global namespace.
+
+
+
+The friend functions that are found by ADL might have been declared in the namespace enclosing the associated type, or they might be declared nowhere else (the so-called “hidden friend” idiom, about which I hope to write more later). However, when the associated type declares a friend function using explicit namespace-qualification (as in friend void NS::f(int)), ADL will ignore that declaration. So even though it is technically possible to befriend functions from other namespaces, those functions will not thereby become ADL candidates
 
 ----------------------
 name lookup in C++ works from innermost scope to outtermost scope. for example if you do this
@@ -76,7 +92,8 @@ It has the same address in every translation unit.
 
 If an inline function or variable (since C++17) with external linkage is defined differently in different translation units, the behavior is undefined
 
-C++ does not allow types and pointers/referenes to objects or functions with internal linkage (static) to be used as template parameters. Replacing static with anonymous namespace still "hides" the things from other translation units but they keep external linkage (mostly) and can so be used as template arguments
+C++ does not allow types and pointers/referenes to objects or functions with internal linkage (static) to be used as template parameters. Replacing static with anonymous namespace still "hides" the things from other translation units
+ but they keep external linkage (mostly) and can so be used as template arguments
 
 inline marks the symbol WEAK, which hints linker to choose arbitary one of definition in object files
 static marks the symbol LOCAL, which restricts the symbol in current translation unit, and the linker may keep multiple instances of (possibly different) definition.
@@ -230,19 +247,23 @@ int main()
 A variable declared inline has the same semantics as a function declared inline: it can be defined, identically, in multiple translation units, and in fact each trasnlation unit would still only have a unique definiton of it, and the behavior of the program is as if there was exactly one variable.
 --------------
 zero initialization does not mean litterly memset(0)! it could be in fact set to all bits 1!
+An object of static storage duration is zero initialized
+If T is a scalar type, the object's initial value is the integral constant zero explicitly converted to T
+If T is array type, each element is zero-initialized.
+If T is reference type, nothing is done.
 
 ----
 vtable
 -----
 
 --
-0offset to top
+0offset to top of the object!
 8RTTI std::type_info
 16 ~ with delete after
 24 ~ without delete after
 32 func1
 ....
-N offset to top
+N offset to top of the object!
 N+8 RTTI std::type_info
 A,B, C : A,B
 .....
@@ -253,16 +274,37 @@ data A
 data B
 data C
 
+                           +-----------------------+
+                           |     0 (top_offset)    |
+                           +-----------------------+
+c --> +----------+         | ptr to typeinfo for C |
+      |  vtable  |-------> +-----------------------+
+      +----------+         |         A::v()        |
+      |     a    |         +-----------------------+
+      +----------+         |         C::w()        |
+      |  vtable  |---+     +-----------------------+
+      +----------+   |     |    -8 (top_offset)    |
+      |     b    |   |     +-----------------------+
+      +----------+   |     | ptr to typeinfo for C |
+      |     c    |   +---> +-----------------------+
+      +----------+         |    thunk to C::w()    |
+                           +-----------------------+
+
+Now, when w() is called on an instance of C through a pointer-to-B, the thunk is called. What does the thunk do? Let's disassemble it (here, with gdb):
+
+0x0804860c <_ZThn8_N1C1wEv+0>:  addl   $0xfffffff8,0x4(%esp)
+0x08048611 <_ZThn8_N1C1wEv+5>:  jmp    0x804853c <_ZN1C1wEv>
+
 The entries for virtual destructors are actually pairs of entries. The first destructor, called the complete object destructor, performs the destruction without calling delete() on the object. The second destructor, called the deleting destructor, calls delete() after destroying the object. Both destroy any virtual bases; a separate, non-virtual function, called the base object destructor, performs destruction of the object but not its virtual base subobjects, and does not call delete().
 
 The offset to top holds the displacement to the top of the object from the location within the object of the virtual table pointer that addresses this virtual table, as a  ptrdiff_t. It is always present. The offset provides a way to find the top of the object from any base subobject with a virtual table pointer. This is necessary for dynamic_cast<void*> in particular. So basically this offset is an offest insdie the top object! !!!!!!!!!! ---------- 
+
 (1) Used by  dynamic_cast<void*>(b);(returns the most derived pointer! so no RTTI needed) for example. One last point, you might wonder what's offsetToTop doing in vtables. It's used when casting to void* so that you can simply substract the pointer by the offset to get the base of the most derived class ----------------
-(2) Also used by thunk functions which are kept the same across all VTABLE and just adjust pointer for this BY offset to top to get the right this for object!
  
  NOW VIRTUAL BASE INHERITANCE WORKS THE SIMILAR WAY because at any any given base vtable the location of virtual base cannot be known for sure since earlier / later classes might have created it! That is why each vtable having virtual base classes has an offset to the virtual base object
  !!!!!!!!!!!!!!!!!!!!
 
-
+dynamic_cast<void*> will return the pointer to the most dervided
 
 The typeinfo pointer points to the typeinfo object used for RTTI. It is always present. All entries in each of the virtual tables for a given class must point to the same typeinfo object. A correct implementation of typeinfo equality is to check pointer equality, except for pointers (directly or indirectly) to incomplete types. The typeinfo pointer is a valid pointer for polymorphic classes, i.e. those with virtual functions, and is zero for non-polymorphic classes
 

@@ -1,4 +1,27 @@
 ﻿---------------------
+
+ in C++ defaulted template parameters are not part of the signature, so multiple versions of the function will look like duplicate versions of the same function to the compiler, resulting in a compile error.
+
+template<class Msg, typename = std::enable_if_t<AnyOfType<Msg, SupportedMessages>::value>>
+bool handle(DepthUpdate<Msg> const& update);
+
+However, it turns out that when dealing with non-type template parameters then default template parameters are part of the signature so we can work around this by changing the type of template parameter accepted.  This will now compile but as this is an integer value then we must consider that integers can legitimately occur in non-type template parameters.
+
+template<class Msg, std::enable_if_t<AnyOfType<Msg, SupportedMessages>::value, int> = 0>
+bool handle(DepthUpdate<Msg> const& update);
+
+-------------
+Templates are compiled (atleast) twice:
+
+Without Instantiation the template code itself is checked for syntax.
+Eg: Any syntax errors such as ; etc.
+
+At the time of instantiation(when the exact type is known), the template code is checked again to ensure all calls are valid for that particular type.
+Eg: The template might in turn call to functions which might not be present for that particular type.
+
+Also note that lookup for non-dependent names is done in the first phase, whereas lookup for names that depend on a template parameter is done in the second phase. The significance is that if you call sqrt(1), then sqrt needs to be declared before the template is defined. But if you call sqrt(t), where t is an instance of a type that's a template parameter, then sqrt needn't be visible until the template is instantiated.
+
+---------------------
 clang treats alias tempalte as totally diffrent template
 
 template <class T> using vecalias =  std::vector<int>;

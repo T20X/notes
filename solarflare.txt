@@ -1,0 +1,19 @@
+1. The Solarflare SFN7000, SFN8000 and X2 series adapters support multicast
+replication where received packets are replicated in hardware and delivered to
+multiple receive queues
+
+
+2. If a multicaststream is being accelerated by Onload, and another application that is
+not using Onload subscribes to the same stream, then the second application will
+not receive the associated datagrams. Therefore if multiple applications subscribe
+to a particular multicast stream, either all or none should be run with Onload.
+
+
+3. When multiple sockets join the same multicast group, received packets are
+delivered to these sockets in the order that they joined the group.
+When multiple sockets are created by different threads and all threads are spinning
+on recv(), the thread which is able to receive first will also deliver the packets to
+the other sockets.
+If a thread ‘A’ is spinning on poll(), and another thread ‘B’, listening to the same
+group, calls recv() but does not spin, ‘A’ will notice a received packet first and
+deliver the packet to ‘B’ without an interrupt occurring
