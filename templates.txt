@@ -1,4 +1,5 @@
-﻿---------------------
+﻿void_t It can also be used to detect validity of an expression rather than just a type
+---------------------
 
  in C++ defaulted template parameters are not part of the signature, so multiple versions of the function will look like duplicate versions of the same function to the compiler, resulting in a compile error.
 

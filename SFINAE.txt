@@ -11,6 +11,19 @@ TEMPLATE SEQUENCE
 ------------
 instantiation -> deduction -> substitution -> evaluation!
 
+SFINAE - is not only substitution failure it is also deduction failure
+
+Type deduction does not consider implicit conversions (other than type adjustments listed above): that's the job for overload resolution, which happens later. However, if deduction succeeds for all parameters that participate in template argument deduction, and all template arguments that aren't deduced are explicitly specified or defaulted, then the remaining function parameters are compared with the corresponding function arguments. For each remaining parameter P with a type that was non-dependent before substitution of any explicitly-specified template arguments, if the corresponding argument A cannot be implicitly converted to P, deduction fails.
+
+//this works because vector T's get deduced properly and void deduce(const std::vector<T>& vec, typename Identity<T>::type v) fails to be deduced! 
+void deduce(const std::vector<T>& vec, typename Identity<T>::type v)
+
+
+
+Template argument deduction takes place after the function template name lookup (which may involve argument-dependent lookup) and before template argument substitution (which may involve SFINAE) and overload resolution.
+
+Alias templates are not deduced , except in class template argument deduction (since C++20)
+
 All the expressions won't lead to a SFINAE. A broad rule would be to say that all the substitutions out of the function/methods body are "safes"
 
 Substitution proceeds in lexical order and stops when a failure is encountered.
@@ -52,17 +65,24 @@ auto enableIfSINAFE(Container& v) -> decltype(enable_if_t<is_same<Iter, random_a
 auto enableIfSINAFE(Container& v) -> decltype(enable_if_t<is_same<Iter, bidirectional_iterator_tag>::value>(), void())
 
 
-      template<typename _Alloc2>
-    static auto
-    _S_select(_Alloc2& __a, int)
-    -> decltype(__a.select_on_container_copy_construction())
-    { return __a.select_on_container_copy_construction(); }
+      template<typename _Alloc2> static auto _S_select(_Alloc2& __a, int) -> decltype(__a.select_on_container_copy_construction()) { return __a.select_on_container_copy_construction(); }
+      template<typename _Alloc2> static _Alloc2 _S_select(_Alloc2& __a, ...) { return __a; }
 
-      template<typename _Alloc2>
-    static _Alloc2
-    _S_select(_Alloc2& __a, ...)
-    { return __a; }
 
+      template <class T>
+auto inner2(T t,int) -> decltype(t.d(), void()) {
+    std::cout << "inner2 worked 1!";
+}
+
+template <class T>
+auto inner2(T t, int) -> decltype(t.f(), void()) {
+    std::cout << "inner2 worked 1!";
+}
+
+template <class T>
+void  inner2(T t, ...)  {
+    std::cout << "inner2 worked 3!";
+}
 
 
 (2) 
@@ -96,6 +116,10 @@ template<class _FwdIt,
 
 trick is that {} will force default construction! but not for void in which case SFINAE kicks in!
 
+
+-------------
+CASES OF SFINAE  ERRORS
+-------------
 (4)
 attempting to use a type that is not a class or enumeration on the left of a scope resolution operator ::
 template <class T> int f(typename T::B*);
