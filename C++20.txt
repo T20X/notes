@@ -88,3 +88,7 @@ void f(std::same_as<char> auto){}   // #3
 // calls #1 because std::integral is more constrained
 // than integral_or_floating(#2)
 f(int{});
+
+
+
+(4) C++17 didn’t allow to move rvalue references in return statements, function parameters in throw expressions, and various forms of conversions unreasonably prevented moving

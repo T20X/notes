@@ -1,4 +1,32 @@
-﻿void_t It can also be used to detect validity of an expression rather than just a type
+﻿
+C++20 lays foundation for constexpr containers. First, it allows constexpr and even virtual constexpr destructors for literal types(types that can be used as a constexpr variable). Second, it allows calls to std::allocator<T>::allocate() and new-expression which results in a call to one of the global operator new if allocated storage is deallocated at compile time. That is, memory can be allocated at compile-time but it must be freed at compile-time also. This creates a bit of friction if final data has to be used at run-time. There’s no choice but to store it in some non-allocating container like std::array and get compile-time value twice: first, to get its size, and second, to actually copy it(thanks to arthur-odwyer, beached and luke from cpplang slack for explaining this to me):
+
+constexpr auto get_str()
+{
+    std::string s1{"hello "};
+    std::string s2{"world"};
+    std::string s3 = s1 + s2;
+    return s3;
+}
+
+constexpr auto get_array()
+{
+    constexpr auto N = get_str().size();
+    std::array<char, N> arr{};
+    std::copy_n(get_str().data(), N, std::begin(arr));
+    return arr;
+}
+
+static_assert(!get_str().empty());
+
+// error because it holds data allocated at compile-time
+constexpr auto str = get_str();
+
+// OK, string is stored in std::array<char>
+constexpr auto result = get_array();
+
+----------------------------
+void_t It can also be used to detect validity of an expression rather than just a type
 ---------------------
 
  in C++ defaulted template parameters are not part of the signature, so multiple versions of the function will look like duplicate versions of the same function to the compiler, resulting in a compile error.
@@ -23,10 +51,10 @@ Eg: The template might in turn call to functions which might not be present for 
 Also note that lookup for non-dependent names is done in the first phase, whereas lookup for names that depend on a template parameter is done in the second phase. The significance is that if you call sqrt(1), then sqrt needs to be declared before the template is defined. But if you call sqrt(t), where t is an instance of a type that's a template parameter, then sqrt needn't be visible until the template is instantiated.
 
 ---------------------
-clang treats alias tempalte as totally diffrent template
+ alias tempalte  == original type
 
 template <class T> using vecalias =  std::vector<int>;
-is_same<std::vector, vecalias> == false!
+is_same<std::vector, vecalias> == true!
 
 ----------------------
 template template classes can alos be specializead

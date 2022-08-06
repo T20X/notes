@@ -1,4 +1,28 @@
+------------------------
+
+An object, in C++, has
+
+size (can be determined with sizeof);
+alignment requirement (can be determined with alignof);
+storage duration (automatic, static, dynamic, thread-local);
+lifetime (bounded by storage duration or temporary);
+type;
+value (which may be indeterminate, e.g. for default-initialized non-class types);
+optionally, a name.
+The following entities are not objects: value, reference, function, enumerator, type, non-static class member, template, class or function template specialization, namespace, parameter pack, and this.
+
+For an object of type T:
+
+its object representation is the sequence of sizeof(T) objects of type unsigned char (or, equivalently, std::byte) (since C++17) beginning at the same address as the T object,
+its value representation is the set of bits that hold the value of its type T, and
+its padding bits are the bits in the object representation that are not part of the value representation
+
+--------------------------
+
+
 -----------------
+
+
 code is said to be exception safe if it keeps program in a consistent state even if a throw occurs
 
 -basic guarantee

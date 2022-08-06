@@ -19,3 +19,16 @@ auto lambda = [=](int x, int z) {
 
 int(decltype(lambda)::*ptr)(int, int)const = &decltype(lambda)::operator();
 std::cout << "test = " << (lambda.*ptr)(2, 3) << std::endl;
+
+
+(5) 
+
+
+std::map<int, int, decltype([](const auto& v1, const auto& v2){ return v1 < v2;})> m;
+
+
+
+(6)
+variable length arrays
+// since C++20
+int* p2 = new int[]{1, 2, 3};

@@ -1,4 +1,214 @@
-﻿bad_alloc can also happen because of heap corruption
+﻿-----------
+allocator
+------------------
+
+std::allocator<T>::allocate returns T[n] and starts the lifetime of the array but not objects themselves
+
+std::allocator_traits<std::allocator>::allocate calls std:;allocator<T>::allocate which in turn would could some form of ::operator new (new /ext/new_allocator.h does that)
+allocator_traits<std::allocator>::deallocate calls std::allocator<T>::deallocate
+allocator_traits<std::allocator>::construct calls std::construct_at
+allocator_traits<std::allocator>::destroy calls std::destroy_at
+
+-----
+vector internals
+---
+
+gcc using in vector _gnu_cxx::_allocator_traits which is based on std::allocator_traits
+it is using  alloc traits from gcc to allocate / deallocae its internal storage
+
+----------
+struct Ref{
+    const int& r;
+};
+
+
+brace initialization extends ref lifetime
+Ref r1{GetInt()}; // OK, lifetime is extended
+Ref r1(GetInt()); // dangled reference
+
+
+----------------
+reinterpret_cast
+-----------
+
+Two objects a and b are pointer-interconvertible if:
+(4.1)
+they are the same object, or
+(4.2)
+one is a union object and the other is a non-static data member of that object ([class.union]), or
+(4.3)
+one is a standard-layout class object and the other is the first non-static data member of that object or any base class subobject of that object ([class.mem]), or
+(4.4)
+there exists an object c such that a and c are pointer-interconvertible, and c and b are pointer-interconvertible
+
+If two objects are pointer-interconvertible, then they have the same address, and it is possible to obtain a pointer to one from a pointer to the other via a reinterpret_­cast ([expr.reinterpret.cast]).
+
+
+Any object pointer type T1* can be converted to another object pointer type cv T2*. This is exactly equivalent to static_cast<cv T2*>(static_cast<cv void*>(expression)) (which implies that if T2's alignment requirement is not stricter than T1's, the value of the pointer does not change and conversion of the resulting pointer back to its original type yields the original value). In any case, the resulting pointer may only be dereferenced safely if allowed by the type aliasing rules (see below)
+
+
+
+A glvalue of type T1, designating an object x, can be cast to the type “reference to T2” if an expression of type “pointer to T1” can be explicitly converted to the type “pointer to T2” using a reinterpret_­cast. The result is that of *reinterpret_­cast<T2 *>(p) where p is a pointer to x of type “pointer to T1”. No temporary is created, no copy is made, and no constructors ([class.ctor]) or conversion functions ([class.conv]) are called.60
+
+---
+static_cast
+----
+
+ Conversion of any pointer to pointer to void and back to pointer to the original (or more cv-qualified) type preserves its original value.
+
+ this is totally fine
+
+ Test t;
+ void* p = t;
+ Test* ptr = static_cast<Test*>(p)
+
+
+ Sorry for the thread necromancy, but I just happened across this and your code above is likely not safe. This is because you're using reinterpret_cast to cast a void *, whereas you should always use a static_cast for related type conversions (and void * is related to all other pointer types).
+-------------
+Union
+---------------
+
+In C and in C++ prior to C++11, unions are restricted to trivial types.
+
+Starting from C++11, it is possible to use unions with non-trivial types with the following limitations :
+
+You have to manually handle the lifetime of the active member, using placement new and explicit object destruction.
+You have to define special members like destructor and copy-constructor while taking into consideration the active member.
+
+
+It says that we are allowed to read the non-static data member of the non-active member if it is part of the common initial sequence of the the structs [class.mem.general]p25.
+
+struct T1 { int a, b; };
+struct T2 { int c; double d; };
+union U { T1 t1; T2 t2; };
+int f() {
+  U u = { { 1, 2 } };   // active member is t1
+  return u.t2.c;        // OK, as if u.t1.a were nominated
+
+
+
+union A { 
+  struct { int x, y; } a;
+  struct { int x, y; } b;
+};
+int f() {
+  A a = {.a = {}};
+  a.b.x = 1; // Change active member, starts lifetime of b
+             // there is no initialization of y
+  return a.b.y; // UB
+}
+
+----
+
+type pune 
+
+some room with reinterpret_cast,
+more standart way : memcpy and std::bit_cast
+
+
+ntoe that compiler optimizes mempcy and std::bit_cast very well to avoid actuall copy
+
+---
+Whenever an attempt is made to read or modify the stored value of an object of type DynamicType through a glvalue of type AliasedType, the behavior is undefined unless one of the following is true:
+
+AliasedType and DynamicType are similar.
+AliasedType is the (possibly cv-qualified) signed or unsigned variant of DynamicType.
+AliasedType is std::byte, (since C++17) char, or unsigned char: this permits examination of the object representation of any object as an array of bytes.
+Informally, two types are similar if, ignoring top-level cv-qualification:
+
+they are the same type; or
+they are both pointers, and the pointed-to types are similar; or
+they are both pointers to member of the same class, and the types of the pointed-to members are similar; or
+they are both arrays of the same size or both arrays of unknown bound, and the array element types are similar.
+(until C++20)
+they are both arrays of the same size or at least one of them is array of unknown bound, and the array element types are similar.
+
+
+
+After implicitly creating objects within a specified region of storage, some operations produce a pointer to a suitable created object. The suitable created object has the same address as the region of storage. Likewise, the behavior is undefined if only if no such pointer value can give the program defined behavior, and it is unspecified which pointer value is produced if there are multiple values giving the program defined behavior.
+
+#include <cstdlib>
+ 
+struct X { int a, b; };
+ 
+X* MakeX()
+{
+    // One of possible defined behaviors:
+    // the call to std::malloc implicitly creates an object of type X
+    // and its subobjects a and b, and returns a pointer to that X object
+    X* p = static_cast<X*>(std::malloc(sizeof(X)));
+    p->a = 1;
+    p->b = 2;
+    return p;
+}
+Call to std::allocator::allocate or implicitly defined copy/move special member functions of union types can also create objects.
+
+
+
+/* Also no issue with aliasing here, object lifetime has been started with placement new */
+
+{
+    // Statically allocate the storage with automatic storage duration
+    // which is large enough for any object of type `T`.
+    alignas(T) unsigned char buf[sizeof(T)];
+ 
+    T* tptr = new(buf) T; // Construct a `T` object, placing it directly into your 
+                          // pre-allocated storage at memory address `buf`.
+ 
+    tptr->~T();           // You must **manually** call the object's destructor
+                
+
+--------------------
+zero initializing array
+std::byte[10] = {}
+----------------------
+Strict aliasing
+Accessing an object using an expression of a type other than the type with which it was created is undefined behavior in many cases, see reinterpret_cast for the list of exceptions and examples.
+
+basically you cannot just defined an array of std:;byte and use it to change types of int or float
+
+Unlike static_cast, but like const_cast, the reinterpret_cast expression does not compile to any CPU instructions (except when converting between integers and pointers or on obscure architectures where pointer representation depends on its type). It is purely a compile-time directive which instructs the compiler to treat expression as if it had the type new-type.
+
+
+When it is needed to interpret the bytes of an object as a value of a different type, std::memcpy or std::bit_cast (since C++20)can be used
+
+
+A float can not validly alias an int object
+aliasing anything into std::byte, char, unsgined char is totally fine
+
+
+As we have seen earlier this is not a valid aliasing, so we are invoking undefined behavior. But traditionally compilers did not take advantage of strict aliasing rules and this type of code usually just worked, developers have unfortunately gotten used to doing things this way.
+
+-------------------------
+
+If we are going to create objects automatically, we need a bare minimum of the following two properties for the type:
+
+1) Creating an instance of the type runs no code. For class types, having a trivially default constructible type is often the right constraint. However, we should also consider cases where initially creating an object is non-trivial, but copying it (for instance, from an on-disk representation) is trivial.
+
+2) Destroying an instance of the type runs no code. If the type maintains invariants, we should not be implicitly creating objects of that type.
+
+Note that we’re only interested in properties of the object itself here, not of its subobjects. In particular, the above two properties always hold for array types. While creating or destroying array elements might run code, creating the array object (without its elements) does not. For similar reasons, it also seems reasonable to permit implicit object creation for aggregate class types even if the aggregate contains an element with a non-trivial destructor.
+
+This suggests that the largest set of types we could apply this to is:
+
+Scalar types
+
+Aggregate types (arrays with any element type, aggregate classes with any members)
+
+Class types with a trivial destructor and a trivial constructor (of any kind)
+
+(Put another way, we can apply this to all types other than function type, reference type, void, and class types where all constructors are non-trivial or where the destructor is non-trivial.)
+
+We will call types that satisfy the above constraints implicit-lifetime types
+
+------------
+std::unordered_map does not guarantee iterators are valid after rehashing, only refrences
+-------------
+::operator delete does not call destrcutor because type info is lost
+::operator [] new is meant to implement special array indexing strategy where allocated size won't be exactly  N * sizeof(T)
+----------------------------------------
+
+bad_alloc can also happen because of heap corruption
 -----------
 structured binding is just a way to introduce refrences to destructured elements it is pointing to
 auto [a,b] = f();
@@ -364,6 +574,7 @@ std::variant
 We could do with some guidelines for when to consider type erasure. There are two types of issues to keep in mind—design considerations and performance considerations
 ---------------
 providing default implementation for pure virtual function can be done, but derived class still has to provide an implementation regardless
+
 ---------------
 a valid use case for static_cast
 ------------
@@ -375,7 +586,9 @@ Base* b = new Derived;    // *b is really DerivedDerived* d = b;
 - that private inheritance implements a has-a relationship—the derived object has an instance of the base class contained inside of i
 
 The programming technique where some code operates on any number of base objects and invokes the same methods, but the results depend on the actual type of these objects, is known as runtime polymorphism, and the objects that support this technique are polymorphic
+
 -------------------
+
 .  values are mental model(platonic type) of things which could then be mapped/approximated into C++.
     values are recursively defined in terms of operations that are possible on a given type.
 We refer to stateful objects that do not represent a value as "Mechanisms" - say C++ allocators for example.
@@ -770,6 +983,7 @@ classes model a concept I call trivially destructive-movable
 -------------
 prvalue - pure rvalue
 xvalue - rvalue from lvalue
+glvalue - it is kidn of lvalue
 ----------------
 Two pointers can be compared with using the comparison function objects less,  greater etc. Otherwise, using blanket operator< etc, this is only possible if the pointers point to elements of the same array object or one past the end. Otherwise, results are unspecifie
 ----------------------------------
