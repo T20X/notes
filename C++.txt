@@ -1,4 +1,281 @@
-﻿-----------
+﻿------------
+temporary
+------------
+
+The materialization of a temporary object is generally delayed as long as possible in order to avoid creating unnecessary temporary objects. [ Note: Temporary objects are materialized
+
+-----
+initialization
+--------
+
+
++++++++++++++++++++++
+
+default -> T t; 
+default ->  new T;
+
++++++++++++++++++++++
+default initialization
++++++++++++++++++++++
+
+Default initialization is performed in three situations:
+
+1) when a variable with automatic, static, or thread-local storage duration is declared with no initializer;
+2) when an object with dynamic storage duration is created by a new-expression with no initializer;
+3) when a base class or a non-static data member is not mentioned in a constructor initializer list and that constructor is called.
+The effects of default initialization are:
+
+if T is a (possibly cv-qualified) non-POD (until C++11) class type, the constructors are considered and subjected to overload resolution against the empty argument list. The constructor selected (which is one of the default constructors) is called to provide the initial value for the new object;
+if T is an array type, every element of the array is default-initialized;
+otherwise, no initialization is performed: the objects with automatic / dynamic storage duration (and their subobjects) contain indeterminate values
+
+
+Use of an indeterminate value obtained by default-initializing a non-class variable of any type is undefined behavior (in particular, it may be a trap representation), except in the following cases:
+
+
++++++++++++++++++++++
+
+T ()	(1)	
+new T ()	(2)	
+Class::Class(...) : member () { ... }	(3)	
+T object {};	(4)	(since C++11)
+T {}	(5)	(since C++11)
+new T {}	(6)	(since C++11)
+Class::Class(...) : member {} { ... }	(7)	(since C++11)
+
+
+++++++++++++++++++
+value initialization
++++++++++++++++++++++
+
+In all cases, if the empty pair of braces {} is used and T is an aggregate type, aggregate-initialization is performed instead of value-initialization.
+
+If T is a class type that has no default constructor but has a constructor taking std::initializer_list, list-initialization is performed.
+
+(since C++11)
+The effects of value initialization are:
+
+1) if T is a class type with no default constructor or with a user-declared (until C++11)user-provided or deleted (since C++11) default constructor, the object is default-initialized;
+2) if T is a class type with a default constructor that is not user-declared (until C++11)neither user-provided nor deleted (since C++11) (that is, it may be a class with an implicitly-defined or defaulted default constructor), the object is zero-initialized and the semantic constraints for default-initialization are checked, and if T has a non-trivial default constructor, the object is default-initialized;
+3) if T is an array type, each element of the array is value-initialized;
+4) otherwise, the object is zero-initialized.
+
+
+The standard specifies that zero-initialization is not performed when the class has a user-provided or deleted default constructor, which implies that whether said default constructor is selected by overload resolution is not considered. All known compilers performs additional zero-initialization if a non-deleted defaulted default constructor is selected
+
+
+
+---
+classes
+-----
+A trivially copyable class is a class that
+
+**************** Trivally copyable class **********************
+has at least one eligible copy constructor, move constructor, copy assignment operator, or move assignment operator,
+each eligible copy constructor is trivial
+each eligible move constructor is trivial
+each eligible copy assignment operator is trivial
+each eligible move assignment operator is trivial, and
+has a non-deleted trivial destructor.
+++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+The default constructor for class T is trivial (i.e. performs no action) if all of the following is true:
+
+The constructor is not user-provided (i.e., is implicitly-defined or defaulted on its first declaration)
+T has no virtual member functions
+T has no virtual base classes
+T has no non-static members with default initializers.
+(since C++11)
+Every direct base of T has a trivial default constructor
+Every non-static member of class type (or array thereof) has a trivial default constructor
+A trivial default constructor is a constructor that performs no action. All data types compatible with the C language (POD types) are trivially default-constructible.
+
+Triviality of eligible default constructors determines whether the class is an implicit-lifetime type, and whether the class is a trivial type.
+
+
+++++++++++++++++++++++++++++++++++++++++++++++++
+A trivial class is a class that
+++++++++++++++++++++++++++++++++++++++++++++++++
+
+- is trivially copyable, and
+- has one or more eligible default constructors such that each is trivial
+
+
+++++++++++++++++++++++++++++++++++++++++++++++++
+Standard-layout class
+++++++++++++++++++++++++++++++++++++++++++++++++
+A standard-layout class is a class that
+
+has no non-static data members of type non-standard-layout class (or array of such types) or reference,
+has no virtual functions and no virtual base classes,
+has the same access control for all non-static data members,
+has no non-standard-layout base classes,
+has all non-static data members and bit-fields in the class and its base classes first declared in the same class, and
+
+
+
+++++++++++++++++++++++++++++++++++++++++++++++++
+construction
+++++++++++++++++++++++++++++++++++++++++++++++++
+
+For an object with a non-trivial constructor, referring to any non-static member or base class of the object before the constructor begins execution results in undefined behavior. For an object with a non-trivial destructor, referring to any non-static member or base class of the object after the destructor finishes execution results in undefined behavior.
+
+
+During the construction of an object, if the value of the object or any of its subobjects is accessed through a glvalue that is not obtained, directly or indirectly, from the constructor's this pointer, the value of the object or subobject thus obtained is unspecifie
+
+
+----
+
+objects
+----
+
+size (can be determined with sizeof);
+alignment requirement (can be determined with alignof);
+storage duration (automatic, static, dynamic, thread-local);
+lifetime (bounded by storage duration or temporary);
+type;
+value (which may be indeterminate, e.g. for default-initialized non-class types);
+optionally, a name.
+
+An object that is not a subobject of any other object is called a complete object
+
+
+A pointer value becomes invalid when the storage it denotes reaches the end of its storage duration
+
+For purposes of pointer arithmetic ([expr.add]) and comparison ([expr.rel], [expr.eq]), a pointer past the end of the last element of an array x of n elements is considered to be equivalent to a pointer to a hypothetical array element n of x and an object of type T that is not an array element is considered to belong to an array with one element of type T. The value representation of pointer types is implementation-defined. 
+
+While pointer values are implementation defined, there is exist a concept of byte and statement that each byte has unique address
+
+object is not its value! value exists independetnly of objects
+
+The following entities are not objects: value, reference, function, enumerator, type, non-static class member, template, class or function template specialization, namespace, parameter pack, and this.
+
+A variable is an object or a reference that is not a non-static data member, that is introduced by a declaration.
+
+
+Each object with automatic storage duration is destroyed if it has been constructed, but not yet destroyed, since the try block was entered. That means this code is invvalid because n is destroyed first (before a)!
+
+Every object and reference has a lifetime, which is a runtime property: for any object or reference, there is a point of execution of a program when its lifetime begins, and there is a moment when it ends.
+
+
+Two objects a and b are pointer-interconvertible if:
+(4.1)
+they are the same object
+(4.2)
+one is a union object and the other is a non-static data member of that object ([class.union]), or
+(4.3)
+one is a standard-layout class object and the other is the first non-static data member of that object, or, if the object has no non-static data members, any base class subobject of that object ([class.mem]), or
+(4.4)
+there exists an object c such that a and c are pointer-interconvertible, and c and b are pointer-interconvertible.
+If two objects are pointer-interconvertible, then they have the same address, and it is possible to obtain a pointer to one from a pointer to the other via a reinterpret_­cast. [ Note: An array object and its first element are not pointer-interconvertible, even though they have the same address. — end note ]
+
+
+
+When storage for an object with automatic or dynamic storage duration is obtained, the object has an indeterminate value, and if no initialization is performed for the object, that object retains an indeterminate value until that value is replaced ([expr.ass]). [ Note: Objects with static or thread storage duration are zero-initialized, see [basic.start.static]. — end note ]
+
+------
+object lifetime
+-----
+
+The lifetime of an object begins when:
+
+storage with the proper alignment and size for its type is obtained, and
+its initialization (if any) is complete (including default initialization via no constructor or trivial default constructor), except that
+if the object is a union member or subobject thereof, its lifetime only begins if that union member is the initialized member in the union, or it is made active,
+if the object is nested in a union object, its lifetime may begin if the containing union object is assigned or constructed by a trivial special member function,
+an array object's lifetime may also begin if it is allocated by std::allocator::allocate.
+Some operations implicitly create objects of implicit-lifetime types in given region of storage and start their lifetime. If a subobject of an implicitly created object is not of an implicit-lifetime type, its lifetime does not begin implicitly.
+
+The lifetime of an object ends when:
+
+if it is of a non-class type, the object is destroyed (maybe via a pseudo-destructor call), or
+if it is of a class type, the destructor call starts, or
+the storage which the object occupies is released, or is reused by an object that is not nested within it.
+Lifetime of an object is equal to or is nested within the lifetime of its storage, see storage duration.
+
+The lifetime of a reference begins when its initialization is complete and ends as if it were a scalar object.
+
+Note: the lifetime of the referred object may end before the end of the lifetime of the reference, which makes dangling references possible.
+
+Lifetimes of non-static data members and base subobjects begin and end following class initialization order.
+
+
+If a new object is created at the address that was occupied by another object, then all pointers, references, and the name of the original object will automatically refer to the new object and, once the lifetime of the new object begins, can be used to manipulate the new object, but only if the original object is transparently replaceable by the new object.
+
+
+**********************************
+Object x is transparently replaceable by object y if:
+*******************************
+
+the storage for y exactly overlays the storage location which x occupied
+y is of the same type as x (ignoring the top-level cv-qualifiers)
+x is not a complete const object
+neither x nor y is a base class subobject, or a member subobject declared with [[no_unique_address]] (since C++20)
+either
+x and y are both complete objects, or
+x and y are direct subobjects of objects ox and oy respectively, and ox is transparently replaceable by oy.
+
+
+Creating a new object within the storage that a const complete object with static, thread, or automatic storage duration occupies, or within the storage that such a const object used to occupy before its lifetime ended, results in undefined behavior. [ Example:
+struct B {
+  B();
+  ~B();
+};
+
+const B b;
+
+void h() {
+  b.~B();
+  new (const_cast<B*>(&b)) const B;     // undefined behavior
+
+-----
+types
+---
+The declared type of an array object might be an array of incomplete class type and therefore incomplete; if the class type is completed later on in the translation unit, the array type becomes complete; 
+
+Objects shall not be defined to have an incomplete type.
+
+An object type is a (possibly cv-qualified) type that is not a function type, not a reference type, and not cv void.
+
+Two types cv1 T1 and cv2 T2 are layout-compatible types if T1 and T2 are the same type, layout-compatible enumerations, or layout-compatible standard-layout class types.
+
+Two standard-layout struct ([class.prop]) types are layout-compatible classes if their common initial sequence comprises all members and bit-fields of both classes ([basic.types]).
+
+Unsigned arithmetic does not overflow
+
+
+Specifies that a type is a literal type. Literal types are the types of constexpr variables and they can be constructed, manipulated, and returned from constexpr functions.
+
+A literal type is any of the following:
+
+possibly cv-qualified void (so that constexpr functions can return void);
+(since C++14)
+scalar type;
+reference type;
+an array of literal type;
+possibly cv-qualified class type that has all of the following properties:
+has a trivial (until C++20)constexpr (since C++20) destructor,
+is one of
+an aggregate type,
+a type with at least one constexpr (possibly template) constructor that is not a copy or move constructor,
+a closure type
+(since C++17)
+for unions, at least one non-static data member is of non-volatile literal type,
+for non-unions, all non-static data members and base classes are of non-volatile literal types.
+
+
+
+------------
+ODR
+-----------
+One and only one definition of every non-inline function or variable that is odr-used (see below) is required to appear in the entire program (including any standard and user-defined libraries). The compiler is not required to diagnose this violation, but the behavior of the program that violates it is undefined
+
+
+Informally, an object is odr-used if its value is read (unless it is a compile time constant) or written, its address is taken, or a reference is bound to it; a reference is odr-used if it is used and its referent is not known at compile time; and a function is odr-used if a function call to it is made or its address is taken. If an object, a reference or a function is odr-used, its definition must exist somewhere in the program; a violation of that is usually a link-time error
+
+
+-----------
 allocator
 ------------------
 
@@ -98,9 +375,22 @@ int f() {
   return a.b.y; // UB
 }
 
+In a standard-layout union with an active member of struct type T1, it is permitted to read a non-static data member m of another union member of struct type T2 provided m is part of the common initial sequence of T1 and T2; the behavior is as if the corresponding member of T1 were nominated. [ Example:
+struct T1 { int a, b; };
+struct T2 { int c; double d; };
+union U { T1 t1; T2 t2; };
+int f() {
+  U u = { { 1, 2 } };   // active member is t1
+  return u.t2.c;        // OK, as if u.t1.a were nominated
+}
+
+
+
 ----
 
 type pune 
+
+---------------
 
 some room with reinterpret_cast,
 more standart way : memcpy and std::bit_cast
@@ -108,6 +398,124 @@ more standart way : memcpy and std::bit_cast
 
 ntoe that compiler optimizes mempcy and std::bit_cast very well to avoid actuall copy
 
+-------------------
+ways to do type copy / pune
+-------------------
+
+(1) 
+
+constexpr std::size_t N = sizeof(T);
+char buf[N];
+T obj;                          // obj initialized to its original value
+std::memcpy(buf, &obj, N);      // between these two calls to std​::​memcpy, obj might be modified
+std::memcpy(&obj, buf, N);      // at this point, each subobject of obj of scalar type holds its original value
+
+(2) 
+
+T* t1p;
+T* t2p;
+    // provided that t2p points to an initialized object ...
+std::memcpy(t1p, t2p, sizeof(T));
+    // at this point, every subobject of trivially copyable type in *t1p contains
+    // the same value as the corresponding subobject in *t2p
+
+(3)
+
+struct T1 { int a, b; };
+struct T2 { int c; double d; };
+union U { T1 t1; T2 t2; };
+int f() {
+  U u = { { 1, 2 } };   // active member is t1
+  return u.t2.c;        // OK, as if u.t1.a were nominated
+
+
+
+  (4)
+
+  struct C {
+  int i;
+  void f();
+  const C& operator=( const C& );
+};
+
+const C& C::operator=( const C& other) {
+  if ( this != &other ) {
+    this->~C();                 // lifetime of *this ends
+    new (this) C(other);        // new object of type C created
+    f();                        // well-defined
+  }
+  return *this;
+}
+
+C c1;
+C c2;
+c1 = c2;                        // well-defined
+c1.f();                         // well-defined; c1 refers to a new object of type C
+
+
+  --------------
+  ways NOT to do type pune
+  ---------
+
+(1)
+
+Before the lifetime of an object has started but after the storage which the object will occupy has been allocated29 or, after the lifetime of an object has ended and before the storage which the object occupied is reused or released, any pointer that represents the address of the storage location where the object will be or was located may be used but only in limited ways. For an object under construction or destruction, see [class.cdtor]. Otherwise, such a pointer refers to allocated storage ([basic.stc.dynamic.allocation]), and using the pointer as if the pointer were of type void* is well-defined. Indirection through such a pointer is permitted but the resulting lvalue may only be used in limited ways, as described below. The program has undefined behavior if:
+
+  struct B {
+  virtual void f();
+  void mutate();
+  virtual ~B();
+};
+
+struct D1 : B { void f(); };
+struct D2 : B { void f(); };
+
+void B::mutate() {
+  new (this) D2;    // reuses storage --- ends the lifetime of *this
+  f();              // undefined behavior
+
+
+  (2)
+  If a program ends the lifetime of an object of type T with static, thread, or automatic storage duration and if T has a non-trivial destructor,30 the program must ensure that an object of the original type occupies that same storage location when the implicit destructor call takes place; otherwise the behavior of the program is undefined. This is true even if the block is exited with an exception. [ Example:
+
+class T { };
+struct B {
+   ~B();
+};
+
+void h() {
+   B b;
+   new (&b) T;
+
+   } // b's destrctor is called but storage has been occupied by T
+
+Objects can contain other objects, called subobjects. A subobject can be a member subobject ([class.mem]), a base class subobject ([class.derived]), or an array element. An object that is not a subobject of any other object is called a complete object. If an object is created in storage associated with a member subobject or array element e (which may or may not be within its lifetime), the created object is a subobject of e's containing object if:
+(2.1)
+the lifetime of e's containing object has begun and not ended, and
+(2.2)
+the storage for the new object exactly overlays the storage location associated with e, and
+(2.3)
+the new object is of the same type as e (ignoring cv-qualification).
+3
+#If a complete object is created ([expr.new]) in storage associated with another object e of type “array of N unsigned char” or of type “array of N std​::​byte” ([cstddef.syn]), that array provides storage for the created object if:
+(3.1)
+the lifetime of e has begun and not ended, and
+(3.2)
+the storage for the new object fits entirely within e, and
+(3.3)
+there is no smaller array object that satisfies these constraints.
+[ Note: If that portion of the array previously provided storage for another object, the lifetime of that object ends because its storage was reused
+
+  template<typename ...T>
+struct AlignedUnion {
+  alignas(T...) unsigned char data[max(sizeof(T)...)];
+};
+int f() {
+  AlignedUnion<int, char> au;
+  int *p = new (au.data) int;           // OK, au.data provides storage
+  char *c = new (au.data) char();       // OK, ends lifetime of *p
+
+ 
 ---
 Whenever an attempt is made to read or modify the stored value of an object of type DynamicType through a glvalue of type AliasedType, the behavior is undefined unless one of the following is true:
 
@@ -163,7 +571,8 @@ zero initializing array
 std::byte[10] = {}
 ----------------------
 Strict aliasing
-Accessing an object using an expression of a type other than the type with which it was created is undefined behavior in many cases, see reinterpret_cast for the list of exceptions and examples.
+Accessing(READING IT) an object using an expression of a type other than the type with which it was created is undefined behavior in many cases, see reinterpret_cast for the list of exceptions and examples.
+note these rules only kick in if you try to read object's value
 
 basically you cannot just defined an array of std:;byte and use it to change types of int or float
 
@@ -177,7 +586,7 @@ A float can not validly alias an int object
 aliasing anything into std::byte, char, unsgined char is totally fine
 
 
-As we have seen earlier this is not a valid aliasing, so we are invoking undefined behavior. But traditionally compilers did not take advantage of strict aliasing rules and this type of code usually just worked, developers have unfortunately gotten used to doing things this way.
+
 
 -------------------------
 

@@ -92,3 +92,5 @@ f(int{});
 
 
 (4) C++17 didn’t allow to move rvalue references in return statements, function parameters in throw expressions, and various forms of conversions unreasonably prevented moving
+
+(5) std::launder is not requried anymore as const andr ref now can be repalced in placement new 
