@@ -4,18 +4,36 @@ temporary
 
 The materialization of a temporary object is generally delayed as long as possible in order to avoid creating unnecessary temporary objects. [ Note: Temporary objects are materialized
 
+
+When an implementation introduces a temporary object of a class that has a non-trivial constructor ([class.default.ctor], [class.copy.ctor]), it shall ensure that a constructor is called for the temporary object. Similarly, the destructor shall be called for a temporary with a non-trivial destructor ([class.dtor]). Temporary objects are destroyed as the last step in evaluating the full-expression ([intro.execution]) that (lexically) contains the point where they were created. This is true even if that evaluation ends in throwing an exception. The value computations and side effects of destroying a temporary object are associated only with the full-expression, not with any specific subexpression
+
+If a temporary object has a reference member initialized by another temporary object, lifetime extension applies recursively to such a member's initializer.
+[Example 4:
+struct S {
+  const int& m;
+};
+const S& s = S{1};     //this is good
+
+
+A temporary bound to a reference in a new-initializer ([expr.new]) persists until the completion of the full-expression containing the new-initializer.
+[Note 7: This might introduce a dangling reference. — end note]
+[Example 5:
+struct S { int mi; const std::pair<int,int>& mp; };
+S a { 1, {2,3} };
+S* p = new S{ 1, {2,3} }; // dangling reference
+
+
 -----
 initialization
 --------
 
 
-+++++++++++++++++++++
-
-default -> T t; 
-default ->  new T;
 
 +++++++++++++++++++++
 default initialization
++++++++++++++++++++++
+default -> T t; 
+default ->  new T;
 +++++++++++++++++++++
 
 Default initialization is performed in three situations:
@@ -25,7 +43,7 @@ Default initialization is performed in three situations:
 3) when a base class or a non-static data member is not mentioned in a constructor initializer list and that constructor is called.
 The effects of default initialization are:
 
-if T is a (possibly cv-qualified) non-POD (until C++11) class type, the constructors are considered and subjected to overload resolution against the empty argument list. The constructor selected (which is one of the default constructors) is called to provide the initial value for the new object;
+if T is a (possibly cv-qualified) class type, the constructors are considered and subjected to overload resolution against the empty argument list. The constructor selected (which is one of the default constructors) is called to provide the initial value for the new object;
 if T is an array type, every element of the array is default-initialized;
 otherwise, no initialization is performed: the objects with automatic / dynamic storage duration (and their subobjects) contain indeterminate values
 
@@ -33,6 +51,36 @@ otherwise, no initialization is performed: the objects with automatic / dynamic 
 Use of an indeterminate value obtained by default-initializing a non-class variable of any type is undefined behavior (in particular, it may be a trap representation), except in the following cases:
 
 
+
++++++++++++++++++++++++++++++
+direct initialization
++++++++++++++++++++++++++++++++
+
+T object ( arg );
+T object ( arg1, arg2, ... );
+
+(1)	
+T object { arg };
+T object { arg, arga2,... };
+	(2)	(since C++11)
+T ( other )
+T ( arg1, arg2, ... )
++++++++++++++++++++++
+
+(3)	
+static_cast< T >( other )	(4)	
+new T(args, ...)	(5)	
+Class::Class() : member(args, ...) { ... }	(6)	
+[arg](){ ... }
+
+
+Direct-initialization is more permissive than copy-initialization: copy-initialization only considers non-explicit constructors and non-explicit user-defined conversion functions, while direct-initialization considers all constructors and all user-defined conversion functions
+
+
+otherwise, if the destination type is a (possibly cv-qualified) aggregate class, it is initialized as described in aggregate initialization except that narrowing conversions are permitted, designated initializers are not allowed, a temporary bound to a reference does not have its lifetime extended, there is no brace elision, and any elements without an initializer are value-initialized.
+
+++++++++++++++++++
+value initialization
 +++++++++++++++++++++
 
 T ()	(1)	
@@ -43,20 +91,16 @@ T {}	(5)	(since C++11)
 new T {}	(6)	(since C++11)
 Class::Class(...) : member {} { ... }	(7)	(since C++11)
 
-
-++++++++++++++++++
-value initialization
 +++++++++++++++++++++
 
-In all cases, if the empty pair of braces {} is used and T is an aggregate type, aggregate-initialization is performed instead of value-initialization.
-
-If T is a class type that has no default constructor but has a constructor taking std::initializer_list, list-initialization is performed.
+Turns into aggregate initialization: In all cases, if the empty pair of braces {} is used and T is an aggregate type, aggregate-initialization is performed instead of value-initialization.
+Turns into list initialization: If T is a class type that has no default constructor but has a constructor taking std::initializer_list, list-initialization is performed.
 
 (since C++11)
 The effects of value initialization are:
 
-1) if T is a class type with no default constructor or with a user-declared (until C++11)user-provided or deleted (since C++11) default constructor, the object is default-initialized;
-2) if T is a class type with a default constructor that is not user-declared (until C++11)neither user-provided nor deleted (since C++11) (that is, it may be a class with an implicitly-defined or defaulted default constructor), the object is zero-initialized and the semantic constraints for default-initialization are checked, and if T has a non-trivial default constructor, the object is default-initialized;
+1) if T is a class type with no default constructor or with user-provided or deleted (since C++11) default constructor, the object is default-initialized;
+2) if T is a class type with a default constructor that is neither user-provided nor deleted (since C++11) (that is, it may be a class with an implicitly-defined or defaulted default constructor), the object is zero-initialized and the semantic constraints for default-initialization are checked, and if T has a non-trivial default constructor, the object is default-initialized;
 3) if T is an array type, each element of the array is value-initialized;
 4) otherwise, the object is zero-initialized.
 
@@ -64,10 +108,35 @@ The effects of value initialization are:
 The standard specifies that zero-initialization is not performed when the class has a user-provided or deleted default constructor, which implies that whether said default constructor is selected by overload resolution is not considered. All known compilers performs additional zero-initialization if a non-deleted defaulted default constructor is selected
 
 
+++++++++++++++++++
+aggregate initialization
+++++++++++++++++
+
+T object = { arg1, arg2, ... };	(1)	
+T object { arg1, arg2, ... };	(2)	(since C++11)
+T object = { .des1 = arg1 , .des2 { arg2 } ... };	(3)	(since C++20)
+T object { .des1 = arg1 , .des2 { arg2 } ... };	(4)	(since C++20)
+
+
+element is copy-initialized from the corresponding initializer clause of the initializer list:
+If the initializer clause is an expression, implicit conversions are allowed as per copy-initialization, except that narrowing conversions are prohibited (since C++11).
+If the initializer clause is a nested braced-init-list (which is not an expression), list-initialize the corresponding element from that clause, which will (since C++11) recursively apply the rule if the corresponding element is a subaggregate.
+
+
+If the aggregate is a union and the initializer list is empty, then
+If any variant member has a default member initializer, that member is initialized from its default member initializer.
+(since C++11)
+Otherwise, the first member of the union (if any) is copy-initialized from an empty initializer list.
 
 ---
 classes
 -----
+The Empty Base Optimization is what will allow an empty base to not "inflate" the object, as you call it. However, you must be careful so that an object does not inherit from the same empty base twice or this optimization won't be allowed
+
+class S{ std::string s; 
+S():s("sadf")}; <-------------- member initializer list 
+int n = 7; <---------  default member initialize
+
 A trivially copyable class is a class that
 
 **************** Trivally copyable class **********************
@@ -114,6 +183,16 @@ has no non-standard-layout base classes,
 has all non-static data members and bit-fields in the class and its base classes first declared in the same class, and
 
 
+Two standard-layout unions are called layout-compatible if they have the same number of non-static data members and corresponding non-static data members (in any order) have layout-compatible types.
+
+Standard-layout types have the following special properties:
+
+- In a standard-layout union with an active member of non-union class type T1, it is permitted to read a non-static data member m of another union member of non-union class type T2 provided m is part of the common initial sequence of T1 and T2 (except that reading a volatile member through non-volatile glvalue is undefined).
+
+- A pointer to an object of standard-layout class type can be reinterpret_cast to pointer to its first non-static non-bitfield data member (if it has non-static data members) or otherwise any of its base class subobjects (if it has any), and vice versa. In other words, padding is not allowed before the first data member of a standard-layout type. Note that strict aliasing rules still apply to the result of such cast.
+
+- The macro offsetof may be used to determine the offset of any member from the beginning of a standard-layout class.
+
 
 ++++++++++++++++++++++++++++++++++++++++++++++++
 construction
@@ -141,6 +220,18 @@ optionally, a name.
 An object that is not a subobject of any other object is called a complete object
 
 
+For objects insdie complete ojbect, an object has nonzero size if it
+(8.1)
+is not a potentially-overlapping subobject, or
+(8.2)
+is not of class type, or
+(8.3)
+is of a class type with virtual member functions or virtual base classes, or
+(8.4)
+has subobjects of nonzero size or unnamed bit-fields of nonzero length.
+Otherwise, if the object is a base class subobject of a standard-layout class type with no non-static data members, it has zero size
+
+
 A pointer value becomes invalid when the storage it denotes reaches the end of its storage duration
 
 For purposes of pointer arithmetic ([expr.add]) and comparison ([expr.rel], [expr.eq]), a pointer past the end of the last element of an array x of n elements is considered to be equivalent to a pointer to a hypothetical array element n of x and an object of type T that is not an array element is considered to belong to an array with one element of type T. The value representation of pointer types is implementation-defined. 
@@ -165,7 +256,7 @@ they are the same object
 (4.2)
 one is a union object and the other is a non-static data member of that object ([class.union]), or
 (4.3)
-one is a standard-layout class object and the other is the first non-static data member of that object, or, if the object has no non-static data members, any base class subobject of that object ([class.mem]), or
+one i s a standard-layout classobject and the other is the first non-static data member of that object, or, if the object has no non-static data members, any base class subobject of that object ([class.mem]), or
 (4.4)
 there exists an object c such that a and c are pointer-interconvertible, and c and b are pointer-interconvertible.
 If two objects are pointer-interconvertible, then they have the same address, and it is possible to obtain a pointer to one from a pointer to the other via a reinterpret_­cast. [ Note: An array object and its first element are not pointer-interconvertible, even though they have the same address. — end note ]
@@ -232,6 +323,8 @@ void h() {
 -----
 types
 ---
+An object of trivially copyable or standard-layout type ([basic.types.general]) shall occupy contiguous bytes of storage.
+
 The declared type of an array object might be an array of incomplete class type and therefore incomplete; if the class type is completed later on in the translation unit, the array type becomes complete; 
 
 Objects shall not be defined to have an incomplete type.
@@ -263,6 +356,22 @@ a closure type
 (since C++17)
 for unions, at least one non-static data member is of non-volatile literal type,
 for non-unions, all non-static data members and base classes are of non-volatile literal types.
+
+
+
+An aggregate is one of the following types:
+
+array type
+class type (typically, struct or union), that has
+no private or protected direct (since C++17)non-static data members
+no user-provided, inherited, or explicit constructors
+no user-declared or inherited constructors
+(since C++20)
+no virtual, private, or protected (since C++17) base classes
+no virtual member functions
+(since C++11)
+(until C++14)
+
 
 
 

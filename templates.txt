@@ -1,4 +1,8 @@
 ﻿
+extern templates can really save a lot of compilation time
+
+------------------
+
 C++20 lays foundation for constexpr containers. First, it allows constexpr and even virtual constexpr destructors for literal types(types that can be used as a constexpr variable). Second, it allows calls to std::allocator<T>::allocate() and new-expression which results in a call to one of the global operator new if allocated storage is deallocated at compile time. That is, memory can be allocated at compile-time but it must be freed at compile-time also. This creates a bit of friction if final data has to be used at run-time. There’s no choice but to store it in some non-allocating container like std::array and get compile-time value twice: first, to get its size, and second, to actually copy it(thanks to arthur-odwyer, beached and luke from cpplang slack for explaining this to me):
 
 constexpr auto get_str()
