@@ -1,0 +1,58 @@
+(1) void foo() try
+    {
+      throw int();
+    } 
+    catch(...)
+    {
+     	std::cout << "Exception caught\n";
+    }
+
+Can also be used to catch excetiptions in the class initializer list!. Note that it stil would be implicitly re-throw!
+
+class A
+{
+public:
+  A(int x) { throw x; }
+};
+
+class B
+{
+  A a;
+public:
+  B()
+    try
+    : a(5)
+    { } catch(...) {
+      std::cout << "Exception in initializer merely-caught\n";
+      // implicit throw;!
+    }
+};
+
+(2)  template <typename T> struct array_struct { T data_[N] {}; }; - value initializes array!
+   
+
+   (3) speed up io
+    static const auto io_sync_off = []()
+{
+	// turn off sync
+	std::ios::sync_with_stdio(false);
+	// untie in/out streams
+	std::cin.tie(nullptr);
+	return nullptr;
+}();
+
+(3) super cool move assingment! allocating in this wont be always standart complying though!
+struct A
+{
+  ~A() noexcept;
+  A(A&&) noexcept;
+  A& operator=(A&& o)
+  {
+    static_assert(noexcept(~A()));
+    static_assert(noexcept(A(std::move(o)));
+    o.~A();
+    return *::new(static_cast<void*>(this)) (std::move(o));
+  }
+}
+
+(4) sstd::function<void(std::string &, char)> p2 = &std::string::push_back;

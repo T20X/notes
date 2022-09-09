@@ -36,3 +36,14 @@ Behaviors are composable if they can be applied to the same object separately
 what is for a function to be inline!
 (1) linker won't give you single definition error!
 (2) if translation unit does not use inline function it won't include it the object file!
+
+
+-------------
+
+- An entity is a value, object, reference, structured binding, function, enumerator, type, class member, bit-field, template, template specialization, namespace, or pack
+- A name is an identifier ([lex.name]), operator-function-id ([over.oper]), literal-operator-id ([over.literal]), or conversion-function-id ([class.conv.fct]).
+Every name is introduced by a declaration
+- A variable is introduced by the declaration of a reference other than a non-static data member or of an object. The variable's name, if any, denotes the reference or object.
+- A name used in more than one translation unit can potentially refer to the same entity in these translation units depending on the linkage of the name specified in each translation unit.
+
+--------------

@@ -1,3 +1,13 @@
+-------------
+network  - big endian (most significant byte is at lower address)
+CPU - little endian (most significant byte is at higher address)
+
+
+while it is said that TCP,UDP is big endiean it only matters for TCP,UDP headers not actual payload itself
+
+
+-----------------
+
 NIC errros
 -------
 overruns - not enogh space in ring buffers
