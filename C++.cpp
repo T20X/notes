@@ -348,6 +348,9 @@ An object that is not a subobject of any other object is called a complete objec
 
 A function is not an object, regardless of whether or not it occupies storage in the way that objects do
 
+A class S is an implicit-lifetime class if
+- it is an aggregate or
+- it has at least one trivial eligible constructor and a trivial, non-deleted destructor.
 
 For objects insdie complete ojbect, an object has nonzero size if it
 (8.1) is not a potentially-overlapping subobject, or
@@ -377,16 +380,11 @@ Every object and reference has a lifetime, which is a runtime property: for any 
 
 
 Two objects a and b are pointer-interconvertible if:
-(4.1)
-they are the same object
-(4.2)
-one is a union object and the other is a non-static data member of that object ([class.union]), or
-(4.3)
-one i s a standard-layout classobject and the other is the first non-static data member of that object, or, if the object has no non-static data members, any base class subobject of that object ([class.mem]), or
-(4.4)
-there exists an object c such that a and c are pointer-interconvertible, and c and b are pointer-interconvertible.
+- they are the same object
+- one is a union object and the other is a non-static data member of that object ([class.union]), or
+- one i s a standard-layout classobject and the other is the first non-static data member of that object, or, if the object has no non-static data members, any base class subobject of that object ([class.mem]), or
+- there exists an object c such that a and c are pointer-interconvertible, and c and b are pointer-interconvertible.
 If two objects are pointer-interconvertible, then they have the same address, and it is possible to obtain a pointer to one from a pointer to the other via a reinterpret_­cast. [ Note: An array object and its first element are not pointer-interconvertible, even though they have the same address. — end note ]
-
 
 
 When storage for an object with automatic or dynamic storage duration is obtained, the object has an indeterminate value, and if no initialization is performed for the object, that object retains an indeterminate value until that value is replaced ([expr.ass]). [ Note: Objects with static or thread storage duration are zero-initialized, see [basic.start.static]. — end note ]
@@ -479,6 +477,7 @@ types
 ---
 An object of trivially copyable or standard-layout type ([basic.types.general]) shall occupy contiguous bytes of storage.
 
+
 The declared type of an array object might be an array of incomplete class type and therefore incomplete; if the class type is completed later on in the translation unit, the array type becomes complete; 
 
 Objects shall not be defined to have an incomplete type.
@@ -491,6 +490,7 @@ Two standard-layout struct ([class.prop]) types are layout-compatible classes if
 
 Unsigned arithmetic does not overflow
 
+Incompletely-defined object types and cv void are incomplete type
 
 Specifies that a type is a literal type. Literal types are the types of constexpr variables and they can be constructed, manipulated, and returned from constexpr functions.
 
@@ -502,28 +502,28 @@ scalar type;
 reference type;
 an array of literal type;
 possibly cv-qualified class type that has all of the following properties:
-has a trivial (until C++20)constexpr (since C++20) destructor,
-is one of
-an aggregate type,
-a type with at least one constexpr (possibly template) constructor that is not a copy or move constructor,
-a closure type
-(since C++17)
-for unions, at least one non-static data member is of non-volatile literal type,
-for non-unions, all non-static data members and base classes are of non-volatile literal types.
+has a constexpr (since C++20) destructor,
+  is one of:
+    an aggregate type,
+    a type with at least one constexpr (possibly template) constructor that is not a copy or move constructor,
+    a closure type
+    for unions, at least one non-static data member is of non-volatile literal type,
+    for non-unions, all non-static data members and base classes are of non-volatile literal types.
 
-
+Arithmetic types ([basic.fundamental]), enumeration types, pointer types, pointer-to-member types ([basic.compound]), std​::​nullptr_­t, and cv-qualified versions of these types are collectively called scalar types. Scalar types, trivially copyable class types ([class.prop]), arrays of such types, and cv-qualified versions of these types are collectively called trivially copyable types. Scalar types, trivial class types ([class.prop]), arrays of such types and cv-qualified versions of these types are collectively called trivial types. Scalar types, standard-layout class types ([class.prop]), arrays of such types and cv-qualified versions of these types are collectively called standard-layout types. Scalar types, implicit-lifetime class types ([class.prop]), array types, and cv-qualified versions of these types are collectively called implicit-lifetime types.
 
 An aggregate is one of the following types: (note that is not recursive!)
 
 array type
 class type (typically, struct or union), that has
 no private or protected direct (since C++17)non-static data members
-no user-provided, inherited, or explicit constructors
+-----> no user-provided, inherited, or explicit constructors <-------
 no user-declared or inherited constructors
 (since C++20)
 no virtual, private, or protected (since C++17) base classes
 
 
+here are two kinds of types: fundamental types and compound types. Types describe objects, references, or functions
 
 
 ------------
@@ -619,7 +619,7 @@ static_cast
  Test* ptr = static_cast<Test*>(p)
 
 
- Sorry for the thread necromancy, but I just happened across this and your code above is likely not safe. This is because you're using reinterpret_cast to cast a void *, whereas you should always use a static_cast for related type conversions (and void * is related to all other pointer types).
+ Sorry for the thread necromancy, but I just happened across this and your code above is likely not safe. This is because youre using reinterpret_cast to cast a void *, whereas you should always use a static_cast for related type conversions (and void * is related to all other pointer types).
 -------------
 Union
 ---------------
@@ -683,6 +683,8 @@ ways to do type copy / pune
 
 (1) 
 
+For any object (other than a potentially-overlapping subobject) of trivially copyable type T, whether or not the object holds a valid value of type T, the underlying bytes ([intro.memory]) making up the object can be copied into an array of char, unsigned char, or std​::​byte ([cstddef.syn]).30 If the content of that array is copied back into the object, the object shall subsequently hold its original value
+
 constexpr std::size_t N = sizeof(T);
 char buf[N];
 T obj;                          // obj initialized to its original value
@@ -690,6 +692,8 @@ std::memcpy(buf, &obj, N);      // between these two calls to std​::​memcpy,
 std::memcpy(&obj, buf, N);      // at this point, each subobject of obj of scalar type holds its original value
 
 (2) 
+
+For two distinct objects obj1 and obj2 of trivially copyable type T, where neither obj1 nor obj2 is a potentially-overlapping subobject, if the underlying bytes ([intro.memory]) making up obj1 are copied into obj2,31 obj2 shall subsequently hold the same value as obj1
 
 T* t1p;
 T* t2p;
@@ -731,6 +735,22 @@ C c2;
 c1 = c2;                        // well-defined
 c1.f();                         // well-defined; c1 refers to a new object of type C
 
+(4)  
+unique_ptr<char[]> Stream::read() {
+  // ... determine data size ...
+  unique_ptr<char[]> buffer(new char[N]);
+  // ... copy data into buffer ...
+  // if OBJECT IS TRIVIALLY COPYABLE THAT IS FINE IT DOES NOT EVEN NEED TO HAVE TRIVIAL CONSTRUCTOR
+  return buffer;
+}
+
+void process(Stream *stream) {
+  unique_ptr<char[]> buffer = stream->read();
+  if (buffer[0] == FOO)
+    process_foo(reinterpret_cast<Foo*>(buffer.get())); // #1
+  else
+    process_bar(reinterpret_cast<Bar*>(buffer.get())); // #2
+}
 
   --------------
   ways NOT to do type pune

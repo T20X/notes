@@ -1,3 +1,8 @@
+An expression is a sequence of operators and operands that specifies a computation. An expression can result in a value and can cause side effects
+
+
+The implementation can regroup operators according to the usual mathematical rules only where the operators really are associative or commutative
+
 -----------
 Value category
 -------------

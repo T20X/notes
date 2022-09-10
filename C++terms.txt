@@ -18,7 +18,10 @@ its value representation is the set of bits that hold the value of its type T, a
 its padding bits are the bits in the object representation that are not part of the value representation
 
 --------------------------
+An expression is a sequence of operators and operands that specifies a computation. An expression can result in a value and can cause side effects
 
+----------------------
+An object type is a (possibly cv-qualified) type that is not a function type, not a reference type, and not cv void.
 
 -----------------
 
