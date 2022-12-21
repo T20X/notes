@@ -1,4 +1,10 @@
-﻿--------------
+﻿
+--------------
+lambdas
+--------------
+auto* ptr = +[](int, int){} //possible!
+
+--------------
 values
 --------------
 
@@ -11,10 +17,7 @@ constructors
 user-provided constructor deletes default one
 If no user-declared constructors of any kind are provided for a class type (struct, class, or union), the compiler will always declare a default constructor as an inline public member of its class.
 
-
 user-declared copy constructor delete move operators 
-
-
 
 -----
 initialization
@@ -268,7 +271,6 @@ A default constructor is trivial if it is not user-provided and if:
 - all the direct base classes of its class have trivial default constructors, and
 - for all the non-static data members of its class that are of class type (or array thereof), each such class has a trivial default constructor.
 
-Triviality of eligible default constructors determines whether the class is an implicit-lifetime type, and whether the class is a trivial type.
 
 **** Trivial copy constructor ***
 The copy constructor for class T is trivial if all of the following are true:
@@ -517,7 +519,7 @@ An aggregate is one of the following types: (note that is not recursive!)
 array type
 class type (typically, struct or union), that has
 no private or protected direct (since C++17)non-static data members
------> no user-provided, inherited, or explicit constructors <-------
+ no user-provided, inherited, or explicit constructors 
 no user-declared or inherited constructors
 (since C++20)
 no virtual, private, or protected (since C++17) base classes

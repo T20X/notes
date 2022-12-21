@@ -99,6 +99,7 @@ LFENCE instructions cannot pass earlier reads.
 SFENCE instructions cannot pass earlier writes.
 MFENCE instructions cannot pass earlier reads or writes.
 -------
+
 For 64 set associative cache having 64 byte cacheline
 [Tag Physical][Index][Offset]
 [31........12][11...6][....]
@@ -123,8 +124,6 @@ the absence of a cache line in LLC does not indicate that the line is not presen
 
 For the Xeon Scalable Processors (Skylake Xeon), the L3 cache is no longer inclusive.   A cache line will be held in either a core (L1 or L2) or in the L3 cache, but not in both. (I don't know if Intel allows exceptions to this in the way that AMD has in the past with its "mostly-exclusive" L3 cache.)   In Xeon Scalable Processors, the L3 acts primarily as a victim cache for lines evicted from the L1 and L2 caches. The behavior is complex because there are dynamic prediction mechanisms in the L2 caches that decide whether a victim should be sent to L3 or to memory, and the heuristics controlling these predictors are not documented.  From my testing, it appears that if data is dirty, or remotely homed, or evicted due to a snoop filter eviction, it has a very high probability of being sent to the L3.  If data is clean and locally homed, the probability of being sent to the L3 appears to be based on the history of whether subsequent accesses to that address typically hit in the L3.   I have not attempted to determine what sorts of state are tracked by the hardware to make these decisions.
 
-Xeon Scalable Processors don't have an inclusive L3, but still need to track lines held in L1 and L2 caches.  This is done using a structure called a "snoop filter", which is essentially the tags+directory part of an inclusive L3 cache, but without room to store the actual data for the cache line.  Like the earlier inclusive L3 caches, the snoop filter is inclusive, so lines chosen as victims in the snoop filter must be evicted from all L1 and L2 caches before the snoop filter entry can be freed to track a different cache line.   Information in the Xeon Scalable Processor Uncore Performance Monitoring Guide (plus information on core performance counter events in Chapter 19 of Volume 3 of the Intel Architectures Software Developers Guide) suggests that the snoop filter receives eviction notifications from the L1 and L2 caches for many (but not all) evictions, and probably receives replacement hints from the L1 and L2 caches as well.
-
  It uses a mesh network instead of a ring bus to connect cores to each othe
 ---
 Intel caches are physically tagged and virtually indexed
@@ -140,17 +139,63 @@ for cache-able memory to work correctly with DMA on sepculative and prefetching 
 and speculative execution are largely left unsepcified, evicting data from the cache (for cache-able memory region) with explicit instructions is unreliable
 
 
-Intel Data Direct I/O can help with DMA to be coherent as it writes directly into caches!
+----> IMPORTANT <-----
+Intel Data Direct I/O can help with DMA to be coherent as it writes directly into caches! that is available on Xeon only
+In general, Intel DDIO technology can enable NIC to do I/O operation directly to the CPU’s cache, and not to main memory as usually done
+Integrated I/O is the new Intel Xeon processor E5 I/O architecture in which the
+- PCI Express interface is integrated onto the processor itself rather than an I/O
+hub or south bridge. The Intel Xeon processor E5 Integrated I/O implements the
+- PCI Express 3.0 specification and also incorporates Intel DDIO
+- is important to note that an I/O data consumption operation that does not find the data in
+cache, sources it from memory; this operation does not cause data to be allocated into the
+caching hierarchy (unlike the case of data delivery operations described below
+
+
+
+Figure 3a shows a data delivery or write operation without Intel DDIO technology:
+    Step 1: Data delivery operations have the NIC transferring data (packets or control)
+    to host memory. If the data being delivered happens to be in the CPU’s caching
+    hierarchy, it is invalidated.
+    Step 2: SW running on the CPU reads the data to perform processing tasks. These
+    data access operations misses cache (See step 1 above for explanation) and causes
+    data to be read in from memory, into the CPU’s caching hierarchy.
+Figure 3b illustrates the same set of operations on a platform with Intel DDIO technology.
+    Step 1: I/O data delivery uses Write Update or Write Allocate operations (depending
+    on cache residency of the memory addresses to which data is being delivered), which
+    causes data to be delivered to the cache, without going to memory.
+    Step 2: The subsequent read operations initiated by SW are satisfied by data from
+    the cache, without causing cache misses.
+    
+Intel DDIO technology enables these data delivery operations to be accomplished with as
+few trips (including none) to memory as possible with two modes of operation:
+1. Write Update, which causes an in-place update in the cache. If the memory
+addresses for the data being delivered already exists in the CPU’s caching
+hierarchy, then no trips to memory are needed.
+2. Write Allocate, which causes allocation in the last-level cache of the CPU’s
+caching hierarchy. If the memory addresses for the data being delivered does
+not exist in the CPU’s caching hierarchy, then no trips to memory are needed.
+Write Allocate operations are restricted to 10% of the last-level cache; this is a trade-off to
+prevent cache pollution from data streams that are not consumed by threads running on
+CPUs or for scenarios where the incoming rate is much faster than the thread is capable of
+handling. This is NOT a dedicated/reserved cache for I/O (or Intel DDIO). It is fully available
+to applications running on the CPU. This is fixed and cannot be changed.
+Thus, I/O device data delivery operations with Intel DDIO technology are achieved with
+fewer trips to memory, and in the ideal case, without any trips to memory. Also, from a CPU
+caching perspective, the data in cache is not disturbed by virtue of an I/O data delivery
+operation, which creates opportunities for intelligent HW/SW design optimizations
+
+
 PCIe feature (exposed in the Linux kernel apparently) that turns on cache snooping for a DMA request
+Each read operation triggered by the NIC on its PCIe interconnect
+(for example) causes data to be forwarded from the cache, if present;
+however, it also causes the data to be evicted from cache, that is, the act of
+reading by an I/O device causes data to be evicted
+
+
 IO hub connects to the caches, not to memory, via the QPI.
 I/O sees the data as the caches see it
 cache snooping is by default turned on in the PCI(e) spec
 
-Everything (including DMA) on 80x86 is cache coherent; except for the following cases
- (where you have deliberately "weakened" cache coherency for performance reasons or broken cache
- coherency):
-You're using the "write-combining" caching type in the MTRRs and/or PAT. In this case writes that are sitting in a CPU's write-combining buffer won't be seen by other hardware.
-You're using non-temporal stores. In this case writes that are sitting in a CPU's write-combining buffer won't be seen by other hardware.
 ----------------------
 Intel uses MESIF protocol
 ----------------
@@ -159,10 +204,11 @@ The heuristic it uses to choose the entry to evict is called the replacement pol
 LRU
 Adaptive (used in Intel)
 
-*** Write policies *** In a |write-through| cache, every write to the cache causes a write to main memory
+*** Write policies *** 
+In a |write-through| cache, every write to the cache causes a write to main memory
 In a |write-back| or copy-back cache, writes are not immediately mirrored to the main memory, and the cache instead
  tracks which locations have been written over, marking them as dirty
-|Write combining| memory stores are combined by using temoral stores and then commited
+In a |Write combining| memory stores are combined by using temoral stores and then commited
 in a burst!
 
 ---
@@ -216,20 +262,35 @@ direct mapped cached
 fully assoc-iative cache
 set associative cache
 
+------------------
+Exclusive (E)
+-----------
+The cache line is present only in the current cache, but is clean - it matches main memory. It may be changed to the Shared state at any time, in response to a read request. Alternatively, it may be changed to the Modified state when writing to it.
 
 --------------
 Modified
 -----
 This cache has the only valid copy of the cache line, and has made changes to that copy.
 -----
-Owned
-----
-This cache is one of several with a valid copy of the cache line, but has the exclusive right to make changes to it. It must broadcast those changes to all other caches sharing the line. The introduction of owned state allows dirty sharing of data, i.e., a modified cache block can be moved around various caches without updating main memory. The cache line may be changed to the Modified state after invalidating all shared copies, or changed to the Shared state by writing the modifications back to main memory. Owned cache lines must respond to a snoop request with data.
-------
-Exclusive
+Forward
 -----
-This cache has the only copy of the line, but the line is clean (unmodified).
+The F state in the MESIF protocol is simply a way to choose one of the sharers of a clean cache line to respond to a read request for data using a direct cache-to-cache transfer instead of waiting for the data to come from the main memory. This optimization makes sense in architectures where the cache-to-cache latency is much smaller in comparison to the latency of accessing the main memory. A key point to be noted here is that, similar to the MESI protocol, when data is in the shared state (with one of the caches in the F state) the data is clean.
+
+The F state is a specialized form of the S state, and indicates that a cache should act as a designated responder for any requests for the given line. The protocol ensures that, if any cache holds a line in the S state, at most one (other) cache holds it in the F state
+
+
+In a system of caches employing the MESI protocol, a cache line request that is received by multiple caches holding a line in the S state will be serviced inefficiently. It may either be satisfied from (slow) main memory, or all the sharing caches could respond, bombarding the requestor with redundant responses. In a system of caches employing the MESIF protocol, a cache line request will be responded to only by the cache holding the line in the F state.[3] This allows the requestor to receive a copy at cache-to-cache speeds, while allowing the use of as few multicast packets as the network topology will allow.
+
+
+Because a cache may unilaterally discard (invalidate) a line in the S or F states, it is possible that no cache has a copy in the F state, even though copies in the S state exist. In this case, a request for the line is satisfied (less efficiently, but still correctly) from main memory. To minimize the chance of the F line being discarded due to lack of interest, the most recent requestor of a line is assigned the F state; when a cache in the F state responds, it gives up the F state to the new cache
+
+-----
 Shared
+-----
+
+The protocol ensures that, if any cache holds a line in the S state, at most one (other) cache holds it in the F state.
+Indicates that this cache line may be stored in other caches of the machine and is clean - it matches the main memory. The line may be discarded (changed to the Invalid state) at any time.
+This cache has the only copy of the line, but the line is clean (unmodified).
 
 IMPORTANT:!!!!!
 While MOESI can quickly share dirty cache lines from cache, 

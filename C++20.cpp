@@ -108,7 +108,7 @@ v.push_back(34, 45)
 
 
 
-(6) perfect forwarding and storing callback for later execution is not fully supported in lambas
+(6) perfect forwarding and storing callback for later execution is now fully supported in lambas
 
 auto prepare(Func&& func, Args&&... args) {
     auto f = [funcCopy=std::forward<Func>(func), ...argCopies=std::forward<Args>(args)]() mutable { return funcCopy(argsCopies...);};

@@ -1,3 +1,16 @@
+----
+Immediatly executed expressions
+----
+
+const Foo f = [&]]() {
+    if (create) {
+        return Foo();
+     } else {
+        return Foo();
+
+
+     }
+}
 ---------
 RAII
 --------

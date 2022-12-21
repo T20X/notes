@@ -1,0 +1,12 @@
+------
+Terms & notions
+-----
+invariants - statements that are always true about data structures
+race condition - anything that changes outcome the outcome based on relative order of operations
+lock-free programming - a technique that allows to find ndivisible parts in data structures and ensure those indivisible parts are executes atomicly in such a way that invariants remain true
+software transaction memory - a technique where shared data sync achieved by grouping load and stores into a group and then applying it - if something changed since the transaction was first attempted , then it is redone
+data race - race condition in c++ which is causing undefined behaviour
+
+--------------------------
+race condition can come from interface itself. for example top() and pop() methods in the stack. both neeed to execute atomically in a stack that is shared acorsss diffrent threads
+---------------
