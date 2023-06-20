@@ -17,3 +17,6 @@ the other sockets.
 If a thread ‘A’ is spinning on poll(), and another thread ‘B’, listening to the same
 group, calls recv() but does not spin, ‘A’ will notice a received packet first and
 deliver the packet to ‘B’ without an interrupt occurring
+
+
+4. Solarflare cards have hardware total 196K buffers. The card runs at its own frequence of 1Ghz. The filterting unit than DMA's data into memory RAM as given by RX ring queue descriptors. Descirptios are just pointers for packets, and there is up to 4096 entires per queue. There are about 1023 RX ring queues. EV_FI implementation will need to populate those RX ring queues, then card itself will fetch RX ring queues to read descriptors.

@@ -17,6 +17,7 @@ auto lambda = [=](int x, int z) {
     return x + z + first;
 };
 
+
 int(decltype(lambda)::*ptr)(int, int)const = &decltype(lambda)::operator();
 std::cout << "test = " << (lambda.*ptr)(2, 3) << std::endl;
 

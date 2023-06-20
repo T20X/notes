@@ -73,15 +73,7 @@ at least one copy constructor, move constructor, copy assignment operator, or mo
 Trivial non-deleted destructor
 
 
-Standart Layout class (can be used in C)
----------
-It has no virtual functions
-It has no virtual base classes
-All its non-static data members have the same access control (public, private, protected)
-All its non-static data members, including any in its base classes, are in the same one class in the hierarchy
-The above rules also apply to all the base classes and to all non-static data members in the class hierarchy
-It has no base classes of the same type as the first defined non-static data member
------------------------
+
 restrict
 -------------
 In the C programming language, as of the C99 standard, restrict is a keyword that can be used in pointer declarations. The restrict keyword is a declaration of intent given by the programmer to the compiler. It says that for the lifetime of the pointer, only the pointer itself or a value directly derived from it (such as pointer + 1) will be used to access the object to which it point

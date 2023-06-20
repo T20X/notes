@@ -1,3 +1,12 @@
+This lets the derived classes override the function to customize the behavior
+    as needed,
+    without further exposing the virtual functions
+        directly by making them callable by derived
+        classes(as would be possible if the functions were just protected)
+            .The point is that virtual functions exist to allow customization; unless they also need to be invoked directly from within derived classes' code, there's no need to ever make them anything but private
+
+-------------------
+
 Inheritance or composition are the two choices for integrating the policy class into the primary class. In general, the composition should be preferred, unless there is a reason to use inheritance. We have already seen one such reason—the empty base class optimization. Inheritance is also the necessary choice if we want to affect the public interface of the class.
 ----------------------------------
 there are no polymorphic types only the polymorphic use
@@ -6,38 +15,42 @@ shared structure breaks our ability to locally reason about code
 ---------------
 don't call new directly for example, better use make_shared, make_unique
 vector<shared_ptr<Item>> v;
-v.emplace_back(new item); //if emplace_back throws due to size reallocation inside vector, then new Item would not be associated with a pointer and it would leak.
------
-class Builder {
-Foo&& finish()    {  return std::move(obj);  } } // not good, as this would make object of Builder unusable!
-better make it more explicit
-class Builder { 
-  Foo&& finish() && 
-  { return std::move(obj); }
-   // safer now caller is forced to call std::move! move(obj).finish();
+v.emplace_back(new item); // if emplace_back throws due to size reallocation
+                          // inside vector, then new Item would not be
+                          // associated with a pointer and it would leak.
+-- -- -class Builder {
+  Foo &&finish() { return std::move(obj); }
+} // not good, as this would make object of Builder unusable!
+better make it more explicit class Builder {
+  Foo &&finish() && { return std::move(obj); }
+  // safer now caller is forced to call std::move! move(obj).finish();
 
---------------
-when transferring ownership even trvially copyable types good to pass as rvalue refrences to functions as this would force caller to call std::move and it would be more clear code to read.
-----------
-use std::copy to copy as it would choose the most optimizied veriosn
-------------
-regular types match primitive type semantics
-we call the set of axioms satisfaying data type and a set of operations on it a concept
----------------
-f(object o);
-f(object(12)) - copy of object can be elided - contstructs right in o!
----------
-copy/move operators and destructos ideally should not have observable side-effects as if someone is 100% relied on them being called
-------------------
-objcet  {
-  object(const object&)...
-  object& operator=(const object&)...
-  { object tmp(other); dat = move(tmp.dat);return *this; }
+  -- -- -- -- -- -- --when transferring ownership even trvially copyable types good
+                          to pass as rvalue refrences to functions as this would
+                              force caller to call std::move and it would be more
+                                  clear code to read.-- -- -- -- --use std::copy
+                                      to copy as it would choose the most optimizied
+                                          veriosn-- -- -- -- -- --regular types match
+                                              primitive type semantics we call the
+                                                  set of axioms satisfaying data type
+                                                      and a set of operations on it
+                                                          a concept -- -- -- -- -- -- -- -f(
+                                                              object o);
+  f(object(12)) - copy of object can be elided
+          - contstructs right in o !-- -- -- -- -copy / move operators
+      and destructos ideally should not have observable side
+              - effects as if someone is 100 % relied on them being called
+                    -- -- -- -- -- -- -- -- --objcet {
+    object(const object &)... object &operator=(const object &)... {
+      object tmp(other);
+      dat = move(tmp.dat);
+      return *this;
+    }
 
-object f() { return 5; }
-object o = f(); //only calls o ctor!
-object o2 = 1;
-o2 = f(); //calls ctor, ctor and copy
+    object f() { return 5; }
+    object o = f(); // only calls o ctor!
+    object o2 = 1;
+    o2 = f(); // calls ctor, ctor and copy
 -------------
 assignment operators ideally should provide strong exception safety gauarantee
 ---------------------
@@ -72,16 +85,27 @@ It�s a bad idea to ever make std::pair or std::tuple to be a part of a public 
 no auto for non-moveable types! auto v = type() //type has to be moveable!
 ------------
 void set_name(string s) noexcept //never declare it like that. even function is, but it may throw at the caller end!
-{ _s = std::move(s); }
+{
+  _s = std::move(s);
+}
 
-it is good to pass by values in constructors! because then we may not miss the capacity the source (string/vector) already have!
+it is good to pass by values in constructors !because then we may not miss the
+        capacity the source(string / vector) already have !
 
-forwarding references are good in functions which forwards values and then the destination function will know what to do with it
+    forwarding references are good in functions which forwards values and
+    then the destination function will know what to do with it
 
-----------------------
-dont use rvalue refrence optimizations (&&) and forwarding refrences by default - just stick to const & and by value parameter passing and refer to the && as an optimization given the set of use cases
------------------------
-The most important insight is that the answer depends on the details of the base class�s contract. It is not enough to know that the public interfaces / method signatures are compatible; one also needs to know if the contracts / behaviors are compatible
+    -- -- -- -- -- -- -- -- -- -- --dont use rvalue refrence optimizations(
+        &&) and
+    forwarding refrences by default - just stick to const &
+        and by value parameter passing and
+    refer to the &&
+    as an optimization given the set of use
+            cases-- -- -- -- -- -- -- -- -- -- -- -The most important insight is
+                that the answer depends on the details of the base class�s
+                    contract.It is not enough to know that
+                        the public interfaces /
+        method signatures are compatible; one also needs to know if the contracts / behaviors are compatible
 -------------
 The important part of the previous sentence are the words �contracts / behaviors.� That phrase goes well beyond the public interface = method signatures = method names and parameter types and constness. A method�s contract means its advertised behavior = advertised requirements and promises = advertised preconditions and postconditions. So if the base class has a method void insert(const Foo& x), the contract of that method includes the signature (meaning the name insert and the parameter const Foo&), but goes well beyond that to include the method�s advertised preconditions and postconditions
 ------------------------
@@ -110,7 +134,7 @@ Assuming your compiler is completely C++11 conforming,
  then explicitly deleting the move constructor will also implicitly declare the following:
 
 Foo(const Foo&) = delete;
-Foo& operator=(const Foo&) = delete;
+Foo &operator=(const Foo &) = delete;
 AND YOU CANNOT ENABLE THEM BACK!
 -------------------------
 
@@ -126,8 +150,8 @@ So what do I recommend? Use '\n', and std::flush if you really do
 mean it. You may as well put the '\n' into the preceding string literal
 while you are at it.
  std::cout << "foo\n";
- std::cout << "Some int: " << i << '\n';
- std::cout << "bar\n" << std::flush;
+std::cout << "Some int: " << i << '\n';
+std::cout << "bar\n" << std::flush;
 
 -----------------------
 Do not use throw to indicate a coding error in usage of a function. Use assert or other mechanism to either send the process into a debugger or to crash the process and collect the crash dump for the developer to debug.
@@ -143,11 +167,9 @@ void f()  // Using exceptions
     IResult ii = i();
     JResult jj = j();
     // ...
-  }
-  catch (FooError& e) {
+  } catch (FooError &e) {
     // ...code that handles "foo" errors...
-  }
-  catch (BarError& e) {
+  } catch (BarError &e) {
     // ...code that handles "bar" errors...
   }
 }

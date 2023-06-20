@@ -1,4 +1,14 @@
 ﻿
+------------------------------
+
+std function template specialization has been disabled since C++20. Only std classed may be specialized - > only if they depend on user-defined type
+
+-----------------
+function template specialisations are not overloading(they still take part in "function overloading", but not overload between specializations). Basically during function overloading, best match is been looked for and "overloading" for the template candidates only consider "base templates". Once that base template has been selected, its specialisations will be considered for the best match - which would be exact match as templates don't allow type promotion.
+
+Overload resolution does not take into account explicit specializations of function templates. Only after overload resolution has chosen a function template will any explicit specializations be considered
+-----------------
+
 extern templates can really save a lot of compilation time
 
 ------------------
@@ -1042,3 +1052,31 @@ ostream& operator<<(ostream& o, const C<T>& v)
 
 operator<<(cout, DeleteMyHeap<int>()) // works!
 
+
+39. std::type_identity can be used to establish non-deduced contexts in template argument deduction.
+
+template<class T>
+T foo(T a, T b) { return a + b; }
+ 
+template<class T>
+T bar(T a, std::type_identity_t<T> b) { return a + b; }
+ 
+int main()
+{
+    // foo(4.2, 1); // error, deduced conflicting types for 'T'
+    std::cout << bar(4.2, 1) << '\n';  // OK, calls bar<double>
+}
+
+In the following cases, the types, templates, and non-type values that are used to compose P do not participate in template argument deduction, but instead use the template arguments that were either deduced elsewhere or explicitly specified. If a template parameter is used only in non-deduced contexts and is not explicitly specified, template argument deduction fails.
+
+1) The nested-name-specifier (everything to the left of the scope resolution operator ::) of a type that was specified using a qualified-id:
+
+
+2) The expression of a decltype-specifier:
+template<typename T>
+void f(decltype(*std::declval<T>()) arg);
+
+4) A template parameter used in the parameter type of a function parameter that has a default argument that is being used in the call for which argument deduction is being done:
+
+
+....

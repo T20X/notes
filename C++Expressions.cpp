@@ -15,6 +15,8 @@ computes the value of an operand of a built-in operator (such prvalue has no res
 initializes an object (such prvalue is said to have a result object).
 The result object may be a variable, an object created by new-expression, a temporary created by temporary materialization, or a member thereof. Note that non-void discarded expressions have a result object (the materialized temporary). Also, every class and array prvalue has a result object except when it is the operand of decltype;
 an xvalue (an “eXpiring” value) is a glvalue that denotes an object whose resources can be reused;
+an lvalue (so-called, historically, because lvalues could appear on the left-hand side of an assignment expression) is a glvalue that is not an xvalue;
+an rvalue (so-called, historically, because rvalues could appear on the right-hand side of an assignment expression) is a prvalue or an xvalue.
 
 ------------
 temporary
@@ -54,7 +56,7 @@ struct S {
   const int& m;
   S(const int& m):m(m1){}
 };
-const S& s = S{1};     //this is bad, dangling reference!
+const S& s = S(1);     //this is bad, dangling reference!
 
 
 
