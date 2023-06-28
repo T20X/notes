@@ -1080,3 +1080,16 @@ void f(decltype(*std::declval<T>()) arg);
 
 
 ....
+
+40.
+
+template specifalizing by another template are also possible!
+
+template<class T>
+class Foo;
+
+template<class T>
+class Foo<Bar<T>>
+{
+     /* Your implementation of this partial specialization. */
+};

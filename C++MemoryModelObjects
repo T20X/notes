@@ -15,6 +15,8 @@ The constructs in a C++ program create, destroy, refer to, access, and manipulat
 [Note 1: A function is not an object, regardless of whether or not it occupies storage in the way that objects do. — end note]
 The properties of an object are determined when the object is created. An object can have a name ([basic.pre]). An object has a storage duration ([basic.stc]) which influences its lifetime ([basic.life]). An object has a type ([basic.types]).
 [Note 2: Some objects are polymorphic ([class.virtual]); the implementation generates information associated with each such object that makes it possible to determine that object's type during program execution. — end note]
+The lifetime of an object o of type T ends when:
+if T is a class type with a non-trivial destructor ([class.dtor]), the destructor call starts, OR the storage which the object occupies is released, or is reused by an object that is not nested within o
 
 
 
@@ -95,6 +97,21 @@ The lifetime of a reference begins when its initialization is complete. The life
 
 Lifetime of a reference is exactly its storage duration
 
+The lifetime of an object o of type T ends when:
+if T is a class type with a non-trivial destructor ([class.dtor]), the destructor call starts, OR the storage which the object occupies is released, or is reused by an object that is not nested within o
+
+If the subobject contains a reference member or a const subobject, the name of the original subobject cannot be used to access the new object ([basic.life]). ?�?end note?] [?Example:
+
+struct X { const int n; };
+union U { X x; float f; };
+void tong() {
+  U u = {{ 1 }};
+  u.f = 5.f;                          // OK, creates new subobject of u ([class.union])
+  X *p = new (&u.x) X {2};            // OK, creates new subobject of u
+  assert(p->n == 2);                  // OK
+  assert(*std::launder(&u.x.n) == 2); // OK
+  assert(u.x.n == 2);                 // undefined behavior, u.x does not name new subobject
+}
 
 If an object is recreated at the same memory location (e.g. by placement new), the glvalue becomes valid once again, if all of the following is true:
 
@@ -115,6 +132,67 @@ object under construction (constructor is running)
 lifetime
 object under destruction (destructor is running)
 destructor finished, storage not yet released
+
+Unless an object is a bit-field or a base class subobject of zero size, the address of that object is the address of the first byte it occupies. Two objects a and b with overlapping lifetimes that are not bit-fields may have the same address if one is nested within the other, or if at least one is a base class subobject of zero size and they are of different types; otherwise, they have distinct addresses.5
+
+[?Example:
+
+static const char test1 = 'x';
+static const char test2 = 'x';
+const bool b = &test1 != &test2;      // always true
+
+
+struct B { vritual f();}; //non trivial defualt constructor because of virtual table pointer
+struct D1 : B { void f(); };
+struct D2 : B { void f(); };
+void B::mutate() {
+  new (this) D2;    // reuses storage � ends the lifetime of *this
+  f();  //not ok, object stroage was reused by another *type*(D2)!
+    However this is well defined! (new (this) D2)->f() 
+}
+B* b = new D1;
+
+struct C {f(); mutate()};
+void C::mutate() {
+  new (this) C;    // reuses storage � ends the lifetime of *this
+  f();  // ok, object stroage is of the same class!
+}
+
+If a program ends the lifetime of an object of type T with static, thread, or automatic storage duration and if T has a non-trivial destructor,42 the program must ensure that an object of the original type occupies that same storage location when the implicit destructor call takes place; otherwise the behavior of the program is undefined.
+
+For an object with a non-trivial constructor, referring to any non-static member or base class of the object before the constructor begins execution results in undefined behavior. For an object with a non-trivial destructor, referring to any non-static member or base class of the object after the destructor finishes execution results in undefined behavio
+struct W { int j; };
+struct X : public virtual W { };
+struct Y {
+  int* p;
+  X x;
+  Y() /*******constructor execution begins*****/: p(&x.j) {   // undefined, x is not yet constructed
+    
+------
+implicitly created objects
+-------
+
+-----> it is either aggregate or got trival eglibible constructor  and a trivial non-deleted destructor. Note that in aggregatre if subojbect is not itself implicitly created object than it won't be created. <---------------
+
+
+Certain operations may implicitly create and start the lifetime of objects of implicit-lifetime types, if doing so would prevent undefined behavior. However, such operations do not start the lifetimes of subobjects of such objects that are not themselves of implicit-lifetime types.
+
+The following operations may implicitly create objects:
+
+An operation that begins the lifetime of an array of unsigned char or std::byte (since C++17).
+An invocation of std::aligned_alloc, (since C++17)std::calloc, std::malloc, or std::realloc.
+Any implicit or explicit invocation of a function named operator new or operator new[] (including non-allocating and user-defined placement allocation functions). Including
+std::allocator::allocate
+std::allocator::allocate_at_least (since C++23)
+(since C++17) An invocation of std::memory_resource::allocate, regardless of how storage is obtained. Including
+std::pmr::polymorphic_allocator::allocate (since C++17)
+std::pmr::polymorphic_allocator::allocate_bytes (since C++20)
+std::pmr::polymorphic_allocator::allocate_object (since C++20)
+An invocation of std::memcpy or std::memmove.
+(since C++20) An invocation of std::bit_cast.
+(since C++23) An invocation of std::start_lifetime_as or std::start_lifetime_as_array.
+An assignment expression that involves union members if the union's assignment operator is built-in or trivial.
+
 
 ***********
 Compound types
@@ -148,3 +226,27 @@ unions, which are classes capable of containing objects of different types at di
 
 (1.7)
 enumerations, which comprise a set of named constant values. Each distinct enumeration constitutes a different enumerated type, [dcl.enum];
+
+
+---------------
+
+An aggregate is one of the following types:
+
+array type
+class type (typically, struct or union), that has
+no private or protected direct (since C++17
+no user-provided, inherited, or explicit constructors (explicitly defaulted or deleted constructors are allowed)
+no virtual, private, or protected (since C++17) base classes
+no virtual member functions
+
+--------------
+A literal type is one whose layout can be determined at compile time. The following are the literal types:
+
+void
+scalar types
+references
+Arrays of void, scalar types or references
+A class that has a constexpr destructor, and one or more constexpr constructors that are not move or copy constructors. Additionally, all its non-static data members and base classes must be literal types and not volatile.
+
+
+Specifies that a type is a literal type. Literal types are the types of constexpr variables and they can be constructed, manipulated, and returned from constexpr functions.
