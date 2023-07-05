@@ -16,12 +16,10 @@ A union cannot have base classes and cannot be used as a base class.
 
 A union cannot have non-static data members of reference types.
 
-Unions cannot contain a non-static data member with a non-trivial special member function (copy constructor, copy-assignment operator, or destructor).
-
-f a union contains a non-static data member with a non-trivial default constructor, the default constructor of the union is deleted by default unless a variant member of the union has a default member initializer .
+If a union contains a non-static data member with a non-trivial special member function (copy/move constructor, copy/move assignment, or destructor), that function is deleted by default in the union and needs to be defined explicitly by the programmer.
+If a union contains a non-static data member with a non-trivial default constructor, the default constructor of the union is deleted by default unless a variant member of the union has a default member initializer .
 
 At most one variant member can have a default member initializer.
-
 
 If members of a union are classes with user-defined constructors and destructors, to switch the active member, explicit destructor and placement new are generally needed
 
@@ -42,6 +40,8 @@ int main()
     // now, s.vec is the active member of the union
     s.vec.push_back(10);
 
+
+If two union members are standard-layout types, its well-defined to examine their common subsequence on any compiler
 
 ----------
 constructors
@@ -68,280 +68,6 @@ The constructor is not user-provided (i.e., is implicitly-defined or defaulted o
 
 A trivial default constructor is a constructor that performs no action. All data types compatible with the C language (POD types) are trivially default-constructible.
 
------
-initialization
---------
-
-
-
-+++++++++++++++++++++
-default initialization
-+++++++++++++++++++++
-default -> T t;
-default->new T;
-+++++++++++++++++++++
-
-Default initialization is performed in three situations:
-
-1) when a variable with automatic, static, or thread-local storage duration is declared with no initializer;
-2) when an object with dynamic storage duration is created by a new-expression with no initializer;
-3) when a base class or a non-static data member is not mentioned in a constructor initializer list and that constructor is called.
-
-The effects of default initialization are:
-
-- if T is a (possibly cv-qualified) class type, the constructors are considered and subjected to overload resolution against the empty argument list. The constructor selected (which is one of the default constructors) is called to provide the initial value for the new object;
-NOTE THAT FOR CLASS TYPE IF NO DEFAULT CONSTRUCTOR CAN BE FOUND THEN IT WOULD
-    COMPILE ERROR !-ELSE if T is an array type,
-    every element of the array is default - initialized;
-- else otherwise,
-    no initialization is
-    performed:the objects with automatic /
-                  dynamic storage duration(and their subobjects)contain
-                  indeterminate values,
-              static and thread -
-                  local objects are zero initialized
-
-                  Use of an indeterminate value obtained by default -
-                  initializing a non -
-                  class variable of any type is undefined
-                  behavior(in particular, it may be a trap representation),
-              except in the following
-        cases:
-
-            ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ +direct initialization
-                                                      ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ +
-
-                                                      T object(arg);
-T object(arg1, arg2, ...);
-
-// T object { arg }; - note that these refer to list initialization
-// T object { arg, arga2,... }; - note that these refer to list initialization
-(2)(since C++ 11) T(other) T(arg1, arg2, ...)++ ++ ++ ++ ++ ++ ++ ++ ++ ++ +
-
-    (3)
-
-        static_cast<T>(other)(4) new T(args, ...)(5) Class::Class()
-    : member(args, ...){...}(6)[arg](){...}
-
-      () style direct initialization is more permissive as it allows narrowing
-      conversations and using explicit constructors
-
-      Direct
-      - initialization is more permissive than copy
-      - initialization : copy - initialization only considers non -
-                         explicit constructors and non -
-                         explicit user - defined conversion functions,
-while direct - initialization considers all constructors and all user -
-    defined conversion functions
-
-    otherwise,
-if the destination type is a(possibly cv - qualified) aggregate class, it is
-    initialized as described in aggregate initialization except that narrowing
-    conversions are permitted,
-designated initializers are not allowed, a temporary bound to a reference does
-    not have its lifetime extended,
-there is no brace elision,
-and any elements without an initializer are value -
-    initialized.
-
-    A class type T is const
-    - default - constructible if default initialization of T would invoke a user
-    -
-    provided constructor of T(not inherited from a base class)(since C++ 11)
-
-        The effets of direct initialization are
-    : If T is an array type
-      -
-      the array is initialized as in aggregate initialization,
-except that narrowing conversions are allowed and any elements without an
-    initializer are value
-    - initialized.A a[2](
-          A(1)); // OK: initializes a[0] with A(1) and a[1] with A()
-if T
-  is a class type - if the initialiczer is a prvalue expression whose type is
-                        the same class as T(ignoring cv - qualification),
-      the initializer expression itself,
-      rather than a temporary materialized from it,
-      is used to initialize the destination object.-
-          the constructors of T are examined and the best match is selected by
-          overload resolution.The constructor is then called to
-          initialize the object
-          - otherwise,
-      if the destination type is a(possibly cv - qualified) aggregate class,
-      it is initialized as described in aggregate
-      initialization except that narrowing conversions are permitted,
-      designated initializers are not allowed,
-      a temporary bound to a reference does not have its lifetime extended,
-      there is no brace elision,
-      and any elements without an initializer are value
-          - initialized.
-
-            ++ ++ ++ ++ ++ ++ ++ ++ ++value initialization
-            ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ +
-
-            T()(1) new T()(2) Class::Class(...)
-      : member(){...}(3)T object{};
-(4)(since C++ 11) - BE CAREFULL FOR AGGREGATES IT WOULD CALL AGGREGATE
-        INITIALIZATION which has these rules so explicit defult constructors may
-        not work !explicit constructors
-    and conversion operators wont work in aggregate initialization
-
-    ""
-    ""
-    "   Otherwise, if the element is not a reference, the element is "
-    "copy-initialized from an empty initializer list.  "
-    ""
-    ""
-
-    T{}(5)(since C++ 11) new T{}(6)(since C++ 11)Class::Class(...)
-    : member{} {...}(7)(since C++ 11)
-
-          ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ +
-
-      Turns into aggregate initialization : In all cases,
-if the empty pair of braces {} is used and T is an aggregate type, aggregate-initialization is performed instead of value-initialization.
-Turns into list initialization: If T is a class type that has no default constructor but has a constructor taking std::initializer_list, list-initialization is performed.
-
-(since C++11)
-The effects of value initialization are:
-
-1) if T is a class type with no default constructor  or with user-provided or deleted (since C++11) default constructor, the object is default-initialized;
-2) if T is a class type with a default constructor (it can be non-trivial) that is neither user-provided nor deleted (since C++11) (that is, it may be a class with an implicitly-defined or defaulted default constructor), the object is zero-initialized and the semantic constraints for default-initialization are checked, and if T has a non-trivial default constructor, the object is default-initialized;
-3) if T is an array type, each element of the array is value-initialized;
-4) otherwise, the object is zero-initialized.
-
-
-The standard specifies that zero-initialization is not performed when the class has a user-provided or deleted default constructor, which implies that whether said default constructor is selected by overload resolution is not considered. All known compilers performs additional zero-initialization if a non-deleted defaulted default constructor is selected
-
-
-++++++++++++++++++
-aggregate initialization
-++++++++++++++++
-
-T object = { arg1, arg2, ... };
-(1) T object{arg1, arg2, ...};
-(2)(since C++ 11) T object = {.des1 = arg1, .des2{arg2}...};
-(3)(since C++ 20) T object{.des1 = arg1, .des2{arg2}...};	(4)	(since C++20)
-
-all value computations and side effects associated with a given element are sequenced before those of any element that follows it in order
-
-the way c++ works is that if object is aggregate , aggregate initialization is always been tried on for ither value initialization / list initialization
-
-
-element is copy-initialized from the corresponding initializer clause of the initializer list:
-- If the initializer clause is an expression, implicit conversions are allowed as per copy-initialization, except that narrowing conversions are prohibited (since C++11).
-- If the initializer clause is a nested braced-init-list (which is not an expression), list-initialize the corresponding element from that clause, which will (since C++11) recursively apply the rule if the corresponding element is a subaggregate.
-- if no value for a given memeber is given then it is copy-initializate with {}
-
-If the aggregate is a union and the initializer list is empty,
-    then If any variant member has a default member initializer,
-    that member is initialized from its default member
-        initializer.(since C++ 11)Otherwise,
-    the first member of the union(if any) is copy
-        - initialized from an empty initializer list.
-
-          ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ +copy
-          initialization
-          ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ +
-
-          Syntax T object = other;
-(1) T object = {other};
-(2)(until C++ 11) f(other)(3) return other;
-(4) throw object;
-catch (T object)
-
-    (5) T array[N] = {other - sequence};	(6)	
-
----
-
-The effects of copy initialization are:
-
-- First, if T is a class type and the initializer is a prvalue expression whose cv-unqualified type is the same class as T, the initializer expression itself, rather than a temporary materialized from it, is used to initialize the destination object: see copy elision
-(since C++17)
-
-- If T is a class type and the cv-unqualified version of the type of other is T or a class derived from T, the non-explicit constructors of T are examined and the best match is selected by overload resolution. The constructor is then called to initialize the object.
-
-- If T is a class type, and the cv-unqualified version of the type of other is not T or derived from T, or if T is non-class type, but the type of other is a class type, user-defined conversion sequences that can convert from the type of other to T (or to a type derived from T if T is a class type and a conversion function is available) are examined and the best one is selected through overload resolution. The result of the conversion, which is prvalue expression (since C++17) of the cv-unqualified version of T if a converting constructor was used, is then used to direct-initialize the object. The last step is usually optimized out and the result of the conversion is constructed directly in the memory allocated for the target object, but the appropriate constructor (move or copy) is required to be accessible even though it's not used. (until C++17)
-
-- Otherwise (if neither T nor the type of other are class types), standard conversions are used, if necessary, to convert the value of other to the cv-unqualified version of T.
-
-
-
-----------------
-list initialization
--------------
-
-Direct-list-initialization
-
-T object { arg1, arg2, ... };
-(1) T{arg1, arg2, ...}(2) new T{arg1, arg2, ...}(3)Class {
-  T member{arg1, arg2, ...};
-};
-(4) Class::Class() : member{arg1, arg2, ...} {
-  ...(5)
-
-          Copy -
-      list -
-      initialization
-
-          T object = {arg1, arg2, ...};
-  (6) function({arg1, arg2, ...})(7) return {arg1, arg2, ...};
-  (8) object[{arg1, arg2, ...}](9)
-      object = {arg1, arg2, ...}(10)U({arg1, arg2, ...})(11) Class {
-    T member = {arg1, arg2, ...};
-  };	(12)	
-
-
-
-The effects of list-initialization of an object of type T are:
-
-- If T is an aggregate class and the braced-init-list has a single element of the same or derived type (possibly cv-qualified), the object is initialized from that element (by copy-initialization for copy-list-initialization, or by direct-initialization for direct-list-initialization).
-
-- Otherwise, if T is a character array and the braced-init-list has a single element that is an appropriately-typed string literal, the array is initialized from the string literal as usual.
-
-- Otherwise, if T is an aggregate type, aggregate initialization is performed.
-
-- Otherwise, if the braced-init-list is empty and T is a class type with a default constructor, value-initialization is performed.
-
-- Otherwise, if T is a specialization of std::initializer_list, the T object is direct-initialized or copy-initialized, depending on context, from a prvalue of the same type initialized from (until C++17) the braced-init-list.
-
-- Otherwise, the constructors of T are considered, in two phases:
-All constructors that take std::initializer_list as the only argument, or as the first argument if the remaining arguments have default values, are examined, and matched by overload resolution against a single argument of type std::initializer_list
-If the previous stage does not produce a match, all constructors of T participate in overload resolution against the set of arguments that consists of the elements of the braced-init-list, with the restriction that only non-narrowing conversions are allowed. If this stage produces an explicit constructor as the best match for a copy-list-initialization, compilation fails (note, in simple copy-initialization, explicit constructors are not considered at all).
-
-- Otherwise, if：
-T is an enumeration type that with fixed underlying type U (which is int if the enumeration is scoped and its underlying type is not manually specified), and
-the initialization is direct-list-initialization, and
-the braced-init-list has only one initializer v that is implicitly convertible to U, and
-the conversion from v to U is non-narrowing,
-then the enumeration is initialized with the result of converting v to U.
-(since C++17)
-
-- Otherwise (if T is not a class type), if the braced-init-list has only one element and either T is not a reference type or is a reference type whose referenced type is same as or is a base class of the type of the element, T is direct-initialized (in direct-list-initialization) or copy-initialized (in copy-list-initialization), except that narrowing conversions are not allowed.
-
-- Otherwise, if T is a reference type that is not compatible with the type of the element:
-a prvalue temporary of the type referenced by T is copy-list-initialized, and the reference is bound to that temporary (this fails if the reference is a non-const lvalue reference).
-(until C++17)
-a prvalue is generated. The prvalue initializes its result object by copy-list-initialization. The prvalue is then used to direct-initialize the reference (this fails if the reference is a non-const lvalue reference). The type of the temporary is the type referenced by T, unless T is “reference to array of unknown bound of U”, in which case the type of the temporary is the type of x in the declaration U x[] H, where H is the initializer list (since C++20).
-(since C++17)
-
-- Otherwise, if the braced-init-list has no elements, T is value-initialized.
-
-
----------------
-classes
---------------
-
-The Empty Base Optimization is what will allow an empty base to not "inflate" the object, as you call it. However, you must be careful so that an object does not inherit from the same empty base twice or this optimization won't be allowed
-
-class S{
-    std::string s;
-    S() : s("sadf")
-  };
-  < -- -- -- -- -- -- --member initializer list int n = 7; <---------  default member initialize
-
-A trivially copyable class is a class that
-
 **************** Trivally copyable class **********************
 has at least one eligible copy constructor, move constructor, copy assignment operator, or move assignment operator,
 each eligible(the one choosed) copy constructor is trivial
@@ -352,15 +78,6 @@ has a non-deleted trivial destructor.
 
 ----note that you can delete everything above but say copy constructor & destructor and class will still be trivial
 ++++++++++++++++++++++++++++++++++++++++++++++++
-
-
-The default constructor for class T is trivial (i.e. performs no action) if all of the following is true:
-
-A default constructor is trivial if it is not user-provided and if:
-- its class has no virtual functions ([class.virtual]) and no virtual base classes ([class.mi]), and
-- no non-static data member of its class has a default member initializer ([class.mem]), and
-- all the direct base classes of its class have trivial default constructors, and
-- for all the non-static data members of its class that are of class type (or array thereof), each such class has a trivial default constructor.
 
 
 **** Trivial copy constructor ***
@@ -418,6 +135,24 @@ Standard-layout types have the following special properties:
 - The macro offsetof may be used to determine the offset of any member from the beginning of a standard-layout class.
 
 
+
+ Otherwise, if the braced-init-list has no elements, T is value-initialized.
+
+
+
+---------------
+classes
+--------------
+
+The Empty Base Optimization is what will allow an empty base to not "inflate" the object, as you call it. However, you must be careful so that an object does not inherit from the same empty base twice or this optimization won't be allowed
+
+class S{
+    std::string s;
+    S() : s("sadf")
+  };
+  < -- -- -- -- -- -- --member initializer list int n = 7; <---------  default member initialize
+
+
 ++++++++++++++++++++++++++++++++++++++++++++++++
 construction
 ++++++++++++++++++++++++++++++++++++++++++++++++
@@ -426,5 +161,26 @@ For an object with a non-trivial constructor, referring to any non-static member
 
 
 During the construction of an object, if the value of the object or any of its subobjects is accessed through a glvalue that is not obtained, directly or indirectly, from the constructor's this pointer, the value of the object or subobject thus obtained is unspecifie
+
+
+A constructor that is not declared with the specifier explicit and which can be called with a single parameter (until C++11) is called a converting constructor.
+
+Unlike explicit constructors, which are only considered during direct initialization (which includes explicit conversions such as static_cast), converting constructors are also considered during copy initialization, as part of user-defined conversion sequence.
+
+It is said that a converting constructor specifies an implicit conversion from the types of its arguments (if any) to the type of its class. Note that non-explicit user-defined conversion function also specifies an implicit conversion
+
+
+An expression e is said to be implicitly convertible to T2 if and only if T2 can be copy-initialized from e, that is the declaration T2 t = e; is well-formed (can be compiled), for some invented temporary t. Note that this is different from direct initialization (T2 t(e)), where explicit constructors and conversion functions would additionally be considered.
+
+
+*******************
+Implicitly-defined default constructor
+*******************
+If the implicitly-declared default constructor is not defined as deleted, it is defined (that is, a function body is generated and compiled) by the compiler if odr-used or needed for constant evaluation (since C++11), and it has the same effect as a user-defined constructor with empty body and empty initializer list. That is, it calls the default constructors of the bases and of the non-static members of this class. Class types with an empty user-provided constructor may get treated differently than those with an implicitly-defined or defaulted default constructor during value initialization.
+
+
+If no user-declared constructors of any kind are provided for a class type (struct, class, or union), the compiler will always declare a default constructor as an inline public member of its class
+
+
 
 
