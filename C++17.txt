@@ -111,3 +111,13 @@ You could use it like this:
 
 bool foo(int);
 auto lambda = make_lambda<foo>();
+
+
+16.  since copy ellision has been added to c++17, the following is possible now.
+
+std::mutex make() {
+  return std::mutex{};
+}
+
+std::mutex m = make();
+
