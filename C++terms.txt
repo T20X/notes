@@ -18,15 +18,6 @@ its value representation is the set of bits that hold the value of its type T, a
 its padding bits are the bits in the object representation that are not part of the value representation.
 
 
-------
-
-Pointers
-Every value of pointer type is one of the following:
-
-- a pointer to an object or function (in which case the pointer is said to point to the object or function), Example of pointer values  ----> (pointer to a.a, pointer to a.b, pointer a.c)
-- a pointer past the end of an object, or
-- the null pointer value for that type, or
-- an invalid pointer value.
 
 --------------------------
 An expression is a sequence of operators and operands that specifies a computation. An expression can result in a value and can cause side effects

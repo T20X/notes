@@ -1,0 +1,133 @@
+-------------------
+Strinct Aliasing Rules
+--------------------
+If a program attempts to access the stored value of an object through a glvalue of other than one of the following types the behavior is undefined:
+
+(11.1) the dynamic type of the object,
+(11.2) a cv-qualified version of the dynamic type of the object,
+(11.3) a type similar (as defined in 7.5) to the dynamic type of the object,
+(11.4) a type that is the signed or unsigned type corresponding to the dynamic type of the object,
+(11.5) a type that is the signed or unsigned type corresponding to a cv-qualified version of the dynamic type of the object,
+(11.6) an aggregate or union type that includes one of the aforementioned types among its elements or non-static data members (including, recursively, an element or non-static data member of a subaggregate or contained union),
+(11.7) a type that is a (possibly cv-qualified) base class type of the dynamic type of the object,
+(11.8) a char, unsigned char, or std::byte type.
+
+
+---------
+Pointer interconvertible
+-------------
+
+Two objects a and b are pointer-interconvertible if:
+- they are the same object
+- one is a union object and the other is a non-static data member of that object ([class.union]), or
+- one is a standard-layout classobject and the other is the first non-static data member of that object, or, if the object has no non-static data members, any base class subobject of that object ([class.mem]), or
+- there exists an object c such that a and c are pointer-interconvertible, and c and b are pointer-interconvertible.
+If two objects are pointer-interconvertible, then they have the same address, and it is possible to obtain a pointer to one from a pointer to the other via a reinterpret_­cast. [ Note: ***************** ->  An array object and its first element are not pointer-interconvertible, even though they have the same address. — end note <- ********* ]
+
+Practically, the standard tries to place as little restriction as possible on implementations. Pointer-interconvertibility is the condition that pointers may be reinterpret_cast and yield the correct result.
+
+ I guess that "pointer-interconvertible" is about standardizing when you can cast between base and derived pointers through static casts to void* and back (and when you can't).
+
+If a standard-layout class object has any non-static data members, its address is the same as the address of its first non-static data member if that member is not a bit-field. Its address is also the same as the address of each of its base class subobjects.
+[Note 11: There can therefore be unnamed padding within a standard-layout struct object inserted by an implementation, but not at its beginning, as necessary to achieve appropriate alignment. — end note]
+
+
+ ---------
+
+     ************reinterpret_cast ******************
+
+
+     IMPORTANT POINTS: 
+      - 0,NULL cannot be converted to the null pointer of the target type . For that static_cast / implicit convertions must be used!
+      - you can convert nullptr to integer type, but nothing can be converted to std::nullptr_t
+      - pointer-interconvertible is handled in Strict Aliasing rules, welll it kinds of imbeded into it:
+         "(11.6) an aggregate or union type that includes one of the aforementioned types among its elements or non-static data members (including, recursively, an element or non-static data member of a subaggregate or contained union),"
+
+  If two objects are pointer  interconvertible, then they have the same address, and it is possible to obtain a pointer to one from a pointer to the other via a reinterpret_­cast([expr.reinterpret.cast]) .Practically, the standard tries to place as little restriction as possible on implementations.Pointer - interconvertibility is the condition that pointers may be reinterpret_cast and yield the correct result .
+
+      Unlike static_cast, but like const_cast, the reinterpret_cast expression does not compile to any CPU instructions (except when converting between integers and pointers or on obscure architectures where pointer representation depends on its type). It is purely a compile-time directive which instructs the compiler to treat expression as if it had the type new-type.
+
+
+    2) A pointer can be converted to any integral type large enough to hold all values of its type (e.g. to std::uintptr_t).
+
+    3) A value of any integral or enumeration type can be converted to a pointer type. A pointer converted to an integer of sufficient size and back to the same pointer type is guaranteed to have its original value, otherwise the resulting pointer cannot be dereferenced safely (the round-trip conversion in the opposite direction is not guaranteed; the same pointer may have multiple integer representations) The null pointer constant NULL or integer zero is not guaranteed to yield the null pointer value of the target type; static_cast or implicit conversion should be used for this purpose.
+
+    4) Any value of type std::nullptr_t, including nullptr can be converted to any integral type as if it were (void*)0, but no value, not even nullptr can be converted to std::nullptr_t: static_cast should be used for that purpose.
+    (since C++11)
+
+    5) Any object pointer type T1* can be converted to another object pointer type cv T2*. This is exactly equivalent to static_cast<cv T2*>(static_cast<cv void*>(expression)) (which implies that if T2's alignment requirement is not stricter than T1's, the value of the pointer does not change and conversion of the resulting pointer back to its original type yields the original value). In any case, the resulting pointer may only be dereferenced safely if allowed by the type aliasing rules (see below).
+
+    6) An lvalue (until C++11)glvalue (since C++11) expression of type T1 can be converted to reference to another type T2. The result is that of *reinterpret_cast<T2*>(p), where p is a pointer of type “pointer to T1” to the object designated by expression. No temporary is created, no copy is made, no constructors or conversion functions are called. The resulting reference can only be accessed safely if allowed by the type aliasing rules (see below).
+
+    7) Any pointer to function can be converted to a pointer to a different function type. Calling the function through a pointer to a different function type is undefined, but converting such pointer back to pointer to the original function type yields the pointer to the original function.
+
+    8) On some implementations (in particular, on any POSIX compatible system as required by dlsym), a function pointer can be converted to void* or any other object pointer, or vice versa. If the implementation supports conversion in both directions, conversion to the original type yields the original value, otherwise the resulting pointer cannot be dereferenced or called safely.
+
+    9) The null pointer value of any pointer type can be converted to any other pointer type, resulting in the null pointer value of that type. Note that the null pointer constant nullptr or any other value of type std::nullptr_t cannot be converted to a pointer with reinterpret_cast: implicit conversion or static_cast should be used for this purpose.
+
+    10) A pointer to member function can be converted to pointer to a different member function of a different type. Conversion back to the original type yields the original value, otherwise the resulting pointer cannot be used safely.
+
+    11) A pointer to member object of some class T1 can be converted to a pointer to another member object of another class T2. If T2's alignment is not stricter than T1's, conversion back to the original type T1 yields the original value, otherwise the resulting pointer cannot be used safely.
+        
+
+    Whenever an attempt is made to read or modify the stored value of an object of type DynamicType through a glvalue of type AliasedType, the behavior is undefined unless one of the following is true:
+   Informally, two types are similar if, ignoring top-level cv-qualification:
+      ---> Refer to Strict Aliasing Rules in the beginning
+
+
+Two types are similar if:
+    - they are the same type; or
+    - they are both pointers, and the pointed-to types are similar; or
+    - they are both pointers to member of the same class, and the types of the pointed-to members are similar; or
+    - they are both arrays of the same size or at least one of them is array of unknown bound, and the array element types are similar.
+            
+
+*************** static_cast  *************************
+
+          Conversion of any pointer to pointer to void and back to pointer to
+              the
+              original(or more cv - qualified)
+                  type preserves its original value.
+
+          this is totally fine
+
+              Test t;
+  void *p = t;
+ Test* ptr = static_cast<Test*>(p)
+
+
+ you can do the same for interconvertible-pointers  --->
+ A prvalue of type pointer to void (possibly cv-qualified) can be converted to pointer to any object type. If the original pointer value represents an address of a byte in memory that does not satisfy the alignment requirement of the target type, then the resulting pointer value is unspecified. Otherwise, if the original pointer value points to an object a, and there is an object b of the target type (ignoring cv-qualification) that is pointer-interconvertible (as defined below) with a, the result is a pointer to b. Otherwise the pointer value is unchanged. Conversion of any pointer to pointer to void and back to pointer to the original (or more cv-qualified) type preserves its original value.
+
+
+----
+implicit  created objects
+----
+
+Some operations are described as implicitly creating objects within a specified region of storage. For each operation that is specified as implicitly creating objects, that operation implicitly creates and starts the lifetime of zero or more objects of implicit-lifetime types ([basic.types.general]) in its specified region of storage if doing so would result in the program having defined behavior. If no such set of objects would give the program defined behavior, the behavior of the program is undefined. If multiple such sets of objects would give the program defined behavior, it is unspecified which such set of objects is created.
+[Note 4: Such operations do not start the lifetimes of subobjects of such objects that are not themselves of implicit-lifetime types. — end note]
+11
+#
+Further, after implicitly creating objects within a specified region of storage, some operations are described as producing a pointer to a suitable created object. These operations select one of the implicitly-created objects whose address is the address of the start of the region of storage, and produce a pointer value that points to that object, if that value would result in the program having defined behavior. If no such pointer value would give the program defined behavior, the behavior of the program is undefined. If multiple such pointer values would give the program defined behavior, it is unspecified which such pointer value is produced.
+
+12
+#
+[Example 3:
+#include <cstdlib>
+struct X { int a, b; };
+X *make_x() {
+  // The call to std​::​malloc implicitly creates an object of type X
+  // and its subobjects a and b, and returns a pointer to that X object
+  // (or an object that is pointer-interconvertible ([basic.compound]) with it),
+  // in order to give the subsequent class member access operations
+  // defined behavior.
+  X *p = (X*)std::malloc(sizeof(struct X));
+  p->a = 1;
+  p->b = 2;
+  return p;
+}
+
+A class S is an implicit-lifetime class if
+- it is an aggregate whose destructor is not user-provided or
+- it has at least one trivial eligible constructor and a trivial, non-deleted destructor.
+

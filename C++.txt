@@ -73,20 +73,6 @@ Each object with automatic storage duration is destroyed if it has been construc
 
 Every object and reference has a lifetime, which is a runtime property: for any object or reference, there is a point of execution of a program when its lifetime begins, and there is a moment when it ends.
 
--------------
-
-Two objects a and b are pointer-interconvertible if:
-- they are the same object
-- one is a union object and the other is a non-static data member of that object ([class.union]), or
-- one is a standard-layout classobject and the other is the first non-static data member of that object, or, if the object has no non-static data members, any base class subobject of that object ([class.mem]), or
-- there exists an object c such that a and c are pointer-interconvertible, and c and b are pointer-interconvertible.
-If two objects are pointer-interconvertible, then they have the same address, and it is possible to obtain a pointer to one from a pointer to the other via a reinterpret_­cast. [ Note: ***************** ->  An array object and its first element are not pointer-interconvertible, even though they have the same address. — end note <- ********* ]
-
-Practically, the standard tries to place as little restriction as possible on implementations. Pointer-interconvertibility is the condition that pointers may be reinterpret_cast and yield the correct result.
-
- I guess that "pointer-interconvertible" is about standardizing when you can cast between base and derived pointers through static casts to void* and back (and when you can't).
- ---------
-
 
 When storage for an object with automatic or dynamic storage duration is obtained, the object has an indeterminate value, and if no initialization is performed for the object, that object retains an indeterminate value until that value is replaced ([expr.ass]). [ Note: Objects with static or thread storage duration are zero-initialized, see [basic.start.static]. — end note ]
 
@@ -329,78 +315,6 @@ void h() {
           to do other casts in the following order :
 
       const_cast static_cast reinterpret_cast
-
-      -- -- -- -- -- -- -- --reinterpret_cast -- -- -- -- -- -
-
-      Two objects a and b are pointer -
-      interconvertible if : (4.1)they are the same object,
-      or (4.2) one is a union object and the other is a non -
-              static data member of that object([class.union]),
-      or
-          (4.3) one is a standard -
-              layout class object and the other is the first non -
-              static data member of that object or
-          any base class subobject of that object([class.mem]),
-      or (4.4) there exists an object c such that a and c are pointer -
-              interconvertible,
-      and c and b are pointer -
-          interconvertible
-
-              If two objects are pointer -
-          interconvertible,
-      then they have the same address,
-      and it is possible to obtain a pointer to one from a pointer to the other
-              via a reinterpret_­cast([expr.reinterpret.cast])
-                  .Practically,
-      the standard tries to place as little restriction as possible on
-              implementations.Pointer -
-          interconvertibility is the condition that pointers may
-              be reinterpret_cast and yield the correct
-                  result
-                      .
-
-          Any object pointer type T1 *can be converted to another object pointer
-              type cv T2
-                  *.This is exactly equivalent to static_cast<cv T2 *>(
-                       static_cast<cv void *>(expression))(
-                       which implies
-                           that if T2 's alignment requirement is not stricter than T1' s,
-                       the value of the pointer does not change and
-                           conversion of the resulting pointer back to its
-                               original type yields the original value)
-                      .In any case,
-      the resulting pointer may only be dereferenced safely if allowed by the
-          type aliasing
-          rules(see below)
-
-              A glvalue of type T1,
-      designating an object x,
-      can be cast to the type “reference to T2” if an expression of
-          type “pointer to T1” can be explicitly converted to the
-              type “pointer to T2” using a reinterpret_­cast
-                  .The result is that of *reinterpret_­cast<T2 *>(p)
-                      where p is a pointer to x of type “pointer to
-                          T1”.No temporary is created,
-      no copy is made,
-      and no constructors([class.ctor]) or
-          conversion functions([class.conv]) are called .60
-
-          -- -static_cast -- --
-
-          Conversion of any pointer to pointer to void and back to pointer to
-              the
-              original(or more cv - qualified)
-                  type preserves its original value.
-
-          this is totally fine
-
-              Test t;
-  void *p = t;
- Test* ptr = static_cast<Test*>(p)
-
-
- you can do the same for interconvertible-pointers  --->
- A prvalue of type pointer to void (possibly cv-qualified) can be converted to pointer to any object type. If the original pointer value represents an address of a byte in memory that does not satisfy the alignment requirement of the target type, then the resulting pointer value is unspecified. Otherwise, if the original pointer value points to an object a, and there is an object b of the target type (ignoring cv-qualification) that is pointer-interconvertible (as defined below) with a, the result is a pointer to b. Otherwise the pointer value is unchanged. Conversion of any pointer to pointer to void and back to pointer to the original (or more cv-qualified) type preserves its original value.
 
 
  Sorry for the thread necromancy, but I just happened across this and your code above is likely not safe. This is because youre using reinterpret_cast to cast a void *, whereas you should always use a static_cast for related type conversions (and void * is related to all other pointer types).

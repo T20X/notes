@@ -142,7 +142,16 @@ A1 a(3) // will not work as 2 level conversion
 initialization
 --------
 
+Important take aways:
+ - since C++20 direct aggregate initialization is now possible, though it would allow narrowing conversions and won't extend the liftime of a refrence. Something like this is possible now
+ struct A { int i; int j;  };  make_shared<A>(1, 2);
 
+ - basically during value initialization if the object's defualt constructor is not user-provider and not deleted and also trivial than zero initialization during value initialization is possible, otherwise the object would be defualt initialized
+
+ - Aggregate initialization would copy initializate explicitly initialized members and direct initializate members with designated initializer, the rest would be initialized as if they were with {}
+ 
+
+ - expression e implicitly converts to T if copy initialization works -> T a = e;
 
 +++++++++++++++++++++
 default initialization
@@ -238,6 +247,8 @@ B b5(1.0, std::move(n)); // OK
 if the empty pair of braces {} is used and T is an aggregate type, aggregate-initialization is performed instead of value-initialization.
 Turns into list initialization: If T is a class type that has no default constructor but has a constructor taking std::initializer_list, list-initialization is performed.
 
+Zero- and value-initialization also initialize pointers to their null values
+
 (since C++11)
 The effects of value initialization are:
 
@@ -328,6 +339,8 @@ S s = "abc"s; // OK: conversion from std::string to S
 If other is an rvalue expression, a move constructor will be selected by overload resolution and called during copy-initialization. This is still considered copy-initialization; there is no special term (e.g., move-initialization) for this case.
 
 Implicit conversion is defined in terms of copy-initialization: if an object of type T can be copy-initialized with expression E, then E is implicitly convertible to T.
+
+If other is an rvalue expression, a move constructor will be selected by overload resolution and called during copy-initialization. This is still considered copy-initialization; there is no special term (e.g., move-initialization) for this case.
 
 
 ----------------
