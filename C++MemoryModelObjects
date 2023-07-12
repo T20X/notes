@@ -18,8 +18,8 @@ Every value of pointer type is one of the following:
 
 - a pointer to an object or function (in which case the pointer is said to point to the object or function), or
 - a pointer past the end of an object, or
-- the null pointer value for that type, or
-an invalid pointer value.
+- the null pointer value for that type,
+- an invalid pointer value.
 
 A pointer that points to an object represents the address of the first byte in memory occupied by the object. A pointer past the end of an object represents the address of the first byte in memory after the end of the storage occupied by the object
 

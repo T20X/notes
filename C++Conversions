@@ -26,7 +26,6 @@ If two objects are pointer-interconvertible, then they have the same address, an
 
 Practically, the standard tries to place as little restriction as possible on implementations. Pointer-interconvertibility is the condition that pointers may be reinterpret_cast and yield the correct result.
 
- I guess that "pointer-interconvertible" is about standardizing when you can cast between base and derived pointers through static casts to void* and back (and when you can't).
 
 If a standard-layout class object has any non-static data members, its address is the same as the address of its first non-static data member if that member is not a bit-field. Its address is also the same as the address of each of its base class subobjects.
 [Note 11: There can therefore be unnamed padding within a standard-layout struct object inserted by an implementation, but not at its beginning, as necessary to achieve appropriate alignment. — end note]
@@ -40,8 +39,9 @@ If a standard-layout class object has any non-static data members, its address i
      IMPORTANT POINTS: 
       - 0,NULL cannot be converted to the null pointer of the target type . For that static_cast / implicit convertions must be used!
       - you can convert nullptr to integer type, but nothing can be converted to std::nullptr_t
-      - pointer-interconvertible is handled in Strict Aliasing rules, welll it kinds of imbeded into it:
-         "(11.6) an aggregate or union type that includes one of the aforementioned types among its elements or non-static data members (including, recursively, an element or non-static data member of a subaggregate or contained union),"
+      - The null pointer value of any pointer type can be converted to any other pointer type, resulting in the null pointer value of that type. Note that the null pointer constant nullptr or any other value of type std::nullptr_t cannot be converted to a pointer with reinterpret_cast: implicit conversion or static_cast should be used for this purpose.
+      - pointer-interconvertible rules avoid Strict Aliasing rules been applied,so that this can be done safely
+      struct A{ int i; } A a; int* p = reinterpret_cast<int*>(&a); *p=100; <--- access is done through DynamicType int* in fact!, because of pointer-interconvertible rules
 
   If two objects are pointer  interconvertible, then they have the same address, and it is possible to obtain a pointer to one from a pointer to the other via a reinterpret_­cast([expr.reinterpret.cast]) .Practically, the standard tries to place as little restriction as possible on implementations.Pointer - interconvertibility is the condition that pointers may be reinterpret_cast and yield the correct result .
 
@@ -57,7 +57,7 @@ If a standard-layout class object has any non-static data members, its address i
 
     5) Any object pointer type T1* can be converted to another object pointer type cv T2*. This is exactly equivalent to static_cast<cv T2*>(static_cast<cv void*>(expression)) (which implies that if T2's alignment requirement is not stricter than T1's, the value of the pointer does not change and conversion of the resulting pointer back to its original type yields the original value). In any case, the resulting pointer may only be dereferenced safely if allowed by the type aliasing rules (see below).
 
-    6) An lvalue (until C++11)glvalue (since C++11) expression of type T1 can be converted to reference to another type T2. The result is that of *reinterpret_cast<T2*>(p), where p is a pointer of type “pointer to T1” to the object designated by expression. No temporary is created, no copy is made, no constructors or conversion functions are called. The resulting reference can only be accessed safely if allowed by the type aliasing rules (see below).
+    6) glvalue (since C++11) expression of type T1 can be converted to reference to another type T2. The result is that of *reinterpret_cast<T2*>(p), where p is a pointer of type “pointer to T1” to the object designated by expression. No temporary is created, no copy is made, no constructors or conversion functions are called. The resulting reference can only be accessed safely if allowed by the type aliasing rules (see below).
 
     7) Any pointer to function can be converted to a pointer to a different function type. Calling the function through a pointer to a different function type is undefined, but converting such pointer back to pointer to the original function type yields the pointer to the original function.
 
@@ -84,16 +84,12 @@ Two types are similar if:
 
 *************** static_cast  *************************
 
-          Conversion of any pointer to pointer to void and back to pointer to
-              the
-              original(or more cv - qualified)
-                  type preserves its original value.
+ -  Conversion of any pointer to pointer to void and back to pointer to the original(or more cv - qualified) type preserves its original value.
 
-          this is totally fine
-
-              Test t;
+     this is totally fine 
+  Test t;
   void *p = t;
- Test* ptr = static_cast<Test*>(p)
+  Test* ptr = static_cast<Test*>(p)
 
 
  you can do the same for interconvertible-pointers  --->
