@@ -1,4 +1,19 @@
 ﻿
+An array type whose elements are cv-qualified is also considered to have the same cv-qualifications as its elements.
+[Note 2: Cv-qualifiers applied to an array type attach to the underlying element type, so the notation “cv T”, where T is an array type, refers to an array whose elements are so-qualified ([dcl.array]). — end note]
+[Example 1:
+typedef char CA[5];
+typedef const char CC;
+CC arr1[5] = { 0 };
+const CA arr2 = { 0 };
+The type of both arr1 and arr2 is “array of 5 const char”, and the array type is considered to be const-qualified. — end example]
+
+
+
+---------------------------
+
+
+
 template <class T> struct owner_less; /* undefined */
 (since C++ 11)(until C++ 17) template <class T = void>
 struct owner_less; /* undefined */

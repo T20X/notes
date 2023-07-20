@@ -266,6 +266,7 @@ T object = { arg1, arg2, ... };
 (1) T object{arg1, arg2, ...};
 (2)(since C++ 11) T object = {.des1 = arg1, .des2{arg2}...};
 (3)(since C++ 20) T object{.des1 = arg1, .des2{arg2}...};	(4)	(since C++20)
+(6) T array[N] = {other - sequence}; IMPORTANT -> array just just aggregate class!
 
 all value computations and side effects associated with a given element are sequenced before those of any element that follows it in order of declaration
 
@@ -310,7 +311,6 @@ Syntax
 (3) return other;
 (4) throw object;
 (5)catch (T object)
-(6) T array[N] = {other - sequence};
 
 ---
 NARROWING CONVERSIONS ARE allowed
@@ -374,7 +374,7 @@ The effects of list-initialization of an object of type T are:
 
 - Otherwise, if T is an aggregate type, aggregate initialization is performed.
 
-- Otherwise, if the braced-init-list is empty and T is a class type with a default constructor, value-initialization is performed.
+- Otherise, if the braced-init-list is empty and T is a class type with a default constructor, value-initialization is performedw.
 
 - Otherwise, the constructors of T are considered, in two phases:
 If the previous stage does not produce a match, all constructors of T participate in overload resolution against the set of arguments that consists of the elements of the braced-init-list, with the restriction that only non-narrowing conversions are allowed. If this stage produces an explicit constructor as the best match for a copy-list-initialization, compilation fails (note, in simple copy-initialization, explicit constructors are not considered at all).

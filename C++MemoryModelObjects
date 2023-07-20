@@ -75,21 +75,25 @@ if T is a class type with a non-trivial destructor ([class.dtor]), the destructo
 
 
 Objects can contain other objects, called subobjects. A subobject can be a member subobject ([class.mem]), a base class subobject ([class.derived]), or an array element. An object that is not a subobject of any other object is called a complete object. If an object is created in storage associated with a member subobject or array element e (which may or may not be within its lifetime), the created object is a subobject of e containing object if:
-(2.1)
-the lifetime of e containing object has begun and not ended, and
-(2.2)
-the storage for the new object exactly overlays the storage location associated with e, and
-(2.3)
-the new object is of the same type as e (ignoring cv-qualification).
+(2.1) the lifetime of e containing object has begun and not ended, and
+(2.2) the storage for the new object exactly overlays the storage location associated with e, and
+(2.3) the new object is of the same type as e (ignoring cv-qualification).
+
+struct A {
+    T t /*initializer*/;
+    U* u;
+
+    A() {
+        t.~T(); 
+        u = ::new(static_cast<void*>(&t)) U /*initializer*/; 
+      //u does not point to suboject because lifetime of A has not started yet!
+    }
 3
 #
 If a complete object is created ([expr.new]) in storage associated with another object e of type “array of N unsigned char” or of type “array of N std​::​byte” ([cstddef.syn]), that array provides storage for the created object if:
-(3.1)
-the lifetime of e has begun and not ended, and
-(3.2)
-the storage for the new object fits entirely within e, and
-(3.3)
-there is no array object that satisfies these constraints nested within e.
+(3.1) the lifetime of e has begun and not ended, and
+(3.2) the storage for the new object fits entirely within e, and
+(3.3) there is no array object that satisfies these constraints nested within e.
 [Note 3: If that portion of the array previously provided storage for another object, the lifetime of that object ends because its storage was reused ([basic.life]). — end note]
 
 
@@ -117,34 +121,35 @@ Objects, references, functions including function template specializations, and 
 Lifetime
 ------------
 
-1
-#
+(1) #
 The lifetime of an object or reference is a runtime property of the object or reference. A variable is said to have vacuous initialization if it is default-initialized and, if it is of class type or a (possibly multidimensional) array thereof, that class type has a trivial default constructor. The lifetime of an object of type T begins when:
 (1.1)
 storage with the proper alignment and size for type T is obtained, and
 (1.2)
 its initialization (if any) is complete (including vacuous initialization) ([dcl.init]),
 except that if the object is a union member or subobject thereof, its lifetime only begins if that union member is the initialized member in the union ([dcl.init.aggr], [class.base.init]), or as described in [class.union], [class.copy.ctor], and [class.copy.assign], and except as described in [allocator.members]. The lifetime of an object o of type T ends when:
-(1.3)
-if T is a non-class type, the object is destroyed, or
-(1.4)
-if T is a class type, the destructor call starts, or
-(1.5)
-the storage which the object occupies is released, or is reused by an object that is not nested within o ([intro.object]).
-2
-#
-The lifetime of a reference begins when its initialization is complete. The lifetime of a reference ends as if it were a scalar object requiring storage.
-3
-#
+(1.3) if T is a non-class type, the object is destroyed, or
+(1.4) if T is a class type, the destructor call starts, or
+(1.5) the storage which the object occupies is released, or is reused by an object that is not nested within o ([intro.object]).
+
+(2) The lifetime of a reference begins when its initialization is complete. The lifetime of a reference ends as if it were a scalar object requiring storage.
 [Note 1: [class.base.init] describes the lifetime of base and member subobjects. 
 
 
-Lifetime of a reference is exactly its storage duration
+(3) The lifetime of an object o of type T ends when:
+- if T is a class type with a non-trivial destructor ([class.dtor]), the destructor call starts,
+- if T is a class type, the destructor call starts, or
+- the storage which the object occupies is released, or is reused by an object that is not nested within o ([intro.object]).
 
-The lifetime of an object o of type T ends when:
-if T is a class type with a non-trivial destructor ([class.dtor]), the destructor call starts, OR the storage which the object occupies is released, or is reused by an object that is not nested within o
 
-If the subobject contains a reference member or a const subobject, the name of the original subobject cannot be used to access the new object ([basic.life]). ?�?end note?] [?Example:
+Right now, even if you called n.~int();, that would not actually end ns lifetime
+
+
+ you cannot create an array from allocating two objects adjacently to each othe
+
+
+
+(5) This removed in C++20 -----> If the subobject contains a reference member or a const subobject, the name of the original subobject cannot be used to access the new object ([basic.life]). ?�?end note?] [?Example:
 
 struct X { const int n; };
 union U { X x; float f; };
@@ -158,7 +163,7 @@ void tong() {
 }
 
 
-It is not strictly defined in the C++ standard, what is a lifetime. Intuitively we refer to it as a time when object lives. The reason for introducing the concept (not confuse with concepts feature) of a lifetime in the language is to know when we can use objects without some limitations.
+(6) It is not strictly defined in the C++ standard, what is a lifetime. Intuitively we refer to it as a time when object lives. The reason for introducing the concept (not confuse with concepts feature) of a lifetime in the language is to know when we can use objects without some limitations.
 
 The actual life of an object has multiple stages:
 
@@ -173,7 +178,7 @@ destructor finished, storage not yet released
 
 
 
-When an object is being constructed and destructed, we can do a little bit more with the object. Namely, we can get to the members of object under construction, that already were initialized. An important thing to note is, that we can do that only via this pointer. Let’s look at what it means by looking at the example from the draft:
+(7) When an object is being constructed and destructed, we can do a little bit more with the object. Namely, we can get to the members of object under construction, that already were initialized. An important thing to note is, that we can do that only via this pointer. Let’s look at what it means by looking at the example from the draft:
 
 struct C;
 void no_opt(C*);
@@ -191,19 +196,14 @@ void no_opt(C* cptr) {
 in this example inside no_opt using object cobj by its name and not by its pointer reads unspecified values.
 
 
-Before the lifetime of an object has started but after the storage which the object will occupy has been allocated23 or, after the lifetime of an object has ended and before the storage which the object occupied is reused or released, any pointer that represents the address of the storage location where the object will be or was located may be used but only in limited ways. ------------------------> SUPER IMPORTANT(this means that during construciton and destruction the lifetime by standart has not started yet and not finished correspondinly ) For an object under construction or destruction, see [class.cdtor] <-----------------. Otherwise, such a pointer refers to allocated storage ([basic.stc.dynamic.allocation]), and using the pointer as if the pointer were of type void* is well-defined. Indirection through such a pointer is permitted but the resulting lvalue may only be used in limited ways, as described below. The program has undefined behavior if:
-(6.1)
-the pointer is used as the operand of a delete-expression,
-(6.2)
-the pointer is used to access a non-static data member or call a non-static member function of the object, or
-(6.3)
-the pointer is implicitly converted ([conv.ptr]) to a pointer to a virtual base class, or
-(6.4)
-the pointer is used as the operand of a static_cast ([expr.static.cast]), except when the conversion is to pointer to cv void, or to pointer to cv void and subsequently to pointer to cv char, cv unsigned char, or cv std​::​byte ([cstddef.syn]), or
-(6.5)
-the pointer is used as the operand of a dynamic_cast ([expr.dynamic.cast]).
+(8) Before the lifetime of an object has started but after the storage which the object will occupy has been allocated23 or, after the lifetime of an object has ended and before the storage which the object occupied is reused or released, any pointer that represents the address of the storage location where the object will be or was located may be used but only in limited ways. ------------------------> SUPER IMPORTANT(this means that during construciton and destruction the lifetime by standart has not started yet and not finished correspondinly ) For an object under construction or destruction, see [class.cdtor] <-----------------. Otherwise, such a pointer refers to allocated storage ([basic.stc.dynamic.allocation]), and using the pointer as if the pointer were of type void* is well-defined. Indirection through such a pointer is permitted but the resulting lvalue may only be used in limited ways, as described below. The program has undefined behavior if:
+(6.1) the pointer is used as the operand of a delete-expression,
+(6.2) the pointer is used to access a non-static data member or call a non-static member function of the object, or
+(6.3) the pointer is implicitly converted ([conv.ptr]) to a pointer to a virtual base class, or
+(6.4) the pointer is used as the operand of a static_cast ([expr.static.cast]), except when the conversion is to pointer to cv void, or to pointer to cv void and subsequently to pointer to cv char, cv unsigned char, or cv std​::​byte ([cstddef.syn]), or
+(6.5) the pointer is used as the operand of a dynamic_cast ([expr.dynamic.cast]).
 
-If a program ends the lifetime of an object of type T with static ([basic.stc.static]), thread ([basic.stc.thread]), or automatic ([basic.stc.auto]) storage duration and if T has a non-trivial destructor,24 and another object of the original type does not occupy that same storage location when the implicit destructor call takes place, the behavior of the program is undefined. This is true even if the block is exited with an exception.
+(9) If a program ends the lifetime of an object of type T with static ([basic.stc.static]), thread ([basic.stc.thread]), or automatic ([basic.stc.auto]) storage duration and if T has a non-trivial destructor,24 and another object of the original type does not occupy that same storage location when the implicit destructor call takes place, the behavior of the program is undefined. This is true even if the block is exited with an exception.
 [Example 3:
 class T { };
 struct B {
@@ -215,7 +215,7 @@ void h() {
    new (&b) T;
 } 
 
-Unless an object is a bit-field or a base class subobject of zero size, the address of that object is the address of the first byte it occupies. Two objects a and b with overlapping lifetimes that are not bit-fields may have the same address if one is nested within the other, or if at least one is a base class subobject of zero size and they are of different types; otherwise, they have distinct addresses.5
+(10) Unless an object is a bit-field or a base class subobject of zero size, the address of that object is the address of the first byte it occupies. Two objects a and b with overlapping lifetimes that are not bit-fields may have the same address if one is nested within the other, or if at least one is a base class subobject of zero size and they are of different types; otherwise, they have distinct addresses.5
 
 [?Example:
 
@@ -223,6 +223,8 @@ static const char test1 = 'x';
 static const char test2 = 'x';
 const bool b = &test1 != &test2;      // always true
 
+
+Before the lifetime of an object has started but after the storage which the object will occupy has been allocated23 or, after the lifetime of an object has ended and before the storage which the object occupied is reused or released, any pointer that represents the address of the storage location where the object will be or was located may be used but only in limited ways. For an object under construction or destruction, see [class.cdtor]. Otherwise, such a pointer refers to allocated storage ([basic.stc.dynamic.allocation]), and using the pointer as if the pointer were of type void* is well-defined. Indirection through such a pointer is permitted but the resulting lvalue may only be used in limited ways, as described below
 
 struct B { vritual f();}; //non trivial defualt constructor because of virtual table pointer
 struct D1 : B { void f(); };
@@ -234,15 +236,34 @@ void B::mutate() {
 }
 B* b = new D1;
 
-struct C {f(); mutate()};
-void C::mutate() {
-  new (this) C;    // reuses storage � ends the lifetime of *this
-  f();  // ok, object stroage is of the same class!
+If, after the lifetime of an object has ended and before the storage which the object occupied is reused or released, a new object is created at the storage location which the original object occupied, a pointer that pointed to the original object, a reference that referred to the original object, or the name of the original object will automatically refer to the new object and, once the lifetime of the new object has started, can be used to manipulate the new object, if the original object is transparently replaceable (see below) by the new object. An object is transparently replaceable by an object 
+
+(8.1) the storage that occupies exactly overlays the storage that 
+ occupied, and
+(8.2) are of the same type (ignoring the top-level cv-qualifiers), and
+(8.3) is not a const, complete object, and
+(8.4) neither is a potentially-overlapping subobject ([intro.object]), and
+(8.5) either  both complete objects, or  are direct subobjects of objects p1
+ and p2 , respectively, and p1 is transparently replaceable by p2 .
+
+[Example 2:
+struct C {
+  int i;
+  void f();
+  const C& operator=( const C& );
+};
+
+const C& C::operator=( const C& other) {
+  if ( this != &other ) {
+    this->~C();                 // lifetime of *this ends
+    new (this) C(other);        // new object of type C created
+    f();                        // well-defined
+  }
+  return *this;
 }
 
-If a program ends the lifetime of an object of type T with static, thread, or automatic storage duration and if T has a non-trivial destructor,42 the program must ensure that an object of the original type occupies that same storage location when the implicit destructor call takes place; otherwise the behavior of the program is undefined.
 
-For an object with a non-trivial constructor, referring to any non-static member or base class of the object before the constructor begins execution results in undefined behavior. For an object with a non-trivial destructor, referring to any non-static member or base class of the object after the destructor finishes execution results in undefined behavio
+(11) For an object with a non-trivial constructor, referring to any non-static member or base class of the object before the constructor begins execution results in undefined behavior. For an object with a non-trivial destructor, referring to any non-static member or base class of the object after the destructor finishes execution results in undefined behavio
 struct W { int j; };
 struct X : public virtual W { };
 struct Y {
@@ -250,6 +271,94 @@ struct Y {
   X x;
   Y() /*******constructor execution begins*****/: p(&x.j) {   // undefined, x is not yet constructed
     
+(12) Objects can contain other objects, called subobjects. A subobject can be a member subobject ([class.mem]), a base class subobject ([class.derived]), or an array element. An object that is not a subobject of any other object is called a complete object. If an object is created in storage associated with a member subobject or array element e (which may or may not be within its lifetime), the created object is a subobject of e's containing object if:
+(2.1) the lifetime of e's containing object has begun and not ended, and
+(2.2) the storage for the new object exactly overlays the storage location associated with e, and
+(2.3) the new object is of the same type as e (ignoring cv-qualification).
+
+
+--- IMPORTANT > STANDART PRETTY CLEARLY defines what subobject is really, it is either member subobject in a class , base base or an array element. Everything else we don't consider subobjects. Note that complete object is an object which is not suboject!
+
+
+ If a complete object is created ([expr.new]) in storage associated with another object e of type “array of N unsigned char” or of type “array of N std​::​byte” ([cstddef.syn]), that array **********PROVIDES STORAGE******** for the created object if:
+(3.1) the lifetime of e has begun and not ended, and
+(3.2) the storage for the new object fits entirely within e, and
+(3.3) there is no array object that satisfies these constraints nested within e. ---->  struct A { unsigned char a[32]; }; ...
+----> .... struct B { unsigned char b[16]; };
+
+[Note 3: If that portion of the array previously provided storage for another object, the lifetime of that object ends because its storage was reused ([basic.life]). — end note]
+[Example 1:
+template<typename ...T>
+struct AlignedUnion {
+  alignas(T...) unsigned char data[max(sizeof(T)...)];
+};
+int f() {
+  AlignedUnion<int, char> au;
+  int *p = new (au.data) int;           // OK, au.data provides storage
+  char *c = new (au.data) char();       // OK, ends lifetime of *p because of "
+  [Note 3: If that portion of the array previously provided storage for another object, the lifetime of that object ends because its storage was reused ([basic.life]). — end note]"
+  char *d = new (au.data + 1) char();
+  return *c + *d;                       // OK
+}
+
+struct A { unsigned char a[32]; };
+struct B { unsigned char b[16]; };
+A a;
+B *b = new (a.a + 8) B;                 // a.a provides storage for *b
+int *p = new (b->b + 4) int;            // b->b provides storage for *p
+                                        // a.a does not provide storage for *p (directly),
+                                        // but *p is nested within a (see below)
+— end example]
+
+ An object a is nested within another object b if:
+(4.1) a is a subobject of b, or
+(4.2) b provides storage for a(IMPORTANT ---> note that only arrays of unsigned char / std::byte CANNNNNN provide storage), or
+(4.3) there exists an object c where a is nested within c, and c is nested within b.
+
+
+
+(13)
+Block-scope variables not explicitly declared static, thread_­local, or extern have automatic storage duration. The storage for these entities lasts until the block in which they are created exits.
+ # [ Note: These variables are initialized and destroyed as described in [stmt.dcl].  — end note ]
+
+#
+If a variable with automatic storage duration has initialization or a destructor with side effects, an implementation shall not destroy it before the end of its block nor eliminate it as an optimization, even if it appears to be unused, except that a class object or its copy/move may be eliminated as specified in [class.copy].
+
+
+Variables with automatic storage duration are initialized each time their declaration-statement is executed. Variables with automatic storage duration declared in the block are destroyed on exit from the block.  On exit from a scope (however accomplished), objects with automatic storage duration that have been constructed in that scope are destroyed in the reverse order of their construction
+
+Notice that the order of destruction is specified, but the order of automatic storage release is not specified. This means that the implementation could release the storage right after each variable is destroyed, or release it all at once later, or in some arbitrary other order.
+
+Now, the fact that it uses the singular for storage ("the storage for ... lasts") rather than talking about each variable individually may suggest that the intent is for the storage as a whole to be released at once for that scope. But there is no explicit statement of this in the standard. So as long as a variable is destroyed before its storage is released, any ordering of destruction vs. release appears to be legal, BUT STANDART DID AGREE in 2015 that RELEASE MUST HAPPEN AFTER DESTRUCTION! CWG Issue 2115
+
+ --EXISTING C++ ISUE (CWG 2115) --------->
+Basically it is not established wheather destructors for automatic variables at the end of block or memory (trivial types) for them is going to be released first. Because trivally destructible types don't need destructor to be run
+--------------
+The relative ordering between destruction of automatic variables on exit from a block and the release of the variables' storage is not specified by the Standard: are all the destructors executed first and then the storage released, or are they interleaved?
+
+Notes from the February, 2016 meeting:
+
+CWG agreed that the storage should persist until all destructions are complete, although the “as-if” rule would allow for unobservable optimizations of this ordering.
+<-----------------
+
+
+This means it is entirely possible for the code to work, for n to outlive a. But it is unspecified whether it does work.
+
+(14)
+
+In [basic.indet]/1, we have:
+
+When storage for an object with automatic or dynamic storage duration is obtained, the object has an indeterminate value, and if no initialization is performed for the object, that object retains an indeterminate value until that value is replaced ([expr.ass]).
+
+One important detail here (which I missed at first) is that <obtaining storage> is different from <allocating storage> or the storage duration of a storage region. The <obtain storage> words are also used to define the beginning of an objects lifetime in [basic.life]/1 and in the context of a new-expression in [expr.new]/10:
+
+A new-expression may obtain storage for the object by calling an allocation function ([basic.stc.dynamic.allocation]). ... [ Note: ... The set of allocation and deallocation functions that may be called by a new-expression may include functions that do not perform allocation or deallocation; for example, see [new.delete.placement]. — end note ]
+
+
+(15)
+dynamic storage duration means that you have to take care for the object lifecycle and delete when necessary
+dynamic storage means that there are no constraints to the storage duration.
+
 ------
 implicitly created objects
 -------
@@ -282,23 +391,12 @@ Compound types
 
 Compound types can be constructed in the following ways:
 
-(1.1)
-arrays of objects of a given type, [dcl.array];
-
-(1.2)
-functions, which have parameters of given types and return void or references or objects of a given type, [dcl.fct];
-
-(1.3)
-pointers to cv void or objects or functions (including static members of classes) of a given type, [dcl.ptr];
-
-(1.4)
-references to objects or functions of a given type, [dcl.ref]. There are two types of references:
-
-(1.4.1)
-lvalue reference
-
-(1.4.2)
-rvalue reference
+(1.1) arrays of objects of a given type, [dcl.array];
+(1.2) functions, which have parameters of given types and return void or references or objects of a given type, [dcl.fct];
+(1.3) pointers to cv void or objects or functions (including static members of classes) of a given type, [dcl.ptr];
+(1.4) references to objects or functions of a given type, [dcl.ref]. There are two types of references:
+(1.4.1) lvalue reference
+(1.4.2) rvalue reference
 
 (1.5)
 classes containing a sequence of objects of various types (Clause [class]), a set of types, enumerations and functions for manipulating these objects ([class.mfct]), and a set of restrictions on the access to these entities (Clause [class.access]);
@@ -331,4 +429,12 @@ Arrays of void, scalar types or references
 A class that has a constexpr destructor, and one or more constexpr constructors that are not move or copy constructors. Additionally, all its non-static data members and base classes must be literal types and not volatile.
 
 
-Specifies that a type is a literal type. Literal types are the types of constexpr variables and they can be constructed, manipulated, and returned from constexpr functions.
+Specifies that a type is a literal type. Literal types are the types of constexpr variables and they can be constructed, manipulated, and returned from constexmemset pr functions.
+
+
+
+
+------------
+copying
+---
+memset  will set padding bits to 0
