@@ -4,16 +4,41 @@ Memory model
 The fundamental storage unit in the C++ memory model is the byte
 The least significant bit is called the low-order bit; the most significant bit is called the high-order bit. The memory available to a C++ program consists of one or more sequences of contiguous bytes. Every byte has a unique address
 
+
+There are few terms describing memory model:
+- address 
+- pointer value 
+- integer represetning pointer value - typically type uintptr_t
+- memory location
+
 A memory location is either an object of scalar type that is not a bit-field or a maximal sequence of adjacent bit-fields all having nonzero width. It is NOT address as it is more logical concept! Just been a locatoin that complier will allow concurrent access to!
 
 In general, pointer is a type of a variable that stores a link to another object. In C and C++, the link is the address of that object in the program memory. Pointers allow to refer to the same object from multiple locations of the source code without copying the object. Also, the same pointer variable may refer to different objects during its lifetime.
 
 
-the same pointer may have multiple integer representations
+A prvalue of type “pointer to cv T”, where T is an object type, can be converted to a prvalue of type “pointer to cv void”. The pointer value ([basic.compound]) is unchanged by this conversio
+
+
+- the same pointer may have multiple integer representations
+- an array is not pointer-interconvertible with the first element
+
+
+ C++, a pointer doesnt point to a memory location, it points to a designated object: pointers are high level types, not low level addresses as in assembly. Pointing to an object is not the same to pointing to a different object at the exact same address
+
+
+ A pointer to void may be converted to or from a pointer to any object type. A pointer to any object type may be converted to a pointer to void and back again; the result shall compare equal to the original pointe
+ 
+ A null pointer constant is an integer literal ([lex.icon]) with value zero or a prvalue of type std​::​nullptr_t. A null pointer constant can be converted to a pointer type; the result is the null pointer value of that type ([basic.compound]) and is distinguishable from every other value of object pointer or function pointer type. Such a conversion is called a null pointer conversion. Two null pointer values of the same type shall compare equal. The conversion of a null pointer constant to a pointer to cv-qualified type is a single conversion, and not the sequence of a pointer conversion followed by a qualification conversion ([conv.qual]). A null pointer constant of integral type can be converted to a prvalue of type std​::​nullptr_t.
+[Note 1: The resulting prvalue is not a null pointer value. — end note]
+
+
+
+The address of the whole array, and the address of the first element, are defined to be the same, since arrays in C++ (and C) have no intrinsic padding besides that of the constituent objects
 
 
 As far as C++ is concerned, pointers are not integers; theyre just pointers. You can use casts to convert between pointer values and integer values, and the result should be meaningful in terms of the underlying machines memory model, but not much is guaranteed about the results. You can perform arithmetic on pointers, but on the language level thats not at all the same thing as integer arithmetic (though its probably implemented as scaled integer arithmetic on the machine level).
 
+--------------------------------------------
 Every value of pointer type is one of the following:
 
 - a pointer to an object or function (in which case the pointer is said to point to the object or function), or
@@ -21,7 +46,11 @@ Every value of pointer type is one of the following:
 - the null pointer value for that type,
 - an invalid pointer value.
 
-A pointer that points to an object represents the address of the first byte in memory occupied by the object. A pointer past the end of an object represents the address of the first byte in memory after the end of the storage occupied by the object
+conversions to void* and the other way around preserve pointer values
+
+------------------------------
+
+A pointer that points to an object represents the address of the first byte in memory occupied by the object. A pointer past the end of an object represents the address of the first byte in memory after the end of the storage occupied by the object. Even though two objects may have the same address, their value representations may be diffrent, which means that the scalar value representinting pointer value could have diffrent bits even though they point to the same address.
 
 
 Note that two pointers that represent the same address may nonetheless have different values.
@@ -38,12 +67,31 @@ int* py = &c.y;   // value of py is "pointer to c.y"
 assert(pxe == py); // == tests if two pointers represent the same address
                    // may or may not fire
 
+
+An lvalue or rvalue of type “array of N T” or “array of unknown bound of T” can be converted to an rvalue of type “pointer to T.”
+
+Another example is array. The first member of array may have diffrent pointer value compared to the pointer to array. Generally pointer-interconvertible define if pointer values are the same.
+
+int a[4] = {1, 2, 3, 4};
+void* p1 = a;
+void* p2 = &a[0];
+
+assert((int*)p1 == (int*)p2 ) // MAY FAIL!
+
+
+An object of array type contains a contiguously allocated non-empty set of N subobjects of type T
+
 Pointers of every type have a special value known as null pointer value of that type. A pointer whose value is null does not point to an object or a function (the behavior of dereferencing a null pointer is undefined), and compares equal to all pointers of the same type whose value is also null
 
 Pointer to object of any type can be implicitly converted to pointer to void (optionally cv-qualified); the pointer value is unchanged. The reverse conversion, which requires static_cast or explicit cast, yields the original pointer value
 
 there are no pointers to references and there are no pointers to bit-fields
 standard does not require that pointers are directly related to memory addresses
+
+
+
+
+A null pointer constant is an integer literal ([lex.icon]) with value zero or a prvalue of type std​::​nullptr_t. A null pointer constant can be converted to a pointer type; the result is the null pointer value of that type ([basic.compound]) and is distinguishable from every other value of object pointer or function pointer type. Such a conversion is called a null pointer conversion. Two null pointer values of the same type shall compare equal. The conversion of a null pointer constant to a pointer to cv-qualified type is a single conversion, and not the sequence of a pointer conversion followed by a qualification conversion ([conv.qual]). A null pointer constant of integral type can be converted to a prvalue of type std​::​nullptr_t
 
 (new in c++11)
 {
@@ -78,6 +126,12 @@ Objects can contain other objects, called subobjects. A subobject can be a membe
 (2.1) the lifetime of e containing object has begun and not ended, and
 (2.2) the storage for the new object exactly overlays the storage location associated with e, and
 (2.3) the new object is of the same type as e (ignoring cv-qualification).
+------->IMPORTANT<---- NOTE THAT IT DOES NOT LIST BASE CLASS SUBOBJECT ABOVE, REPLACING WHICH WOULD END THE LIFETIME OF THE CONTAINING OBJECT <-----> 
+
+<----->IMPORTANT <----->
+ I interpret it to say that the subobject property is determined at creation by the listed rules, not that at any given point in time the subobject property is determined according to the listed rules
+
+
 
 struct A {
     T t /*initializer*/;
@@ -277,7 +331,7 @@ struct Y {
 (2.3) the new object is of the same type as e (ignoring cv-qualification).
 
 
---- IMPORTANT > STANDART PRETTY CLEARLY defines what subobject is really, it is either member subobject in a class , base base or an array element. Everything else we don't consider subobjects. Note that complete object is an object which is not suboject!
+--- IMPORTANT > STANDART PRETTY CLEARLY defines what subobject is really, it is either member subobject in a class , base base or an array element. Everything else we dont consider subobjects. Note that complete object is an object which is not suboject!
 
 
  If a complete object is created ([expr.new]) in storage associated with another object e of type “array of N unsigned char” or of type “array of N std​::​byte” ([cstddef.syn]), that array **********PROVIDES STORAGE******** for the created object if:
@@ -359,6 +413,19 @@ A new-expression may obtain storage for the object by calling an allocation func
 dynamic storage duration means that you have to take care for the object lifecycle and delete when necessary
 dynamic storage means that there are no constraints to the storage duration.
 
+
+(16)
+[no_unique_address]
+Indicates that this data member need not have an address distinct from all other non-static data members of its class. This means that if the member has an empty type (e.g. stateless Allocator), the compiler may optimise it to occupy no space, just like if it were an empty base. If the member is not empty, any tail padding in it may be also reused to store other data members.
+
+
+(17)
+at least one of the following must be true for any two objects:
+
+They must have different types.
+They must have different addresses in memory.
+They must actually be the same object.
+
 ------
 implicitly created objects
 -------
@@ -382,7 +449,7 @@ std::pmr::polymorphic_allocator::allocate_object (since C++20)
 An invocation of std::memcpy or std::memmove.
 (since C++20) An invocation of std::bit_cast.
 (since C++23) An invocation of std::start_lifetime_as or std::start_lifetime_as_array.
-An assignment expression that involves union members if the union's assignment operator is built-in or trivial.
+An assignment expression that involves union members if the unions assignment operator is built-in or trivial.
 
 
 ***********

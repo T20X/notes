@@ -62,6 +62,7 @@ If no user-declared constructors of any kind are provided for a class type (stru
 
 user-declared copy constructor delete move operators 
 
+For an object with a non-trivial constructor, referring to any non-static member or base class of the object before the constructor begins execution results in undefined behavior. For an object with a non-trivial destructor, referring to any non-static member or base class of the object after the destructor finishes execution results in undefined behavior.
 
 ********************
 Trivial default constructor
@@ -124,13 +125,14 @@ A trivial class is a class that
 ++++++++++++++++++++++++++++++++++++++++++++++++
 Standard-layout class
 ++++++++++++++++++++++++++++++++++++++++++++++++
-A standard-layout class is a class that
+A standart-layout class is a class that
 
 has no non-static data members of type non-standard-layout class (or array of such types) or reference,
 has no virtual functions and no virtual base classes,
 has the same access control for all non-static data members,
 has no non-standard-layout base classes,
 has all non-static data members and bit-fields in the class and its base classes first declared in the same class,
+arrays of standart layout classes are standart layout too
  Informally, none of the base classes has the same type as the first non-static data membe
 ---> only one class in the hierarchy has non-static data members <----
 struct A {
@@ -181,49 +183,28 @@ class S{
   std::string s;
   S() : s("sadf")
 };
-< -- -- -- -- -- -- --member initializer list int n = 7;
-< -- -- -- -- -default member initialize
+< --member initializer list int n = 7;
 
-              ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++construction++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++ ++
+default member initialize
 
-              For an object with a non -
-        trivial constructor,
-    referring to any non - static member or
-        base class of the object before the constructor begins execution results
-                in undefined behavior.For an object with a non -
-            trivial destructor,
-    referring to any non - static member or
-        base class of the object after the destructor finishes execution results
-            in undefined behavior.
+------
+construction
+---------
+ For an object with a non - trivial constructor, referring to any non - static member or base class of the object before the constructor begins execution results in undefined behavior.For an object with a non - trivial destructor, referring to any non - static member or base class of the object after the destructor finishes execution results in undefined behavior.
 
-        During the construction of an object,
-    if the value of the object or any of its subobjects is accessed through a
-                                      glvalue that is not obtained,
-    directly or indirectly,
-    from the constructor's this pointer, the value of the object or subobject thus obtained is unspecifie
+ During the construction of an object, if the value of the object or any of its subobjects is accessed through a glvalue that is not obtained, directly or indirectly, from the constructor's this pointer, the value of the object or subobject thus obtained is unspecifie
 
-        A constructor that is not declared with the specifier explicit and
-        which can be called with a single parameter(until C++ 11)
-            is called a converting constructor.
+ A constructor that is not declared with the specifier explicit and
+ which can be called with a single parameter(until C++ 11)
+ is called a converting constructor.
 
-        Unlike explicit constructors,
-    which are only considered during direct initialization(
-        which includes explicit conversions such as static_cast),
-    converting constructors are also considered during copy initialization,
-    as part of user -
-            defined conversion sequence
+ Unlike explicit constructors, which are only considered during direct initialization( which includes explicit conversions such as static_cast), converting constructors are also considered during copy initialization, as part of user - defined conversion sequence
                 .
 
-            It is said that a converting constructor specifies an implicit
-                conversion from the types of its arguments(if any)
-                    to the type of its class.Note that non -
-            explicit user -
-            defined conversion function also specifies an implicit conversion
+ It is said that a converting constructor specifies an implicit conversion from the types of its arguments(if any) to the type of its class.Note that non - explicit user - defined conversion function also specifies an implicit conversion
 
-                An expression e is said to be implicitly convertible to
-                    T2 if and
-        only if T2 can be copy - initialized from e,
-    that is the declaration T2 t = e; is well-formed (can be compiled), for some invented temporary t. Note that this is different from direct initialization (T2 t(e)), where explicit constructors and conversion functions would additionally be considered.
+An expression e is said to be implicitly convertible to T2 if and only if T2 can be copy - initialized from e,
+that is the declaration T2 t = e; is well-formed (can be compiled), for some invented temporary t. Note that this is different from direct initialization (T2 t(e)), where explicit constructors and conversion functions would additionally be considered.
 
 
 *******************

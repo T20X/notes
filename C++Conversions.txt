@@ -31,13 +31,16 @@ If a standard-layout class object has any non-static data members, its address i
 [Note 11: There can therefore be unnamed padding within a standard-layout struct object inserted by an implementation, but not at its beginning, as necessary to achieve appropriate alignment. — end note]
 
 
+Because the comittee wants to make clear that an array is a low level concept an not a first class object: you cannot return an array nor assign to it for example. Pointer-interconvertibility is meant to be a concept between objects of same level: only standard layout classes or unions
+
+
  ---------
 
      ************reinterpret_cast ******************
 
 
      IMPORTANT POINTS: 
-      - 0,NULL cannot be converted to the null pointer of the target type . For that static_cast / implicit convertions must be used!
+      - 0,NULL CANNOT be converted to the null pointer of the target type . For that static_cast / implicit convertions must be used!
       - you can convert nullptr to integer type, but nothing can be converted to std::nullptr_t
       - The null pointer value of any pointer type can be converted to any other pointer type, resulting in the null pointer value of that type. Note that the null pointer constant nullptr or any other value of type std::nullptr_t cannot be converted to a pointer with reinterpret_cast: implicit conversion or static_cast should be used for this purpose.
       - pointer-interconvertible rules avoid Strict Aliasing rules been applied,so that this can be done safely
@@ -49,7 +52,12 @@ int *p = reinterpret_cast<int *>(&a);
 
   If two objects are pointer  interconvertible, then they have the same address, and it is possible to obtain a pointer to one from a pointer to the other via a reinterpret_­cast([expr.reinterpret.cast]) .Practically, the standard tries to place as little restriction as possible on implementations.Pointer - interconvertibility is the condition that pointers may be reinterpret_cast and yield the correct result .
 
+////INFORMAL////
       Unlike static_cast, but like const_cast, the reinterpret_cast expression does not compile to any CPU instructions (except when converting between integers and pointers or on obscure architectures where pointer representation depends on its type). It is purely a compile-time directive which instructs the compiler to treat expression as if it had the type new-type.
+ //////
+
+
+      The result of the expression reinterpret_cast<T>(v) is the result of converting the expression v to type T. If T is an lvalue reference type or an rvalue reference to function type, the result is an lvalue; if T is an rvalue reference to object type, the result is an xvalue; otherwise, the result is a prvalue and the lvalue-to-rvalue, array-to-pointer, and function-to-pointer standard conversions are performed on the expression v. Conversions that can be performed explicitly using reinterpret_cast are listed below. No other conversion can be performed explicitly using reinterpret_cast.
 
 
     2) A pointer can be converted to any integral type large enough to hold all values of its type (e.g. to std::uintptr_t).
@@ -72,6 +80,10 @@ int *p = reinterpret_cast<int *>(&a);
     10) A pointer to member function can be converted to pointer to a different member function of a different type. Conversion back to the original type yields the original value, otherwise the resulting pointer cannot be used safely.
 
     11) A pointer to member object of some class T1 can be converted to a pointer to another member object of another class T2. If T2's alignment is not stricter than T1's, conversion back to the original type T1 yields the original value, otherwise the resulting pointer cannot be used safely.
+
+
+    12) A function pointer can be explicitly converted to a function pointer of a different type
+    [Note 4: The effect of calling a function through a pointer to a function type ([dcl.fct]) that is not the same as the type used in the definition of the function is undefined ([expr.call]). — end note]
         
 
     Whenever an attempt is made to read or modify the stored value of an object of type DynamicType through a glvalue of type AliasedType, the behavior is undefined unless one of the following is true:
@@ -146,6 +158,21 @@ struct M {
 
   - you can do the same for interconvertible-pointers  --->
   A prvalue of type pointer to void (possibly cv-qualified) can be converted to pointer to any object type. If the original pointer value represents an address of a byte in memory that does not satisfy the alignment requirement of the target type, then the resulting pointer value is unspecified. Otherwise, if the original pointer value points to an object a, and there is an object b of the target type (ignoring cv-qualification) that is pointer-interconvertible (as defined below) with a, the result is a pointer to b. Otherwise the pointer value is unchanged. Conversion of any pointer to pointer to void and back to pointer to the original (or more cv-qualified) type preserves its original value.
+
+
+----------
+C-style casts
+---------
+
+When the C-style cast expression is encountered, the compiler attempts to interpret it as the following cast expressions, in this order:
+a) const_cast<new-type>(expression);
+b) static_cast<new-type>(expression), with extensions: pointer or reference to a derived class is additionally allowed to be cast to pointer or reference to unambiguous base class (and vice versa) even if the base class is inaccessible (that is, this cast ignores the private inheritance specifier). Same applies to casting pointer to member to pointer to member of unambiguous non-virtual base;
+c) static_cast (with extensions) followed by const_cast;
+d) reinterpret_cast<new-type>(expression);
+e) reinterpret_cast followed by const_cast.
+ The first choice that satisfies the requirements of the respective cast operator is selected, even if it cannot be compiled (see example). If the cast can be interpreted in more than one way as static_cast followed by a const_cast, it cannot be compiled.
+ In addition, C-style cast notation is allowed to cast from, to, and between pointers to incomplete class type. If both expression and new-type are pointers to incomplete class types, it is unspecified whether static_cast or reinterpret_cast gets selected
+
 
 
 ----
