@@ -116,10 +116,17 @@ The properties of an object are determined when the object is created.
 - An object has a storage duration ([basic.stc]) which influences its lifetime ([basic.life]). 
 - An object has a type ([basic.types]).
 [Note 2: Some objects are polymorphic ([class.virtual]); the implementation generates information associated with each such object that makes it possible to determine that objects type during program execution. — end note]
-The lifetime of an object o of type T ends when:
+
 if T is a class type with a non-trivial destructor ([class.dtor]), the destructor call starts, OR the storage which the object occupies is released, or is reused by an object that is not nested within o
 
+So if indeed it does constitute storage reuse, that is only because "reuse" is defined by plain English, not because the standard has a rule explicitly defining this as one of the cases of "storage reuse".
+I can construct an object at the storage location of an other object but this operation is not a "storage reuses" (Otherwise why would it be written ...before the storage which the object occupied is resused...)
+No. [basic.life]/8 is trying to explain how you can use pointers/references/variable names to an object after that objects lifetime has ended. It explains the circumstances under which those pointers/references/variable names are still valid and can access the new object created in its storage
 
+auto t = new T;
+t->~T(); //Lifetime has ended.
+new (t) T; //object is created before reuse
+new (t) T; //object lifetime's ends by reuse, however sequence is lifetime end -> objected created -> storage reused by creating object, but lifetime has to end before object is created
 
 
 Objects can contain other objects, called subobjects. A subobject can be a member subobject ([class.mem]), a base class subobject ([class.derived]), or an array element. An object that is not a subobject of any other object is called a complete object. If an object is created in storage associated with a member subobject or array element e (which may or may not be within its lifetime), the created object is a subobject of e containing object if:
@@ -131,7 +138,10 @@ Objects can contain other objects, called subobjects. A subobject can be a membe
 <----->IMPORTANT <----->
  I interpret it to say that the subobject property is determined at creation by the listed rules, not that at any given point in time the subobject property is determined according to the listed rules
 
+! Generaly speaking the properties of the object are determined when it is created!
 
+
+for an object of a scalar type, its lifetime only ends when the storage is reused or released 
 
 struct A {
     T t /*initializer*/;
@@ -250,7 +260,7 @@ void no_opt(C* cptr) {
 in this example inside no_opt using object cobj by its name and not by its pointer reads unspecified values.
 
 
-(8) Before the lifetime of an object has started but after the storage which the object will occupy has been allocated23 or, after the lifetime of an object has ended and before the storage which the object occupied is reused or released, any pointer that represents the address of the storage location where the object will be or was located may be used but only in limited ways. ------------------------> SUPER IMPORTANT(this means that during construciton and destruction the lifetime by standart has not started yet and not finished correspondinly ) For an object under construction or destruction, see [class.cdtor] <-----------------. Otherwise, such a pointer refers to allocated storage ([basic.stc.dynamic.allocation]), and using the pointer as if the pointer were of type void* is well-defined. Indirection through such a pointer is permitted but the resulting lvalue may only be used in limited ways, as described below. The program has undefined behavior if:
+(8) Before the lifetime of an object has started but after the storage which the object will occupy has been allocated23 or, after the lifetime of an object has ended and before the storage which the object occupied is reused or released !!!! Otherwise |||||||||| , any pointer that represents the address of the storage location where the object will be or was located may be used but only in limited ways. ------------------------> SUPER IMPORTANT(this means that during construciton and destruction the lifetime by standart has not started yet and not finished correspondinly ) For an object under construction or destruction, see [class.cdtor] <-----------------. ||||||||||||||| Otherwise, such a pointer refers to allocated storage ([basic.stc.dynamic.allocation]), and using the pointer as if the pointer were of type void* is well-defined. Indirection through such a pointer is permitted but the resulting lvalue may only be used in limited ways, as described below. The program has undefined behavior if:
 (6.1) the pointer is used as the operand of a delete-expression,
 (6.2) the pointer is used to access a non-static data member or call a non-static member function of the object, or
 (6.3) the pointer is implicitly converted ([conv.ptr]) to a pointer to a virtual base class, or
@@ -350,7 +360,7 @@ int f() {
   AlignedUnion<int, char> au;
   int *p = new (au.data) int;           // OK, au.data provides storage
   char *c = new (au.data) char();       // OK, ends lifetime of *p because of "
-  [Note 3: If that portion of the array previously provided storage for another object, the lifetime of that object ends because its storage was reused ([basic.life]). — end note]"
+  [Note 3: If that portion of the array previously provided storage for another object, the lifetime of that object ends because its storage was reused ([basic.life]). — end note]
   char *d = new (au.data + 1) char();
   return *c + *d;                       // OK
 }
@@ -386,9 +396,9 @@ Notice that the order of destruction is specified, but the order of automatic st
 Now, the fact that it uses the singular for storage ("the storage for ... lasts") rather than talking about each variable individually may suggest that the intent is for the storage as a whole to be released at once for that scope. But there is no explicit statement of this in the standard. So as long as a variable is destroyed before its storage is released, any ordering of destruction vs. release appears to be legal, BUT STANDART DID AGREE in 2015 that RELEASE MUST HAPPEN AFTER DESTRUCTION! CWG Issue 2115
 
  --EXISTING C++ ISUE (CWG 2115) --------->
-Basically it is not established wheather destructors for automatic variables at the end of block or memory (trivial types) for them is going to be released first. Because trivally destructible types don't need destructor to be run
+Basically it is not established wheather destructors for automatic variables at the end of block or memory (trivial types) for them is going to be released first. Because trivally destructible types dont need destructor to be run
 --------------
-The relative ordering between destruction of automatic variables on exit from a block and the release of the variables' storage is not specified by the Standard: are all the destructors executed first and then the storage released, or are they interleaved?
+The relative ordering between destruction of automatic variables on exit from a block and the release of the variables storage is not specified by the Standard: are all the destructors executed first and then the storage released, or are they interleaved?
 
 Notes from the February, 2016 meeting:
 
@@ -430,7 +440,7 @@ They must actually be the same object.
 implicitly created objects
 -------
 
------> it is either aggregate or got trival eglibible constructor  and a trivial non-deleted destructor. Note that in aggregatre if subojbect is not itself implicitly created object than it won't be created. <---------------
+-----> it is either aggregate or got trival eglibible constructor  and a trivial non-deleted destructor. Note that in aggregatre if subojbect is not itself implicitly created object than it wont be created. <---------------
 
 
 Certain operations may implicitly create and start the lifetime of objects of implicit-lifetime types, if doing so would prevent undefined behavior. However, such operations do not start the lifetimes of subobjects of such objects that are not themselves of implicit-lifetime types.
