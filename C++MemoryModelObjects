@@ -18,94 +18,137 @@ There are few terms describing memory model:
 
 A memory location is either an object of scalar type that is not a bit-field or a maximal sequence of adjacent bit-fields all having nonzero width. It is NOT address as it is more logical concept! Just been a locatoin that complier will allow concurrent access to!
 
-In general, pointer is a type of a variable that stores a link to another object. In C and C++, the link is the address of that object in the program memory. Pointers allow to refer to the same object from multiple locations of the source code without copying the object. Also, the same pointer variable may refer to different objects during its lifetime.
+      --- 
+      pointer
+      ----
+
+      In general, pointer is a type of a variable that stores a link to another object. In C and C++, the link is the address of that object in the program memory. Pointers allow to refer to the same object from multiple locations of the source code without copying the object. Also, the same pointer variable may refer to different objects during its lifetime.
 
 
-A prvalue of type “pointer to cv T”, where T is an object type, can be converted to a prvalue of type “pointer to cv void”. The pointer value ([basic.compound]) is unchanged by this conversio
+      A prvalue of type “pointer to cv T”, where T is an object type, can be converted to a prvalue of type “pointer to cv void”. The pointer value ([basic.compound]) is unchanged by this conversio
 
 
-- the same pointer may have multiple integer representations
-- an array is not pointer-interconvertible with the first element
+      - the same pointer may have multiple integer representations
+      - an array is not pointer-interconvertible with the first element
 
 
- C++, a pointer doesnt point to a memory location, it points to a designated object: pointers are high level types, not low level addresses as in assembly. Pointing to an object is not the same to pointing to a different object at the exact same address
+      C++, a pointer doesnt point to a memory location, it points to a designated object: pointers are high level types, not low level addresses as in assembly. Pointing to an object is not the same to pointing to a different object at the exact same address
 
 
- A pointer to void may be converted to or from a pointer to any object type. A pointer to any object type may be converted to a pointer to void and back again; the result shall compare equal to the original pointe
- 
- A null pointer constant is an integer literal ([lex.icon]) with value zero or a prvalue of type std​::​nullptr_t. A null pointer constant can be converted to a pointer type; the result is the null pointer value of that type ([basic.compound]) and is distinguishable from every other value of object pointer or function pointer type. Such a conversion is called a null pointer conversion. Two null pointer values of the same type shall compare equal. The conversion of a null pointer constant to a pointer to cv-qualified type is a single conversion, and not the sequence of a pointer conversion followed by a qualification conversion ([conv.qual]). A null pointer constant of integral type can be converted to a prvalue of type std​::​nullptr_t.
-[Note 1: The resulting prvalue is not a null pointer value. — end note]
-
-
-
-The address of the whole array, and the address of the first element, are defined to be the same, since arrays in C++ (and C) have no intrinsic padding besides that of the constituent objects
-
-
-As far as C++ is concerned, pointers are not integers; theyre just pointers. You can use casts to convert between pointer values and integer values, and the result should be meaningful in terms of the underlying machines memory model, but not much is guaranteed about the results. You can perform arithmetic on pointers, but on the language level thats not at all the same thing as integer arithmetic (though its probably implemented as scaled integer arithmetic on the machine level).
-
---------------------------------------------
-Every value of pointer type is one of the following:
-
-- a pointer to an object or function (in which case the pointer is said to point to the object or function), or
-- a pointer past the end of an object, or
-- the null pointer value for that type,
-- an invalid pointer value.
-
-conversions to void* and the other way around preserve pointer values
-
-------------------------------
-
-A pointer that points to an object represents the address of the first byte in memory occupied by the object. A pointer past the end of an object represents the address of the first byte in memory after the end of the storage occupied by the object. Even though two objects may have the same address, their value representations may be diffrent, which means that the scalar value representinting pointer value could have diffrent bits even though they point to the same address.
-
-
-Note that two pointers that represent the same address may nonetheless have different values.
-
-struct C
-{
-    int x, y;
-} c;
- 
-int* px = &c.x;   // value of px is "pointer to c.x"
-int* pxe= px + 1; // value of pxe is "pointer past the end of c.x"
-int* py = &c.y;   // value of py is "pointer to c.y"
- 
-assert(pxe == py); // == tests if two pointers represent the same address
-                   // may or may not fire
+      A pointer to void may be converted to or from a pointer to any object type. A pointer to any object type may be converted to a pointer to void and back again; the result shall compare equal to the original pointe
+      
+      A null pointer constant is an integer literal ([lex.icon]) with value zero or a prvalue of type std​::​nullptr_t. A null pointer constant can be converted to a pointer type; the result is the null pointer value of that type ([basic.compound]) and is distinguishable from every other value of object pointer or function pointer type. Such a conversion is called a null pointer conversion. Two null pointer values of the same type shall compare equal. The conversion of a null pointer constant to a pointer to cv-qualified type is a single conversion, and not the sequence of a pointer conversion followed by a qualification conversion ([conv.qual]). A null pointer constant of integral type can be converted to a prvalue of type std​::​nullptr_t.
+      [Note 1: The resulting prvalue is not a null pointer value. — end note]
 
 
 
-Another example is array. The first member of array may have diffrent pointer value compared to the pointer to array. Generally pointer-interconvertible define if pointer values are the same.
-
-int a[4] = {1, 2, 3, 4};
-void* p1 = &a;
-void* p2 = &a[0];
-
-assert((int*)p1 == (int*)p2 ) // MAY FAIL!
-
-    int i[100]{0};
-    int (*i2) [100] = &i;   /ok 
-    int * p2 = std::launder(reinterpret_cast<int*>(i2)); /ok
+      The address of the whole array, and the address of the first element, are defined to be the same, since arrays in C++ (and C) have no intrinsic padding besides that of the constituent objects
 
 
-An lvalue or rvalue of type “array of N T” or “array of unknown bound of T” can be converted to a prvalue of type “pointer to T”. The temporary materialization conversion ([conv.rval]) is applied. The result is a pointer to the first element of the array
+      As far as C++ is concerned, pointers are not integers; theyre just pointers. You can use casts to convert between pointer values and integer values, and the result should be meaningful in terms of the underlying machines memory model, but not much is guaranteed about the results. You can perform arithmetic on pointers, but on the language level thats not at all the same thing as integer arithmetic (though its probably implemented as scaled integer arithmetic on the machine level).
+
+      --------------------------------------------
+      Every *logical value* of pointer type is one of the following:
+
+      - a pointer to an object or function (in which case the pointer is said to point to the object or function), or(for all objects: many *logical values*, many *value representations* as well)
+      - a pointer past the end of an object, or
+      - the null pointer value for that type, (for all objects : one *logical value* , not sure about one representation as technically you cannot reintepret_cast between diffrent types of null pointer values)
+      - an invalid pointer value. (for all objects: one *logical value*, many value representations)
+
+
+      A value of a pointer type that is a pointer to or past the end of an object represents the address of the first byte in memory ([intro.memory]) occupied by the object35 or the first byte in memory (for arrays) after the end of the storage occupied by the object, respectively.  The value representations of pointers to objects and invalid pointers may overlap
+
+      conversions to void* and the other way around preserve pointer values
+
+
+      Usually, value representation determines the value of an object. Meaning, that if you change the value, it’s value representation changes as well. Pointers are an exception to that rule! You can change the value without changing its value representation. For example:
+      X* p = new X;
+      Y* y = reintrepret_cast<Y*>(p); // here value changed and p is now points to an object of Y, however it's value representation is totally unchanged - bits that make up pointer value
+
+
+      Most (but not all) usual
+      operations require that the dynamic type of the pointee actually
+      matches the type of the pointer.
+
+      (*E1).E2
+
+      If E2 is a non-static member and the result of E1 is an object whose type is not similar ([conv.qual]) to the type of E1, the behavior is undefined.
+      [Example 1:
+      struct A { int i; };
+      struct B { int j; };
+      struct D : A, B {};
+      void f() {
+        D d;
+        static_cast<B&>(d).j;             // OK, object expression designates the B subobject of d
+        reinterpret_cast<B&>(d).j;        // undefined behavior
+      }
+      — end example]
+
+      ------------------------------
+
+      A pointer that points to an object represents the address of the first byte in memory occupied by the object. A pointer past the end of an object represents the address of the first byte in memory after the end of the storage occupied by the object. Even though two objects may have the same address, their value representations may be diffrent, which means that the scalar value representinting pointer value could have diffrent bits even though they point to the same address.
+
+
+      Note that two pointers that represent the same address may nonetheless have different values.
+
+      struct C
+      {
+          int x, y;
+      } c;
+      
+      int* px = &c.x;   // value of px is "pointer to c.x"
+      int* pxe= px + 1; // value of pxe is "pointer past the end of c.x"
+      int* py = &c.y;   // value of py is "pointer to c.y"
+      
+      assert(pxe == py); // == tests if two pointers represent the same address
+                        // may or may not fire
 
 
 
-An object of array type contains a contiguously allocated non-empty set of N subobjects of type T
+      Another example is array. The first member of array may have diffrent pointer value compared to the pointer to array. Generally pointer-interconvertible define if pointer values are the same.
 
-Pointers of every type have a special value known as null pointer value of that type. A pointer whose value is null does not point to an object or a function (the behavior of dereferencing a null pointer is undefined), and compares equal to all pointers of the same type whose value is also null
+      int a[4] = {1, 2, 3, 4};
+      void* p1 = &a;
+      void* p2 = &a[0];
 
-Pointer to object of any type can be implicitly converted to pointer to void (optionally cv-qualified); the pointer value is unchanged. The reverse conversion, which requires static_cast or explicit cast, yields the original pointer value
+      assert((int*)p1 == (int*)p2 ) // MAY FAIL!
 
-there are no pointers to references and there are no pointers to bit-fields
-standard does not require that pointers are directly related to memory addresses
+          int i[100]{0};
+          int (*i2) [100] = &i;   /ok 
+          int * p2 = std::launder(reinterpret_cast<int*>(i2)); /ok
 
-You access it as float and after that as double for example. But that is not allowed. That is a strict aliasing violation. You may only access the objects through a typed pointer if an object of that type is currently alive at this address. And to make sure that things are alive, you need to construct them (even if the constructor is no-op)
 
+      An lvalue or rvalue of type “array of N T” or “array of unknown bound of T” can be converted to a prvalue of type “pointer to T”. The temporary materialization conversion ([conv.rval]) is applied. The result is a pointer to the first element of the array
+
+
+
+      An object of array type contains a contiguously allocated non-empty set of N subobjects of type T
+
+      Pointers of every type have a special value known as null pointer value of that type. A pointer whose value is null does not point to an object or a function (the behavior of dereferencing a null pointer is undefined), and compares equal to all pointers of the same type whose value is also null
+
+      Pointer to object of any type can be implicitly converted to pointer to void (optionally cv-qualified); the pointer value is unchanged. The reverse conversion, which requires static_cast or explicit cast, yields the original pointer value
+
+      there are no pointers to references and there are no pointers to bit-fields
+      standard does not require that pointers are directly related to memory addresses
+
+      You access it as float and after that as double for example. But that is not allowed. That is a strict aliasing violation. You may only access the objects through a typed pointer if an object of that type is currently alive at this address. And to make sure that things are alive, you need to construct them (even if the constructor is no-op)
+
+
+      A null pointer constant is an integer literal ([lex.icon]) with value zero or a prvalue of type std​::​nullptr_t. A null pointer constant can be converted to a pointer type; the result is the null pointer value of that type ([basic.compound]) and is distinguishable from every other value of object pointer or function pointer type. Such a conversion is called a null pointer conversion. Two null pointer values of the same type shall compare equal. The conversion of a null pointer constant to a pointer to cv-qualified type is a single conversion, and not the sequence of a pointer conversion followed by a qualification conversion ([conv.qual]). A null pointer constant of integral type can be converted to a prvalue of type std​::​nullptr_t.
+      [Note 1: The resulting prvalue is not a null pointer value. — end note]
+      2
+      #
+      <----- IMPORTANT, this how static_cast works from T* to void* which basiscally does not change the pointer value ---->>>>>
+      A prvalue of type “pointer to cv T”, where T is an object type, can be converted to a prvalue of type “pointer to cv void”. The pointer value ([basic.compound]) is unchanged by this conversion.
+      3
+      #
+      A prvalue of type “pointer to cv D”, where D is a complete class type, can be converted to a prvalue of type “pointer to cv B”, where B is a base class ([class.derived]) of D. If B is an inaccessible ([class.access]) or ambiguous ([class.member.lookup]) base class of D, a program that necessitates this conversion is ill-formed. The result of the conversion is a pointer to the base class subobject of the derived class object. The null pointer value is converted to the null pointer value of the destination type.
+
+
+
+--------------------- 
 
 Aliasing is all about lifetimes. If i place an int into the storage, i may access it through an int pointer. If i place a float afterwards, i may access the storage trough a float pointer. As soon as i place the float, i may no longer use the int pointer to access the int (because there is no int alive)
-
-A null pointer constant is an integer literal ([lex.icon]) with value zero or a prvalue of type std​::​nullptr_t. A null pointer constant can be converted to a pointer type; the result is the null pointer value of that type ([basic.compound]) and is distinguishable from every other value of object pointer or function pointer type. Such a conversion is called a null pointer conversion. Two null pointer values of the same type shall compare equal. The conversion of a null pointer constant to a pointer to cv-qualified type is a single conversion, and not the sequence of a pointer conversion followed by a qualification conversion ([conv.qual]). A null pointer constant of integral type can be converted to a prvalue of type std​::​nullptr_t
 
 (new in c++11)
 {
@@ -170,6 +213,7 @@ Which basically implies that the idea is to make the syntax (T*)malloc(...) and 
 Although correct format should be -> launder(reinterpret_­cast<T(*)[n]>(new (p) byte[n * sizeof(T)])) - coorect way to get array out of allocation! 
 becuase launder requires the object to start its lifetime
 
+The only case that left, where we still need to use std::launder tool is when we know there is a pointer of one type, and you know that under its address there, in fact, lives object of a different type
 
 
 
@@ -190,6 +234,61 @@ int x2[2][10];
 auto p2 = std::launder(reinterpret_cast<int(*)[10]>(&x2[0][0]));
 // Undefined behavior: x2[1] would be reachable through the resulting pointer to x2[0]
 // but is not reachable from the source
+
+
+struct A { int x; int y};
+int* p = &(arr[1]);
+new (&arr) A;
+*p = 0; //UB now in C++20 because while y and p are not transparently replacable, that is not the case for arr and A as both p and y are technically subobjects and in that case complete objects must be transparently replaceble as well!
+
+
+std::memcpy does do something special, in that it implicitly creates objects
+in its destination region ([cstring.syn] p3). Since 'buffer' is a char array
+instead of an unsigned char array, it cannot provide storage for any created
+objects, and starting the lifetime of an int object would end the lifetime
+of the char array object. However, this does not prevent laundering its
+pointer as an int pointer (as below), since a declared object with automatic
+storage duration only has to live to the end of its block if its type has a
+non-trivial destructor ([basic.life] p9).
+
+As language.lawyer points out, the snippet as written results in UB,
+regardless of whether 'buffer' is a char or unsigned char array. The
+lifetime of an int object can be started at the first address, but 'buffer'
+(after an array-to-pointer conversion) still points to the first char
+object in the array, rather than the int object. Since char is not similar
+to int, 'j' still points to the first char object after the reinterpret_cast
+([expr.static.cast] p14), and reading an int from it is UB
+([basic.lval] p11).
+
+To access the created int object, we would have to use std::launder:
+
+int i = 42;
+unsigned char buffer[sizeof(int)];
+std::memcpy(buffer, &i, sizeof(int));
+int* j = std::launder(reinterpret_cast<int*>(buffer));
+*j;
+
+
+
+The std::memcpy itself is perfectly well-defined (all it does is copy the
+source to the destination as an unsigned char array); it simply fails to
+implicitly create an std::string at the field's address, or an 's' that can
+be laundered
+
+struct s{
+ int a;
+ std::string str;
+ };
+>
+// is an aggregate according to [dcl.init.aggr] and thus eligible for
+// implicit lifetime
+
+ const s v = s{1, "a very long string to avoid SSO"};
+ unsigned char buffer[sizeof(s)];
+ std::memcpy(buffer, &v, sizeof(s)); //OK
+ s* v2 = std::launder(reinterpret_cast<s*>(buffer)); //UB, s cannot be laundered 
+ v2->str[0] = 'a'; //UB, v2 is invalid pointer!
+
 
 -------
 Object model
@@ -262,6 +361,8 @@ If a standard-layout class object has any non-static data members, its address i
 [Note 11: There can therefore be unnamed padding within a standard-layout struct object inserted by an implementation, but not at its beginning, as necessary to achieve appropriate alignment. — end note]
 
 Two standard-layout struct ([class.prop]) types are layout-compatible classes if their common initial sequence comprises all members and bit-fields of both classes ([basic.types]).
+
+Pointers to layout-compatible types shall have the same value representation and alignment requirements ([basic.align]).
 
 ---
 type
@@ -613,3 +714,18 @@ Specifies that a type is a literal type. Literal types are the types of constexp
 copying
 ---
 memset  will set padding bits to 0
+
+
+
+-----
+similar types
+----------
+Two types are similar if:
+    - they are the same type;
+or -they are both pointers, and the pointed - to types are similar;
+or -they are both pointers to member of the same class,
+    and the types of the pointed - to members are similar;
+or -they are both arrays of the same size or
+    at least one of them is array of unknown bound,
+    and the array element types are similar.
+

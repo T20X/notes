@@ -99,6 +99,7 @@ If a program attempts to access the stored value of an object through a glvalue 
 - the dynamic type of the object,
 - a type that is the signed or unsigned type corresponding to the dynamic type of the object, or
 - a char, unsigned char, or std​::​byte type.
+(Only glvalues of scalar type can be used to access objects)
 
 The lifetime of an object begins when:
 
