@@ -1,3 +1,8 @@
+Current issues 
+
+ https://cplusplus.github.io/CWG/issues/1997.html 
+At present placement new is not clear on wheather the storage's bits been carried over!
+
 ---------------
 Memory model
 --------------
@@ -68,15 +73,22 @@ assert(pxe == py); // == tests if two pointers represent the same address
                    // may or may not fire
 
 
-An lvalue or rvalue of type “array of N T” or “array of unknown bound of T” can be converted to an rvalue of type “pointer to T.”
 
 Another example is array. The first member of array may have diffrent pointer value compared to the pointer to array. Generally pointer-interconvertible define if pointer values are the same.
 
 int a[4] = {1, 2, 3, 4};
-void* p1 = a;
+void* p1 = &a;
 void* p2 = &a[0];
 
 assert((int*)p1 == (int*)p2 ) // MAY FAIL!
+
+    int i[100]{0};
+    int (*i2) [100] = &i;   /ok 
+    int * p2 = std::launder(reinterpret_cast<int*>(i2)); /ok
+
+
+An lvalue or rvalue of type “array of N T” or “array of unknown bound of T” can be converted to a prvalue of type “pointer to T”. The temporary materialization conversion ([conv.rval]) is applied. The result is a pointer to the first element of the array
+
 
 
 An object of array type contains a contiguously allocated non-empty set of N subobjects of type T
@@ -88,8 +100,10 @@ Pointer to object of any type can be implicitly converted to pointer to void (op
 there are no pointers to references and there are no pointers to bit-fields
 standard does not require that pointers are directly related to memory addresses
 
+You access it as float and after that as double for example. But that is not allowed. That is a strict aliasing violation. You may only access the objects through a typed pointer if an object of that type is currently alive at this address. And to make sure that things are alive, you need to construct them (even if the constructor is no-op)
 
 
+Aliasing is all about lifetimes. If i place an int into the storage, i may access it through an int pointer. If i place a float afterwards, i may access the storage trough a float pointer. As soon as i place the float, i may no longer use the int pointer to access the int (because there is no int alive)
 
 A null pointer constant is an integer literal ([lex.icon]) with value zero or a prvalue of type std​::​nullptr_t. A null pointer constant can be converted to a pointer type; the result is the null pointer value of that type ([basic.compound]) and is distinguishable from every other value of object pointer or function pointer type. Such a conversion is called a null pointer conversion. Two null pointer values of the same type shall compare equal. The conversion of a null pointer constant to a pointer to cv-qualified type is a single conversion, and not the sequence of a pointer conversion followed by a qualification conversion ([conv.qual]). A null pointer constant of integral type can be converted to a prvalue of type std​::​nullptr_t
 
@@ -104,6 +118,78 @@ A null pointer constant is an integer literal ([lex.icon]) with value zero or a 
   #
   [Note 3: Thus a bit-field and an adjacent non-bit-field are in separate memory locations, and therefore can be concurrently updated by two threads of execution without interference. The same applies to two bit-fields, if one is declared inside a nested struct declaration and the other is not, or if the two are separated by a zero-length bit-field declaration, or if they are separated by a non-bit-field declaration. It is not safe to concurrently update two bit-fields in the same struct if all fields between them are also bit-fields of nonzero width. — end note]
 }
+
+this is now invalid in C++20 as calling destructors on non-class types ends their lifetimes!
+constexpr int f() {
+  int a = 123;
+  using T = int;
+  a.~T();
+  return a;  // undefined behavior; previously returned 123
+}
+static_assert(f() == 123);  // ill-formed; previously valid
+
+
+
+union U {
+  int n;
+  float f;
+};
+float pun(int n) {
+  U u = {.n = n};
+  U u2 = u;    // #1
+  return u2.f; // #2 ill formred as active member is n
+}
+
+
+float do_bad_things(int n) {
+  alignof(int) alignof(float)
+    char buffer[max(sizeof(int), sizeof(float))];
+  *(int*)buffer = n;      // #1
+  new (buffer) std::byte[sizeof(buffer)];
+  return (*float*)buffer; // #2 //undefined behaviour because the lifetime of int ended and float contains intermediate value!
+}
+
+
+When reusing storage denoted by some pointer value p, launder(reinterpret_cast<T*>(new (p) byte[n * sizeof(T)])) can be used to implicitly create a suitable array object and obtain a pointer to it. It is not fully clear if the pointer to array or its first element is returned as the standard clearly does not specify this to choose it based on what would make the program behaviour defined.
+
+
+When storage for an object with automatic or dynamic storage duration is obtained, the object has an indeterminate value, and if no initialization is performed for the object, that object retains an indeterminate value until that value is replaced ([expr.ass]).
+[Note 1: Objects with static or thread storage duration are zero-initialized, see [basic.start.static]. — end note]
+
+
+std::launder has no effect on its argument. Its return value must be used to access the object. Thus, it's always an error to discard the return value.
+Typical uses of std::launder include:
+ - Obtaining a pointer to an object created in the storage of an existing object of the same type, where pointers to the old object cannot be reused (for instance, because either object is a base class subobject);
+- Obtaining a pointer to an object created by placement new from a pointer to an object providing storage for that object.
+
+
+the point is that  you have to pass to std::launder a pointer that represent the address of a real object that is within its lifetime!
+
+launder(reinterpret_­cast<T*>(new (p) byte[n * sizeof(T)])) 
+Which basically implies that the idea is to make the syntax (T*)malloc(...) and (T*)(::operator new(... ) ) (and similar cases) valid for subsequent pointer arithmeti
+Although correct format should be -> launder(reinterpret_­cast<T(*)[n]>(new (p) byte[n * sizeof(T)])) - coorect way to get array out of allocation! 
+becuase launder requires the object to start its lifetime
+
+
+
+
+    // Case 2: access to a new object whose storage is provided
+    // by a byte array through a pointer to the array.
+    struct Y { int z; };
+    alignas(Y) std::byte s[sizeof(Y)];
+    Y* q = new(&s) Y{2};
+    const int f = reinterpret_cast<Y*>(&s)->z; // Class member access is undefined
+                                               // behavior: reinterpret_cast<Y*>(&s)
+                                               // has value "pointer to s" and does
+                                               // not point to a Y object (needs launder)
+
+int x[10];
+auto p = std::launder(reinterpret_cast<int(*)[10]>(&x[0])); // OK
+ 
+int x2[2][10];
+auto p2 = std::launder(reinterpret_cast<int(*)[10]>(&x2[0][0]));
+// Undefined behavior: x2[1] would be reachable through the resulting pointer to x2[0]
+// but is not reachable from the source
 
 -------
 Object model
@@ -126,8 +212,9 @@ No. [basic.life]/8 is trying to explain how you can use pointers/references/vari
 auto t = new T;
 t->~T(); //Lifetime has ended.
 new (t) T; //object is created before reuse
-new (t) T; //object lifetime's ends by reuse, however sequence is lifetime end -> objected created -> storage reused by creating object, but lifetime has to end before object is created
+new (t) T; //object lifetime's ends by reuse, however sequence is lifetime end -> objected created -> storage reused by creating object, but lifetime has to end before object is created -> this needs clarification!
 
+new (this) C(other); - > new object C is created, than new object reuses storage for the old object---> not clear when lifetin's of the old object ends
 
 Objects can contain other objects, called subobjects. A subobject can be a member subobject ([class.mem]), a base class subobject ([class.derived]), or an array element. An object that is not a subobject of any other object is called a complete object. If an object is created in storage associated with a member subobject or array element e (which may or may not be within its lifetime), the created object is a subobject of e containing object if:
 (2.1) the lifetime of e containing object has begun and not ended, and
@@ -174,6 +261,8 @@ const bool b = &test1 != &test2;
 If a standard-layout class object has any non-static data members, its address is the same as the address of its first non-static data member if that member is not a bit-field. Its address is also the same as the address of each of its base class subobjects.
 [Note 11: There can therefore be unnamed padding within a standard-layout struct object inserted by an implementation, but not at its beginning, as necessary to achieve appropriate alignment. — end note]
 
+Two standard-layout struct ([class.prop]) types are layout-compatible classes if their common initial sequence comprises all members and bit-fields of both classes ([basic.types]).
+
 ---
 type
 ---
@@ -204,8 +293,6 @@ except that if the object is a union member or subobject thereof, its lifetime o
 - if T is a class type with a non-trivial destructor ([class.dtor]), the destructor call starts,
 - if T is a class type, the destructor call starts, or
 - the storage which the object occupies is released, or is reused by an object that is not nested within o ([intro.object]).
-
-
 Right now, even if you called n.~int();, that would not actually end ns lifetime
 
 
@@ -258,6 +345,17 @@ void no_opt(C* cptr) {
        << '\n';
 }
 in this example inside no_opt using object cobj by its name and not by its pointer reads unspecified values.
+
+- Arithmetic types ([basic.fundamental]), enumeration types, pointer types, pointer-to-member types ([basic.compound]), std​::​nullptr_t, and cv-qualified versions of these types are collectively called scalar types. 
+- Scalar types, trivially copyable class types ([class.prop]), arrays of such types, and cv-qualified versions of these types are collectively called trivially copyable types. 
+- Scalar types, trivial class types ([class.prop]), arrays of such types and cv-qualified versions of these types are collectively called trivial types.
+- Scalar types, standard-layout class types ([class.prop]), arrays of such types and cv-qualified versions of these types are collectively called standard-layout types. S
+- Scalar types, implicit-lifetime class types ([class.prop]), array types, and cv-qualified versions of these types are collectively called implicit-lifetime types.
+
+A class S is an implicit-lifetime class if
+(9.1) it is an aggregate whose destructor is not user-provided or
+(9.2) it has at least one trivial eligible constructor and a trivial, non-deleted destructor.
+
 
 
 (8) Before the lifetime of an object has started but after the storage which the object will occupy has been allocated23 or, after the lifetime of an object has ended and before the storage which the object occupied is reused or released !!!! Otherwise |||||||||| , any pointer that represents the address of the storage location where the object will be or was located may be used but only in limited ways. ------------------------> SUPER IMPORTANT(this means that during construciton and destruction the lifetime by standart has not started yet and not finished correspondinly ) For an object under construction or destruction, see [class.cdtor] <-----------------. ||||||||||||||| Otherwise, such a pointer refers to allocated storage ([basic.stc.dynamic.allocation]), and using the pointer as if the pointer were of type void* is well-defined. Indirection through such a pointer is permitted but the resulting lvalue may only be used in limited ways, as described below. The program has undefined behavior if:

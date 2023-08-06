@@ -1,11 +1,8 @@
 1. operator delete
 Weather implementations are using std::free is not specified
    it is unspecified wheather operator delete(void* ptr) or operator delete(void* ptr, size_t sz) is called, BUT ANY OF THEM MAY BE CALLED!
-      from standart "
-      f a function without a size parameter is defined, the program should also define the corresponding function with a size parameter. If a function with a size parameter is defined, the program shall also define the corresponding version without the size parameter
-      "
-      also 
-      "A call to an operator delete with a size parameter may be changed to a call to the corresponding operator delete without a size parameter, without affecting memory allocation"
+      from standart " f a function without a size parameter is defined, the program should also define the corresponding function with a size parameter. If a function with a size parameter is defined, the program shall also define the corresponding version without the size parameter
+      " also "A call to an operator delete with a size parameter may be changed to a call to the corresponding operator delete without a size parameter, without affecting memory allocation"
 
 
 
@@ -54,3 +51,43 @@ gcc using in vector _gnu_cxx::_allocator_traits which is based on
     and transitive relationship.Does not throw exceptions.
 
     Although note that still most implemenation also look for is_always_equal member of the allocator in order to determine if the allocator can be reused !Though standart deprecates is_always_equal from C++ 23 in favour of operator==
+
+8.
+An implementation is allowed to omit a call to a replaceable global allocation function ([new.delete.single], [new.delete.array]). When it does so, the storage is instead provided by the implementation or provided by extending the allocation of another new-expression.
+
+
+
+9.
+
+operator new []
+This overhead may be applied in all array new-expressions, including those referencing the library function operator new[](std​::​size_­t, void*) and other placement allocation functions. The amount of overhead may vary from one invocation of new to another.
+
+
+inline
+void*
+operator new[](std::size_t n, void* p, std::size_t limit)
+{
+    if (n <= limit)
+        std::cout << "life is good\n";
+    else
+        throw std::bad_alloc();
+    return p;
+}
+
+int main()
+{
+    alignas(std::string) char buffer[100];
+    std::string* p = new(buffer, sizeof(buffer)) std::string[3];
+}
+
+
+10. The invocation of the allocation function is sequenced before the evaluations of expressions in the new-initializer. Initialization of the allocated object is sequenced before the value computation of the new-expression.
+
+
+11. 
+
+using `std::allocator<T>::allocate` works by fiat; the
+function is defined to return a pointer, not to the array, but to the
+first element of the array
+
+After calling allocate() and before construction of elements, pointer arithmetic of T* is well-defined within the allocated array, but the behavior is undefined if elements are accessed.
