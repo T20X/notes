@@ -18,6 +18,12 @@ its value representation is the set of bits that hold the value of its type T, a
 its padding bits are the bits in the object representation that are not part of the value representation.
 
 
+------------------
+dynamic type
+-----------
+〈glvalue〉 type of the most derived object to which the glvalue refers
+[Example 1 : If a pointer (9.3.4.2) p whose static type is “pointer to class B” is pointing to an object of class D, derived
+from B (11.7), the dynamic type of the expression *p is “D”. References (9.3.4.3) are treated similarly. —end example]
 
 --------------------------
 An expression is a sequence of operators and operands that specifies a computation. An expression can result in a value and can cause side effects
