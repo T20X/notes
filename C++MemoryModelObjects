@@ -263,10 +263,11 @@ to int, 'j' still points to the first char object after the reinterpret_cast
 To access the created int object, we would have to use std::launder:
 
 int i = 42;
-unsigned char buffer[sizeof(int)];
-std::memcpy(buffer, &i, sizeof(int));
-int* j = std::launder(reinterpret_cast<int*>(buffer));
-*j;
+alignas(int) unsigned char buffer[sizeof(int)];
+void* newJ = std::memcpy(buffer, &i, sizeof(int)); //remeber that mempcy would create an implicty object so that newJ would point to it!
+int* j = std::launder(reinterpret_cast<int*>(buffer)); #1 ok
+int * j  = reintepret_cast<int*>(newJ); //#2 ok
+reintepret_cast<int*>(buffer) = 30; //#3 UB as buffer points to char[];
 
 
 
@@ -274,6 +275,20 @@ The std::memcpy itself is perfectly well-defined (all it does is copy the
 source to the destination as an unsigned char array); it simply fails to
 implicitly create an std::string at the field's address, or an 's' that can
 be laundered
+
+partial reuse of the object kills the host object, but not all of its subojects! only those re-used!
+struct A { int y; float x; };
+void f() {
+  A a;
+  int &r = a.y;
+  static_assert(sizeof(int) == sizeof(float));
+  new (&a.x) float; // by [basic.life], this ends the lifetime of a.x and the lifetime of a, but not the lifetime of a.y, because it reuses the storage of a and of a.x to create an object that is nested within neither of them
+  r = 1; // still ok? should be
+  a.y = 4; //UB, because gvalue is used  for object which lifetime ended, but storage was not yet re-used!
+}
+
+
+   -------------------------------------
 
 struct s{
  int a;
@@ -289,6 +304,50 @@ struct s{
  s* v2 = std::launder(reinterpret_cast<s*>(buffer)); //UB, s cannot be laundered 
  v2->str[0] = 'a'; //UB, v2 is invalid pointer!
 
+
+    ----------------------------------------------------
+  int main()
+  {
+      alignas(std::complex<float>) unsigned char network_data[sizeof(std::complex<float>)]{
+          0xcd, 0xcc, 0xcc, 0x3d, 0xcd, 0xcc, 0x4c, 0x3e
+      };
+  
+  //  auto d = *reinterpret_cast<std::complex<float>*>(network_data);
+  //  std::cout << d << '\n'; // UB: network_data does not point to a complex<float>
+  
+  //  auto d = std::launder(*reinterpret_cast<std::complex<float>*>(network_data));
+  //  std::cout << d << '\n'; // Possible UB, related to CWG1997:
+  //      the implicitly created complex<float> may hold indeterminate value
+  
+      auto d = *std::start_lifetime_as<std::complex<float>>(network_data);
+      std::cout << d << '\n'; // OK
+  }
+
+
+std::launder` does not work if there isn't a `T` there. So I don't
+know what you mean by "a pointer to storage" (though C++20's implicit
+object creation can make `launder` work for that case, but it would do
+so for a `reinterpret_cast` too).
+
+
+  #include <cstdlib>
+struct X { int a, b; };
+X *make_x() {
+  // The call to std::malloc implicitly creates an object of type X
+  // and its subobjects a and b, and returns a pointer to that X object
+  // (or an object that is pointer-interconvertible ([basic.compound]) with it),
+  // in order to give the subsequent class member access operations
+  // defined behavior.
+  X *p = (X*)std::malloc(sizeof(struct X) * 2); // me: added the *2
+  p->a = 1;
+  p->b = 2;
+  return p;
+}
+Previously, there was only one set of valid objects that could be created implicitly in that storage - it had to be exactly one X. But now, we have storage for two Xs, but only write to one of them, and nothing in this program ever touches the rest of the bytes. So there are many different sets of objects that could be implicitly created - maybe two Xs, maybe an X and two ints, maybe an X and eight chars, ...
+
+It's not observable which set is created, because if there were any actual observations, that would reduce the possibilities to only those sets which were valid. If we did something like p[1]->a = 3 then the universe of possibilities collapses down to just the one with two Xs.
+
+In other words, multiple sets of implicitly-created-objects are possibly only when there aren't enough observations in the program to distinguish their validity. If there were a way to distinguish, then by definition, they wouldn't all be valid
 
 -------
 Object model
