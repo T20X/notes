@@ -1,7 +1,7 @@
 Current issues 
 
  https://cplusplus.github.io/CWG/issues/1997.html 
-At present placement new is not clear on wheather the storage's bits been carried over!
+At present placement new is not clear on wheather the storages bits been carried over!
 
 ---------------
 Memory model
@@ -16,11 +16,19 @@ There are few terms describing memory model:
 - integer represetning pointer value - typically type uintptr_t
 - memory location
 
+
 A memory location is either an object of scalar type that is not a bit-field or a maximal sequence of adjacent bit-fields all having nonzero width. It is NOT address as it is more logical concept! Just been a locatoin that complier will allow concurrent access to!
 
       --- 
       pointer
       ----
+
+    The type of a pointer to cv void or a pointer to an object type is called an object pointer type.
+
+    [Note 1: A pointer to void does not have a pointer-to-object type, however, because void is not an object type. — end note]
+    The type of a pointer that can designate a function is called a function pointer type. A pointer to an object of type T is referred to as a *pointer to T*.
+    [Example 1: A pointer to an object of type int is referred to as *pointer to int* and a pointer to an object of class X is called a *pointer to X*. — end example]
+
 
       In general, pointer is a type of a variable that stores a link to another object. In C and C++, the link is the address of that object in the program memory. Pointers allow to refer to the same object from multiple locations of the source code without copying the object. Also, the same pointer variable may refer to different objects during its lifetime.
 
@@ -143,12 +151,12 @@ A memory location is either an object of scalar type that is not a bit-field or 
       3
       #
       A prvalue of type “pointer to cv D”, where D is a complete class type, can be converted to a prvalue of type “pointer to cv B”, where B is a base class ([class.derived]) of D. If B is an inaccessible ([class.access]) or ambiguous ([class.member.lookup]) base class of D, a program that necessitates this conversion is ill-formed. The result of the conversion is a pointer to the base class subobject of the derived class object. The null pointer value is converted to the null pointer value of the destination type.
-
+at, i may no longer use the int pointer to access the int (because there is no int ali
 
 
 --------------------- 
 
-Aliasing is all about lifetimes. If i place an int into the storage, i may access it through an int pointer. If i place a float afterwards, i may access the storage trough a float pointer. As soon as i place the float, i may no longer use the int pointer to access the int (because there is no int alive)
+Aliasing is all about lifetimes. If i place an int into the storage, i may access it through an int pointer. If i place a float afterwards, i may access the storage trough a float pointer. As soon as i place the flove)
 
 (new in c++11)
 {
@@ -345,9 +353,9 @@ X *make_x() {
 }
 Previously, there was only one set of valid objects that could be created implicitly in that storage - it had to be exactly one X. But now, we have storage for two Xs, but only write to one of them, and nothing in this program ever touches the rest of the bytes. So there are many different sets of objects that could be implicitly created - maybe two Xs, maybe an X and two ints, maybe an X and eight chars, ...
 
-It's not observable which set is created, because if there were any actual observations, that would reduce the possibilities to only those sets which were valid. If we did something like p[1]->a = 3 then the universe of possibilities collapses down to just the one with two Xs.
+Its not observable which set is created, because if there were any actual observations, that would reduce the possibilities to only those sets which were valid. If we did something like p[1]->a = 3 then the universe of possibilities collapses down to just the one with two Xs.
 
-In other words, multiple sets of implicitly-created-objects are possibly only when there aren't enough observations in the program to distinguish their validity. If there were a way to distinguish, then by definition, they wouldn't all be valid
+In other words, multiple sets of implicitly-created-objects are possibly only when there arent enough observations in the program to distinguish their validity. If there were a way to distinguish, then by definition, they wouldnt all be valid
 
 -------
 Object model
@@ -372,7 +380,7 @@ t->~T(); //Lifetime has ended.
 new (t) T; //object is created before reuse
 new (t) T; //object lifetime's ends by reuse, however sequence is lifetime end -> objected created -> storage reused by creating object, but lifetime has to end before object is created -> this needs clarification!
 
-new (this) C(other); - > new object C is created, than new object reuses storage for the old object---> not clear when lifetin's of the old object ends
+new (this) C(other); - > new object C is created, than new object reuses storage for the old object---> not clear when lifetins of the old object ends
 
 Objects can contain other objects, called subobjects. A subobject can be a member subobject ([class.mem]), a base class subobject ([class.derived]), or an array element. An object that is not a subobject of any other object is called a complete object. If an object is created in storage associated with a member subobject or array element e (which may or may not be within its lifetime), the created object is a subobject of e containing object if:
 (2.1) the lifetime of e containing object has begun and not ended, and
@@ -422,6 +430,14 @@ If a standard-layout class object has any non-static data members, its address i
 Two standard-layout struct ([class.prop]) types are layout-compatible classes if their common initial sequence comprises all members and bit-fields of both classes ([basic.types]).
 
 Pointers to layout-compatible types shall have the same value representation and alignment requirements ([basic.align]).
+
+
+------
+memcpy
+-----
+If the objects overlap, the behavior is undefined.
+If either dest or src is an invalid (say T* actually refers to D* and they are not pointer-interconvertible) or null pointer, the behavior is undefined, even if count is zero.
+If the objects are potentially-overlapping or not TriviallyCopyable, the behavior of memcpy is not specified and may be undefined.
 
 ---
 type
@@ -788,3 +804,16 @@ or -they are both arrays of the same size or
     at least one of them is array of unknown bound,
     and the array element types are similar.
 
+------
+const 
+---
+A const object is an object of type const T or a non-mutable *subobject* of a const object.
+Except for array types, a compound type ([basic.compound]) is not cv-qualified by the cv-qualifiers (if any) of the types from which it is compounded.
+
+static _Tp* _S_access(const _Storage& __storage)
+{ 
+   // The contained object is in __storage._M_buffer
+  const void* __addr = &__storage._M_buffer; //address is taken from _storage and that is const hence _addr is const too!
+  return static_cast<_Tp*>(const_cast<void*>(__addr));
+
+}

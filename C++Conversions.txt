@@ -191,3 +191,5 @@ X *make_x() {
 A class S is an implicit-lifetime class if
 - it is an aggregate whose destructor is not user-provided or
 - it has at least one trivial eligible constructor and a trivial, non-deleted destructor.
+
+
