@@ -23,14 +23,41 @@ A memory location is either an object of scalar type that is not a bit-field or 
       pointer
       ----
 
+      [(1)A value of a pointer type that is a pointer *to*] or [(2)past the end of an object represents] [(1) the address of the first byte in memory ([intro.memory]) occupied by the object35 ] or [(2) the first byte in memory (for arrays) after the end of the storage occupied by the object, respectively].  The value representations of pointers to objects and invalid pointers may overlap
+
+      Every *logical value* of pointer type is one of the following:
+
+      - a pointer to an object or function (in which case the pointer is said to point to the object or function), or(for all objects: many *logical values*, many *value representations* as well)
+      - a pointer past the end of an object, or
+      - the null pointer value for that type, (for all objects : one *logical value* , not sure about one representation as technically you cannot reintepret_cast between diffrent types of null pointer values)
+      - an invalid pointer value. (for all objects: one *logical value*, many value representations)
+
+
+
+      ***** (AND ONLY AND ONLY ) For purposes of pointer arithmetic (7.6.6) and comparison (7.6.9, 7.6.10) **********, a pointer past the end of the
+      last element of an array x of n elements is considered to be equivalent to a pointer to a hypothetical array
+      element n of x and an object of type T that is not an array element is considered to belong to an array
+      with one element of type T. The value representation of pointer types is implementation-defined. Pointers to
+      layout-compatible types shall have the same value representation and alignment requirements (6.7.6).
+      [Note 3 : Pointers to over-aligned types (6.7.6) have no special representation, but their range of valid values is
+      restricted by the extended alignment requirement. —end note]
+      //This is valid code!
+      Derived d;    
+      Derived* d4 = &(&d)[0];
+
+      conversions to void* and the other way around preserve pointer values
+
+
     The type of a pointer to cv void or a pointer to an object type is called an object pointer type.
 
     [Note 1: A pointer to void does not have a pointer-to-object type, however, because void is not an object type. — end note]
     The type of a pointer that can designate a function is called a function pointer type. A pointer to an object of type T is referred to as a *pointer to T*.
     [Example 1: A pointer to an object of type int is referred to as *pointer to int* and a pointer to an object of class X is called a *pointer to X*. — end example]
 
-
       In general, pointer is a type of a variable that stores a link to another object. In C and C++, the link is the address of that object in the program memory. Pointers allow to refer to the same object from multiple locations of the source code without copying the object. Also, the same pointer variable may refer to different objects during its lifetime.
+
+
+      The inability to compare two addresses of two discrete objects is down to only one thing: The anachronistic and now utterly irrelevant segmented memory architecture of the 8086. std::less shall offer total order though, but not < operator.
 
 
       A prvalue of type “pointer to cv T”, where T is an object type, can be converted to a prvalue of type “pointer to cv void”. The pointer value ([basic.compound]) is unchanged by this conversio
@@ -56,22 +83,10 @@ A memory location is either an object of scalar type that is not a bit-field or 
       As far as C++ is concerned, pointers are not integers; theyre just pointers. You can use casts to convert between pointer values and integer values, and the result should be meaningful in terms of the underlying machines memory model, but not much is guaranteed about the results. You can perform arithmetic on pointers, but on the language level thats not at all the same thing as integer arithmetic (though its probably implemented as scaled integer arithmetic on the machine level).
 
       --------------------------------------------
-      Every *logical value* of pointer type is one of the following:
-
-      - a pointer to an object or function (in which case the pointer is said to point to the object or function), or(for all objects: many *logical values*, many *value representations* as well)
-      - a pointer past the end of an object, or
-      - the null pointer value for that type, (for all objects : one *logical value* , not sure about one representation as technically you cannot reintepret_cast between diffrent types of null pointer values)
-      - an invalid pointer value. (for all objects: one *logical value*, many value representations)
-
-
-      A value of a pointer type that is a pointer to or past the end of an object represents the address of the first byte in memory ([intro.memory]) occupied by the object35 or the first byte in memory (for arrays) after the end of the storage occupied by the object, respectively.  The value representations of pointers to objects and invalid pointers may overlap
-
-      conversions to void* and the other way around preserve pointer values
-
 
       Usually, value representation determines the value of an object. Meaning, that if you change the value, it’s value representation changes as well. Pointers are an exception to that rule! You can change the value without changing its value representation. For example:
       X* p = new X;
-      Y* y = reintrepret_cast<Y*>(p); // here value changed and p is now points to an object of Y, however it's value representation is totally unchanged - bits that make up pointer value
+      Y* y = reintrepret_cast<Y*>(p); // here value changed and p is now points to an object of Y, however it's value representation is totally unchanged - bits that make up pointer value; y is invalid pointer;
 
 
       Most (but not all) usual
@@ -201,88 +216,148 @@ float do_bad_things(int n) {
 }
 
 
-When reusing storage denoted by some pointer value p, launder(reinterpret_cast<T*>(new (p) byte[n * sizeof(T)])) can be used to implicitly create a suitable array object and obtain a pointer to it. It is not fully clear if the pointer to array or its first element is returned as the standard clearly does not specify this to choose it based on what would make the program behaviour defined.
+      -----
+      launder
+      -----
+      When reusing storage denoted by some pointer value p, launder(reinterpret_cast<T*>(new (p) byte[n * sizeof(T)])) can be used to implicitly create a suitable array object and obtain a pointer to it. It is not fully clear if the pointer to array or its first element is returned as the standard clearly does not specify this to choose it based on what would make the program behaviour defined.
+
+      The reinterpret_cast gets you a pointer that has the "wrong" value (but represents the "right" address); the launder can be used to attempt to recover the "right" value.  but not all "right" values are recoverable because we dont want to outlaw optimizers.
+
+      When storage for an object with automatic or dynamic storage duration is obtained, the object has an indeterminate value, and if no initialization is performed for the object, that object retains an indeterminate value until that value is replaced ([expr.ass]).
+      [Note 1: Objects with static or thread storage duration are zero-initialized, see [basic.start.static]. — end note]
 
 
-When storage for an object with automatic or dynamic storage duration is obtained, the object has an indeterminate value, and if no initialization is performed for the object, that object retains an indeterminate value until that value is replaced ([expr.ass]).
-[Note 1: Objects with static or thread storage duration are zero-initialized, see [basic.start.static]. — end note]
+      std::launder has no effect on its argument. Its return value must be used to access the object. Thus, its always an error to discard the return value.
+      Typical uses of std::launder include:
+      - Obtaining a pointer to an object created in the storage of an existing object of the same type, where pointers to the old object cannot be reused (for instance, because either object is a base class subobject);
+      - Obtaining a pointer to an object created by placement new from a pointer to an object providing storage for that object.
+
+    A byte of storage b is reachable through a pointer value that points to an object x if there is an object y, pointer-interconvertible with x, such that b is within the storage occupied by y, or the immediately-enclosing array object if y is an array element
 
 
-std::launder has no effect on its argument. Its return value must be used to access the object. Thus, it's always an error to discard the return value.
-Typical uses of std::launder include:
- - Obtaining a pointer to an object created in the storage of an existing object of the same type, where pointers to the old object cannot be reused (for instance, because either object is a base class subobject);
-- Obtaining a pointer to an object created by placement new from a pointer to an object providing storage for that object.
+      the point is that  you have to pass to std::launder a pointer that represent the address of a real object that is within its lifetime!
+
+      launder(reinterpret_­cast<T*>(new (p) byte[n * sizeof(T)])) 
+      Which basically implies that the idea is to make the syntax (T*)malloc(...) and (T*)(::operator new(... ) ) (and similar cases) valid for subsequent pointer arithmeti
+      Although correct format should be -> launder(reinterpret_­cast<T(*)[n]>(new (p) byte[n * sizeof(T)])) - coorect way to get array out of allocation! 
+      becuase launder requires the object to start its lifetime
+
+      The only case that left, where we still need to use std::launder tool is when we know there is a pointer of one type, and you know that under its address there, in fact, lives object of a different type
 
 
-the point is that  you have to pass to std::launder a pointer that represent the address of a real object that is within its lifetime!
+      reinterpret_cast cannot change "pointer value" apart from pointer-interconvertible types, but combined with std::launder, that is possible in some circumstances.
 
-launder(reinterpret_­cast<T*>(new (p) byte[n * sizeof(T)])) 
-Which basically implies that the idea is to make the syntax (T*)malloc(...) and (T*)(::operator new(... ) ) (and similar cases) valid for subsequent pointer arithmeti
-Although correct format should be -> launder(reinterpret_­cast<T(*)[n]>(new (p) byte[n * sizeof(T)])) - coorect way to get array out of allocation! 
-becuase launder requires the object to start its lifetime
+        For example, while array pointer and its first element are not pointer-interconvertible, std::launder can make the same effect as long as the result of std::launder cannot reach "bytes" not accessible to the source pointer.
 
-The only case that left, where we still need to use std::launder tool is when we know there is a pointer of one type, and you know that under its address there, in fact, lives object of a different type
+        this example is OK to me, and you can use a_array_ptr and a_ptr to access A as data
+            int a[5];
+            int(*a_array_ptr)[5] = std::launder(reinterpret_cast<int(*)[5]>(&a[0]));
+            int* a_ptr = std::launder(reinterpret_cast<int*>(&a));
+        
+        Formally, std::launder does impose some reachability requirements. And Id keep storages reachable through result and source as two separate entities and dont try merging them with reachability requirements as that would make it look like std::launder only works with pointer-interconvertible pointers.
+        All bytes of storage that would be reachable through ([basic.compound]) the result are reachable through p.
+
+        Now reachability requirements are these:
+        A byte of storage b is reachable through a pointer value that points to an object x if there is an object y, pointer-interconvertible with x, such that b is within the storage occupied by y, or the immediately-enclosing array object if y is an array element.
+        
+        
+
+        For example, lets try to substitute that reachability requirements for our example int(*a_array_ptr)[5] = std::launder(reinterpret_cast<int(*)[5]>(&a[0]));
+        
+        -------------------  
+        For source pointer:
+        ------------------
+
+        A byte of storage "int c" is reachable through a  "pointer to first element of array a" that points to an object a[0] if there is an object a[0], pointer-interconvertible with a[0], such that storage "int a[5]" is within  the immediately-enclosing array object ******a[5]******* if a[0] is an array element.
+
+        -------------------  
+        For result pointer:
+        -------------------
+        A byte of storage "int a[5]" is reachable through a pointer "a_array_ptr" that points to an object "a" if there is an object "a", pointer-interconvertible with "a", such that storage "int a[5]" is within the storage occupied by "a" (storage "int a[5]" itself)
+        
+        
+        Note in both I use storage "int a[5]" as a proof that the result pointer does not access more "bytes" in a defined way than the source pointer.
+        
+        
+        Even more, I reckon that with the similar reasoning the following code is valid as well
+        
+        Precondition: T1 and T2 got the same size of alignment  
+        T1 storage;
+        T2 *ptr_ = ::new (&storage_) T2;
+        T2* ptr2 = std::launder(reinterpret_cast<T2 *>(&storage_))
+        ptr2->.....
 
 
 
-    // Case 2: access to a new object whose storage is provided
-    // by a byte array through a pointer to the array.
-    struct Y { int z; };
-    alignas(Y) std::byte s[sizeof(Y)];
-    Y* q = new(&s) Y{2};
-    const int f = reinterpret_cast<Y*>(&s)->z; // Class member access is undefined
-                                               // behavior: reinterpret_cast<Y*>(&s)
-                                               // has value "pointer to s" and does
-                                               // not point to a Y object (needs launder)
+          // Case 2: access to a new object whose storage is provided
+          // by a byte array through a pointer to the array.
+          struct Y { int z; };
+          alignas(Y) std::byte s[sizeof(Y)];
+          Y* q = new(&s) Y{2};
+          const int f = reinterpret_cast<Y*>(&s)->z; // Class member access is undefined
+                                                    // behavior: reinterpret_cast<Y*>(&s)
+                                                    // has value "pointer to s" and does
+                                                    // not point to a Y object (needs launder)
 
-int x[10];
-auto p = std::launder(reinterpret_cast<int(*)[10]>(&x[0])); // OK
+      int x[10];
+      auto p = std::launder(reinterpret_cast<int(*)[10]>(&x[0])); // OK
+      
+      int x2[2][10];
+      auto p2 = std::launder(reinterpret_cast<int(*)[10]>(&x2[0][0]));
+      // Undefined behavior: x2[1] would be reachable through the resulting pointer to x2[0]
+      // but is not reachable from the source
+
+
+      struct A { int x; int y};
+      int* p = &(arr[1]);
+      new (&arr) A;
+      *p = 0; //UB now in C++20 because while y and p are not transparently replacable, that is not the case for arr and A as both p and y are technically subobjects and in that case complete objects must be transparently replaceble as well!
+
+
+      std::memcpy does do something special, in that it implicitly creates objects
+      in its destination region ([cstring.syn] p3). Since 'buffer' is a char array
+      instead of an unsigned char array, it cannot provide storage for any created
+      objects, and starting the lifetime of an int object would end the lifetime
+      of the char array object. However, this does not prevent laundering its
+      pointer as an int pointer (as below), since a declared object with automatic
+      storage duration only has to live to the end of its block if its type has a
+      non-trivial destructor ([basic.life] p9).
+
+      As language.lawyer points out, the snippet as written results in UB,
+      regardless of whether 'buffer' is a char or unsigned char array. The
+      lifetime of an int object can be started at the first address, but 'buffer'
+      (after an array-to-pointer conversion) still points to the first char
+      object in the array, rather than the int object. Since char is not similar
+      to int, 'j' still points to the first char object after the reinterpret_cast
+      ([expr.static.cast] p14), and reading an int from it is UB
+      ([basic.lval] p11).
+
+      To access the created int object, we would have to use std::launder:
+
+      int i = 42;
+      alignas(int) unsigned char buffer[sizeof(int)];
+      void* newJ = std::memcpy(buffer, &i, sizeof(int)); //remeber that mempcy would create an implicty object so that newJ would point to it!
+      int* j = std::launder(reinterpret_cast<int*>(buffer)); #1 ok
+      int * j  = reintepret_cast<int*>(newJ); //#2 ok
+      reintepret_cast<int*>(buffer) = 30; //#3 UB as buffer points to char[];
+
+
+
+      The std::memcpy itself is perfectly well-defined (all it does is copy the
+      source to the destination as an unsigned char array); it simply fails to
+      implicitly create an std::string at the fields address, or an s that can
+      be laundered
+
+
+----------------------------
+int32_t x_representation;
+std::memcpy(&x_representation, &x, sizeof(x));
  
-int x2[2][10];
-auto p2 = std::launder(reinterpret_cast<int(*)[10]>(&x2[0][0]));
-// Undefined behavior: x2[1] would be reachable through the resulting pointer to x2[0]
-// but is not reachable from the source
+Implementations now generally outlaw using reinterpret_cast to violate strict aliasing, but allow representation casting to be done via unions.  But even that is an extension, and according to a strict reading of the standard it is UB.  I think that this is exactly the kind of thing that should have "implementation-defined" behavior rather than be UB.  The difference is that usually implementation-defined behavior has bounds to how wild implementations can go, for example: "the resulting value is implementation-defined" vs. "is UB".  It puts boundaries on how non-portable this code is.
 
+Permitting aliasing via unions would wreck performance, as you would never know when two objects of completely different types might alias. The C union visibility rule is highly controversial even within the C community; see e.g. https://gcc.gnu.org/bugzilla/show_bug.cgi?id=65892
+-------------------------
 
-struct A { int x; int y};
-int* p = &(arr[1]);
-new (&arr) A;
-*p = 0; //UB now in C++20 because while y and p are not transparently replacable, that is not the case for arr and A as both p and y are technically subobjects and in that case complete objects must be transparently replaceble as well!
-
-
-std::memcpy does do something special, in that it implicitly creates objects
-in its destination region ([cstring.syn] p3). Since 'buffer' is a char array
-instead of an unsigned char array, it cannot provide storage for any created
-objects, and starting the lifetime of an int object would end the lifetime
-of the char array object. However, this does not prevent laundering its
-pointer as an int pointer (as below), since a declared object with automatic
-storage duration only has to live to the end of its block if its type has a
-non-trivial destructor ([basic.life] p9).
-
-As language.lawyer points out, the snippet as written results in UB,
-regardless of whether 'buffer' is a char or unsigned char array. The
-lifetime of an int object can be started at the first address, but 'buffer'
-(after an array-to-pointer conversion) still points to the first char
-object in the array, rather than the int object. Since char is not similar
-to int, 'j' still points to the first char object after the reinterpret_cast
-([expr.static.cast] p14), and reading an int from it is UB
-([basic.lval] p11).
-
-To access the created int object, we would have to use std::launder:
-
-int i = 42;
-alignas(int) unsigned char buffer[sizeof(int)];
-void* newJ = std::memcpy(buffer, &i, sizeof(int)); //remeber that mempcy would create an implicty object so that newJ would point to it!
-int* j = std::launder(reinterpret_cast<int*>(buffer)); #1 ok
-int * j  = reintepret_cast<int*>(newJ); //#2 ok
-reintepret_cast<int*>(buffer) = 30; //#3 UB as buffer points to char[];
-
-
-
-The std::memcpy itself is perfectly well-defined (all it does is copy the
-source to the destination as an unsigned char array); it simply fails to
-implicitly create an std::string at the field's address, or an 's' that can
-be laundered
 
 partial reuse of the object kills the host object, but not all of its subojects! only those re-used!
 struct A { int y; float x; };
@@ -795,7 +870,7 @@ memset  will set padding bits to 0
 -----
 similar types
 ----------
-Two types are similar if:
+Two types are similar if (ignoring cv):
     - they are the same type;
 or -they are both pointers, and the pointed - to types are similar;
 or -they are both pointers to member of the same class,
@@ -817,3 +892,5 @@ static _Tp* _S_access(const _Storage& __storage)
   return static_cast<_Tp*>(const_cast<void*>(__addr));
 
 }
+
+
