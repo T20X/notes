@@ -5,41 +5,90 @@ An expression is a sequence of operators and operands that specifies a computati
 
 
 ************************** Value category **************************
+      
+        Each C++ expression(an operator with its operands, a literal, a variable name, etc.) is characterized by two independent properties : a type and a value category.Each expression has some non-reference type, and each expression belongs to exactly one of the three primary value categories : prvalue, xvalue, and lvalue.
 
-        Each C++ expression(an operator with its operands, a literal,
-                            a variable name,
-                            etc.) is characterized by two independent properties
-    : a type and a value category.Each expression has some non
-        - reference type,
-    and each expression belongs to exactly one of the three primary value
-    categories : prvalue,
-    xvalue,
-    and lvalue.
+        - A glvalue is an expression whose evaluation determines the identity of an object or function.
+        - A prvalue is an expression whose evaluation initializes an object or computes the value of an operand of an operator, as specified by the context in which it appears, or an expression that has type cv void.
+        - An xvalue is a glvalue that denotes an object whose resources can be reused (usually because it is near the end of its lifetime).
+        - An lvalue is a glvalue that is not an xvalue.
+        - An rvalue is a prvalue or an xvalue.
 
-        a glvalue(“generalized” lvalue) is an expression whose evaluation
-        determines the identity of an object
-        or function;
-a prvalue(“pure” rvalue) is an expression whose
-    evaluation computes the value of an operand of a built
-    - in operator(such prvalue has no result object),
-    or initializes an object(such prvalue is said to have a result object)
-            .The result object may be a variable,
-    an object created by new - expression,
-    a temporary created by temporary materialization,
-    or a member thereof.Note that non - void discarded expressions have a result
-                                        object(the materialized temporary)
-                                            .Also,
-    every
-    class and array prvalue has a result object except when it is the operand of
-    decltype;
-an xvalue(an “eXpiring” value)
-    is a glvalue that denotes an object whose resources can be reused;
-an lvalue(so - called, historically,
-          because lvalues could appear on the left -
-              hand side of an assignment expression) is a glvalue that is
-    not an xvalue;
-an rvalue (so-called, historically, because rvalues could appear on the right-hand side of an assignment expression) is a prvalue or an xvalue.
+        The result of a glvalue is the entity denoted by the expression. The result of a prvalue is the value that the expression stores into its context; a prvalue that has type cv void has no result. A prvalue whose result is the value V is sometimes said to have or name the value V. The result object of a prvalue is the object initialized by the prvalue; a non-discarded prvalue that is used to compute the value of an operand of a built-in operator or a prvalue that has type cv void has no result object.
 
+
+        "informal" definition : lvalue - is an expression which refers to an object
+
+        int n;
+
+        n = 1; //that is an lvalue expression consisting of 2 subexpresions:
+          n  -> lvalue
+          1 -> prvalue
+
+        Rationale behind having lvalues and rvalues:
+           1) compiler got freedom to optimize because prvalues for example don't have associated storage
+           2) complier forbids assigning to prvalues
+
+
+      note that complier assumes that for non-class types, rvalues don't occupy storage, but for class rvalues they do occupy
+      S {int x} a;
+      int i = S().a; //S() is used as rvalue expression, we don't say that S() is rvalue
+      for S().a to work, S() would need to have a base offset and that means it has to be stored somewhere
+
+binding rules occur in the following events:
+ return from function
+ assignment / initialization 
+ pass to function by value
+
+ the thing that you bind to 
+
+
+-----
+refenrece
+----
+a refenrece is a basically a const pointer that gets dereferenced every time it refered to. a reference yields lvalue expression
+
+refenreces were made to make overloaded operators to work with class types . basically there is a need for something like a pointer but without explicitly taking its address
+
+a reference to const T can bind to an expression x that's not an lvalue of type T.
+...if there's a conversion from x's type to T
+
+
+rvalue refenreces buy only to rvalues
+
+rvalue refrences (type) bind only to rvalues
+
+struct A { int& i; };
+struct A2 { int&& i; };
+inline int f2(int i) {return 2 * i;}
+int main() {
+    float x = 3.14f;
+    float&& expr = x * x + x * x; // expr binds to the result of an expression
+    expr = x; // this isn't a rebind, just an assignment to an rvalue reference
+
+    float& y = x;
+    // no way to rebind y. It's an lvalue reference
+    // and it cannot be changed to refer to another lvalue.
+
+    // However, lvalue references that are inside a class can
+    // be changed since an object of the class can be identified
+    int i1{ 1 };
+    int i2{ 2 };
+
+    // lvalue reference in a class
+    A a0{ i1 };
+    A a1{ i2 };
+    std::construct_at(&a0, a1); // a now contains a ref to i2;
+
+    {
+        A2 a02{ 4 };
+        {
+          A2 a12{ 9 };
+          std::construct_at(&a02, a1)2; // a now contains a ref to i2; not UB even rvalue rebounded, but note that  tmp which a02.i pointed to still has not his lifetime ended
+        }
+
+        //temp which points to a02.i get its lifetime ended
+    }
 ------------
 temporary
 ------------
@@ -89,7 +138,7 @@ A temporary bound to a reference in a new-initializer ([expr.new]) persists unti
 struct S {
   int mi;
   const std::pair<int, int> &mp; };
-S a { 1, {2,3} };
+S a { 1, {2,3} }; //ok
 S* p = new S{ 1, {2,3} }; // dangling reference
 
 the reason why temporary does not extend its lifetime in new experssion is the fact 

@@ -366,7 +366,7 @@ void f() {
   int &r = a.y;
   static_assert(sizeof(int) == sizeof(float));
   new (&a.x) float; // by [basic.life], this ends the lifetime of a.x and the lifetime of a, but not the lifetime of a.y, because it reuses the storage of a and of a.x to create an object that is nested within neither of them
-  r = 1; // still ok? should be
+  r = 1; // still ok? should be yes!
   a.y = 4; //UB, because gvalue is used  for object which lifetime ended, but storage was not yet re-used!
 }
 
