@@ -14,8 +14,60 @@ An expression is a sequence of operators and operands that specifies a computati
         - An lvalue is a glvalue that is not an xvalue.
         - An rvalue is a prvalue or an xvalue.
 
+
+
+        An expression is an xvalue if it is:
+          (4.1) a move-eligible id-expression ([expr.prim.id.unqual]),
+          (4.2) the result of calling a function, whether implicitly or explicitly, whose return type is an rvalue reference to object type ([expr.call]),
+          (4.3) a cast to an rvalue reference to object type ([expr.type.conv], [expr.dynamic.cast], [expr.static.cast], [ expr.reinterpret.cast], [expr.const.cast], [expr.cast]),
+          (4.4) a subscripting operation with an xvalue array operand ([expr.sub]),
+          (4.5) a class member access expression designating a non-static data member of non-reference type in which the object expression is an xvalue ([expr.ref]), or
+          (4.6) a .* pointer-to-member expression in which the first operand is an xvalue and the second operand is a pointer to data member ([expr.mptr.oper]).
+          In general, the effect of this rule is that named rvalue references are treated as lvalues and unnamed rvalue references to objects are treated as xvalues; rvalue references to functions are treated as lvalues whether named or not. — end note]
+          [Example 1:
+          struct A {
+          int m;
+          };
+          A&& operator+(A, A);
+          A&& f();
+
+          A a;
+          A&& ar = static_cast<A&&>(a);
+          The expressions f(), f().m, static_cast<A&&>(a), and a + a are xvalues. The expression ar is an lvalue. — end example]
+
+
         The result of a glvalue is the entity denoted by the expression. The result of a prvalue is the value that the expression stores into its context; a prvalue that has type cv void has no result. A prvalue whose result is the value V is sometimes said to have or name the value V. The result object of a prvalue is the object initialized by the prvalue; a non-discarded prvalue that is used to compute the value of an operand of a built-in operator or a prvalue that has type cv void has no result object.
 
+
+
+        Whenever a glvalue appears as an operand of an operator that requires a prvalue for that operand, the lvalue-to-rvalue ([conv.lval]), array-to-pointer ([conv.array]), or function-to-pointer ([conv.func]) standard conversions are applied to convert the expression to a prvalue
+
+
+                  Example 1:
+          struct S { int n; };
+          auto f() {
+          S x { 1 };
+          constexpr S y { 2 };
+          return [&](bool b) { return (b ? y : x).n; };
+          }
+          auto g = f();
+          int m = g(false);   // undefined behavior: access of x.n outside its lifetime
+          int n = g(true);    // OK, does not access y.n
+          — end example]
+          3
+          #
+          The result of the conversion is determined according to the following rules:
+          (3.1) If T is cv std​::​nullptr_t, the result is a null pointer constant ([conv.ptr]).
+          [Note 1: Since the conversion does not access the object to which the glvalue refers, there is no side effect even if T is volatile-qualified ([intro.execution]), and the glvalue can refer to an inactive member of a union ([class.union]). — end note]
+          (3.2) Otherwise, if T has a class type, the conversion copy-initializes the result object from the glvalue.
+          (3.3) Otherwise, if the object to which the glvalue refers contains an invalid pointer value ([basic.stc.dynamic.deallocation]), the behavior is implementation-defined.
+          (3.4) Otherwise, the object indicated by the glvalue is read ([defns.access]), and the value contained in the object is the prvalue result.
+          4
+          #
+          [Note 2: See also [basic.lval]. — end note]
+                45) For historical reasons, this conversion is called the “lvalue-to-rvalue” conversion, even though that name does not accurately reflect the taxonomy of expressions described in 
+
+          Whenever a prvalue appears as an operand of an operator that expects a glvalue for that operand, the temporary materialization conversion is applied to convert the expression to an xvalue
 
         "informal" definition : lvalue - is an expression which refers to an object
 
@@ -89,6 +141,97 @@ int main() {
 
         //temp which points to a02.i get its lifetime ended
     }
+
+
+
+    Given types “cv1 T1” and “cv2 T2”, “cv1 T1” is reference-related to “cv2 T2” if T1 is similar ([conv.qual]) to T2, or T1 is a base class of T2. “cv1 T1” is reference-compatible with “cv2 T2” if a prvalue of type “pointer to cv2 T2” can be converted to the type “pointer to cv1 T1” via a standard conversion sequence ([conv]). In all cases where the reference-compatible relationship of two types is used to establish the validity of a reference binding and the standard conversion sequence would be ill-formed, a program that necessitates such a binding is ill-formed.
+
+
+#
+A reference to type “cv1 T1” is initialized by an expression of type “cv2 T2” as follows:
+  (5.1) If the reference is an lvalue reference and the initializer expression
+  (5.1.1) is an lvalue (but is not a bit-field), and “cv1 T1” is reference-compatible with “cv2 T2”, or
+  (5.1.2) has a class type (i.e., T2 is a class type), where T1 is not reference-related to T2, and can be converted to an lvalue of type “cv3 T3”, where “cv1 T1” is reference-compatible with “cv3 T3”85 (this conversion is selected by enumerating the applicable conversion functions ([over.match.ref]) and choosing the best one through overload resolution),
+  then the reference binds to the initializer expression lvalue in the first case and to the lvalue result of the conversion in the second case (or, in either case, to the appropriate base class subobject of the object).
+  [Note 2: The usual lvalue-to-rvalue, array-to-pointer, and function-to-pointer standard conversions are not needed, and therefore are suppressed, when such direct bindings to lvalues are done. — end note]
+  [Example 3:
+  double d = 2.0;
+  double& rd = d;                 // rd refers to d
+  const double& rcd = d;          // rcd refers to d
+
+  struct A { };
+  struct B : A { operator int&(); } b;
+  A& ra = b;                      // ra refers to A subobject in b
+  const A& rca = b;               // rca refers to A subobject in b
+  int& ir = B();                  // ir refers to the result of B​::​operator int&
+  — end example]
+(5.2)
+Otherwise, if the reference is an lvalue reference to a type that is not const-qualified or is volatile-qualified, the program is ill-formed.
+[Example 4:
+double& rd2 = 2.0;              // error: not an lvalue and reference not const
+int  i = 2;
+double& rd3 = i;                // error: type mismatch and reference not const
+— end example]
+(5.3)
+Otherwise, if the initializer expression
+(5.3.1)
+is an rvalue (but not a bit-field) or function lvalue and “cv1 T1” is reference-compatible with “cv2 T2”, or
+(5.3.2)
+has a class type (i.e., T2 is a class type), where T1 is not reference-related to T2, and can be converted to an rvalue or function lvalue of type “cv3 T3”, where “cv1 T1” is reference-compatible with “cv3 T3” (see [over.match.ref]),
+then the initializer expression in the first case and the converted expression in the second case is called the converted initializer. If the converted initializer is a prvalue, its type T4 is adjusted to type “cv1 T4” ([conv.qual]) and the temporary materialization conversion ([conv.rval]) is applied. In any case, the reference binds to the resulting glvalue (or to an appropriate base class subobject).
+[Example 5:
+struct A { };
+struct B : A { } b;
+extern B f();
+const A& rca2 = f();                // binds to the A subobject of the B rvalue.
+A&& rra = f();                      // same as above
+struct X {
+  operator B();
+  operator int&();
+} x;
+const A& r = x;                     // binds to the A subobject of the result of the conversion
+int i2 = 42;
+int&& rri = static_cast<int&&>(i2); // binds directly to i2
+B&& rrb = x;                        // binds directly to the result of operator B
+— end example]
+(5.4)
+Otherwise:
+(5.4.1)
+If T1 or T2 is a class type and T1 is not reference-related to T2, user-defined conversions are considered using the rules for copy-initialization of an object of type “cv1 T1” by user-defined conversion ([dcl.init], [over.match.copy], [over.match.conv]); the program is ill-formed if the corresponding non-reference copy-initialization would be ill-formed. The result of the call to the conversion function, as described for the non-reference copy-initialization, is then used to direct-initialize the reference. For this direct-initialization, user-defined conversions are not considered.
+(5.4.2)
+Otherwise, the initializer expression is implicitly converted to a prvalue of type “T1”. The temporary materialization conversion is applied, considering the type of the prvalue to be “cv1 T1”, and the reference is bound to the result.
+If T1 is reference-related to T2:
+(5.4.3)
+cv1 shall be the same cv-qualification as, or greater cv-qualification than, cv2; and
+(5.4.4)
+if the reference is an rvalue reference, the initializer expression shall not be an lvalue.
+[Note 3: This can be affected by whether the initializer expression is move-eligible ([expr.prim.id.unqual]). — end note]
+[Example 6:
+struct Banana { };
+struct Enigma { operator const Banana(); };
+struct Alaska { operator Banana&(); };
+void enigmatic() {
+  typedef const Banana ConstBanana;
+  Banana &&banana1 = ConstBanana(); // error
+  Banana &&banana2 = Enigma();      // error
+  Banana &&banana3 = Alaska();      // error
+}
+
+const double& rcd2 = 2;             // rcd2 refers to temporary with value 2.0
+double&& rrd = 2;                   // rrd refers to temporary with value 2.0
+const volatile int cvi = 1;
+const int& r2 = cvi;                // error: cv-qualifier dropped
+struct A { operator volatile int&(); } a;
+const int& r3 = a;                  // error: cv-qualifier dropped
+                                    // from result of conversion function
+double d2 = 1.0;
+double&& rrd2 = d2;                 // error: initializer is lvalue of related type
+struct X { operator int&(); };
+int&& rri2 = X();                   // error: result of conversion function is lvalue of related type
+int i3 = 2;
+double&& rrd3 = i3;                 // rrd3 refers to temporary with value 2.0
+— end example]
+In all cases except the last (i.e., implicitly converting the initializer expression to the referenced type), the reference is said to bind directly to the initializer expression.
 ------------
 temporary
 ------------
