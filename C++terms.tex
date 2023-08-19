@@ -1,0 +1,67 @@
+------------------------
+
+An object, in C++, has
+
+size (can be determined with sizeof);
+alignment requirement (can be determined with alignof);
+storage duration (automatic, static, dynamic, thread-local);
+lifetime (bounded by storage duration or temporary);
+type;
+value (which may be indeterminate, e.g. for default-initialized non-class types);
+optionally, a name.
+The following entities are not objects: value, reference, function, enumerator, type, non-static class member, template, class or function template specialization, namespace, parameter pack, and this.
+
+For an object of type T:
+
+its object representation is the sequence of sizeof(T) objects of type unsigned char (or, equivalently, std::byte) (since C++17) beginning at the same address as the T object,
+its value representation is the set of bits that hold the value of its type T, and
+its padding bits are the bits in the object representation that are not part of the value representation.
+
+
+------------------
+dynamic type
+-----------
+〈glvalue〉 type of the most derived object to which the glvalue refers
+[Example 1 : If a pointer (9.3.4.2) p whose static type is “pointer to class B” is pointing to an object of class D, derived
+from B (11.7), the dynamic type of the expression *p is “D”. References (9.3.4.3) are treated similarly. —end example]
+
+--------------------------
+An expression is a sequence of operators and operands that specifies a computation. An expression can result in a value and can cause side effects
+
+----------------------
+An object type is a (possibly cv-qualified) type that is not a function type, not a reference type, and not cv void.
+
+-----------------
+
+
+code is said to be exception safe if it keeps program in a consistent state even if a throw occurs
+
+-basic guarantee
+-the strong guarantee
+-nothrow guarantee
+
+----------------------------------
+Behaviors are composable if they can be applied to the same object separately
+
+--------------
+what is for a function to be inline!
+(1) linker won't give you single definition error!
+(2) if translation unit does not use inline function it won't include it the object file!
+
+
+-------------
+
+- An entity is a value, object, reference, structured binding, function, enumerator, type, class member, bit-field, template, template specialization, namespace, or pack
+- A name is an identifier ([lex.name]), operator-function-id ([over.oper]), literal-operator-id ([over.literal]), or conversion-function-id ([class.conv.fct]).
+Every name is introduced by a declaration
+- A variable is introduced by the declaration of a reference other than a non-static data member or of an object. The variable's name, if any, denotes the reference or object.
+- A name used in more than one translation unit can potentially refer to the same entity in these translation units depending on the linkage of the name specified in each translation unit.
+
+---------------------
+[defns.access]access
+----------------------
+⟨execution-time action⟩ read or modify the value of an object
+[Note 1: Only glvalues of scalar type can be used to access objects. Reads of scalar objects are described in [conv.lval] and modifications of scalar objects are described in [expr.ass], [expr.post.incr], and [expr.pre.incr]. Attempts to read or modify an object of class type typically invoke a constructor or assignment operator; such invocations do not themselves constitute accesses, although they may involve accesses of scalar subobjects. — end note]
+
+
+

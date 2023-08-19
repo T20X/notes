@@ -23,7 +23,8 @@ A memory location is either an object of scalar type that is not a bit-field or 
       pointer
       ----
 
-      [(1)A value of a pointer type that is a pointer *to*] or [(2)past the end of an object represents] [(1) the address of the first byte in memory ([intro.memory]) occupied by the object35 ] or [(2) the first byte in memory (for arrays) after the end of the storage occupied by the object, respectively].  The value representations of pointers to objects and invalid pointers may overlap
+      [(1)A value of a pointer type that is a pointer *to*] or [(2)past the end of an object represents] 
+      [(1) the address of the first byte in memory ([intro.memory]) occupied by the object35 ] or [(2) the first byte in memory (for arrays) after the end of the storage occupied by the object, respectively].  The value representations of pointers to objects and invalid pointers may overlap
 
       Every *logical value* of pointer type is one of the following:
 
@@ -360,7 +361,7 @@ Permitting aliasing via unions would wreck performance, as you would never know 
 
 
 partial reuse of the object kills the host object, but not all of its subojects! only those re-used!
-struct A { int y; float x; };
+struct A { int y; int x; };
 void f() {
   A a;
   int &r = a.y;
@@ -784,6 +785,10 @@ at least one of the following must be true for any two objects:
 They must have different types.
 They must have different addresses in memory.
 They must actually be the same object.
+
+
+(18)
+If a program invokes a defaulted copy/move constructor or copy/move assignment operator for a union of type U with a glvalue argument that does not denote an object of type cv U within its lifetime, the behavior is undefined.
 
 ------
 implicitly created objects

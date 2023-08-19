@@ -1,3 +1,9 @@
+Usually a Linux process can open up to 1,024 file descriptors. That is select limit for example!
+$ ls /proc/` pidof listener `/fd | wc -l
+517
+
+
+According to the kernel documentation, /proc/sys/fs/file-max is the maximum, total, global number of file handles the kernel will allocate before choking. This is the kernel's limit, not your current user's. So you can open 590432, provided you're alone on an idle system (single-user mode, no daemons running).
 
 ----------------
 A process can begin executing in kernel-space only through one of the following well-defined interfaces:
@@ -16,7 +22,7 @@ Linux, aiming to provide good interactive response and desktop performance, opti
 
 The Linux kernel implements two separate priority ranges:
 
-nice value (a number from –20 to +19 with a default of 0) is the standard priority range used in all Unix systems:
+nice value (a number from ï¿½20 to +19 with a default of 0) is the standard priority range used in all Unix systems:
 Processes with a lower nice value (higher priority) receive a larger proportion of the system's processor, and vice versa.
 In Linux, the nice value is a control over the proportion of timeslice. In other Unix-based systems, such as Mac OS X, the nice value is a control over the absolute timeslice allotted to a process;
 The ps -el command lists processes with their nice values.
@@ -24,6 +30,6 @@ Real-time priority (configurable values that by default range from 0 to 99)
 Higher real-time priority values correspond to a greater priority.
 All real-time processes are at a higher priority than normal processes.
 Linux implements real-time priorities in accordance with the relevant Unix standards, specifically POSIX.1b.
-The ps -eo state,uid,pid,ppid,rtprio,time,comm command lists processes and their real-time priority. A value of “-” means the process is not real-time.
+The ps -eo state,uid,pid,ppid,rtprio,time,comm command lists processes and their real-time priority. A value of ï¿½-ï¿½ means the process is not real-time.
 
 
