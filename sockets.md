@@ -63,11 +63,11 @@ This field specifies the offset of a particular fragment relative to the beginni
 
 [IP fragmentation detailed](https://packetpushers.net/ip-fragmentation-in-detail/)
 
-## UDP message
+## UDP 
 
 ![](images/socket/20230819133718.png)
 
-## TCP message
+## TCP 
 
 Transmission Control Protocol accepts data from a data stream, divides it into chunks, and adds a TCP header creating a TCP segment. The TCP segment is then encapsulated into an Internet Protocol (IP) datagram, and exchanged with peers.[7]
 
@@ -76,7 +76,112 @@ The term TCP packet appears in both informal and formal usage, whereas in more p
 Processes transmit data by calling on the TCP and passing buffers of data as arguments. The TCP packages the data from these buffers into segments and calls on the internet module [e.g. IP] to transmit each segment to the destination TCP
 
 
+
 ![](images/socket/20230819164936.png)
+
+### TCP session
+
+The only way to identify a TCP connection is by a unique 4-tuple (client-ip, src-port, server-ip, dest-port)
+
+### TCP Segmentation
+
+Large payload not fitting into MSS will be split in many segments 
+
+TCP Segmentation offload - These days many NICs can create headers/checksum for a given user data autmatically given a template from kernel! this can save massive amount of CPU time.
+
+
+### TCP states
+
+#### SYN 
+
+***a synchronization message typically used to request a connection between a client and a server***
+
+#### ACK
+***an acknowledgment message employed to declare the receipt of a particular message***
+
+#### FIN 
+
+***a message that triggers a graceful connection termination between a client and a server***
+
+#### RST
+
+**a message that aborts the connection (forceful termination) between a client and a server**
+
+Linux only tear down a TCP connection if the RST sequence number is the next expected sequence number
+
+A RST isn't ordinarily sent between peers in a normal connection termination. A FIN is. When you kill the client, a FIN is sent on the connection to indicate to the server that the client won't be sending any more data.  But the server is apparently not paying attention to the FIN it receives when the client is killed (i.e. it would need to attempt a recv on the socket and react appropriately to the end-of-file indication it will get -- usually that means close its own socket). Subsequently, the server is attempting to send data to the client but the connection is closed. That is what results in a RST packet being sent.
+RST means (roughly) "there is no active connection available to receive the data you're sending; it's pointless to send more." And so the timing of that RST is likely based on when the server next attempts to send to the client, not on any kernel / OS configuration setting. If the server doesn't attempt to send and it doesn't close, the connection should just sit there idle forever, and no RST will be sent
+
+
+Setting SO_LINGER with a positive timeout does exactly one thing. It enables close() to block for up to that timeout while there is any outbound pending data still in flight. If you don't modify it, the default is for the close() to be asynchronous, which means the application can't tell whether any data still in flight got sent.
+
+
+When a TCP connection is closed cleanly, the end that initiated the close ("active close") ends up with the connection sitting in TIME_WAIT for 60 seconds. So if your protocol is one where the server initiates the connection close, and involves very large numbers of short-lived connections, then it might be susceptible to this problem. An application level protocol sitting on top of TCP should be designed in such a way that the client always initiates the connection close. That way, the TIME_WAIT will sit at the client doing no harm. Remember as it says in "UNIX Network Programming" third edition (Stevens et al) page 203: "The TIME_WAIT state is your friend and is there to help us. Instead of trying to avoid the state, we should understand it
+
+Note that it is very unlikely that delayed segments will cause problems like this. Firstly the address and port of each end point needs to be the same; which is normally unlikely as the client's port is usually selected for you by the operating system from the ephemeral port range and thus changes between connections. Secondly, the sequence numbers for the delayed segments need to be valid in the new connection which is also unlikely. However, should both of these things occur then TIME_WAIT will prevent the new connection's data from being corrupted.
+
+
+The server will silently drop the packet since it already has a connection in the ESTABLISHED state, one of the four values from (client-ip, src-port, server-ip, dest-port) must be different for the new SYN to be accepted
+
+### TCP connection establish
+
+The ACK is accompanied by sequence numbers. The RFC is pretty clear on the handshake:
+
+1) A --> B SYN my sequence number is X
+2) A <-- B ACK your sequence number is X
+3) A <-- B SYN my sequence number is Y (the moment A gets it, it is considered complete)
+4) A --> B ACK your sequence number is Y (the moment B gets it it is complete as well)
+Steps 2 and 3 are combined in a single packet.
+
+Reasons for sequence numbers is SYN to be randomized:
+       - Security: anything too predictable is likely to be used for spoofing purposes
+       - Multi-session interference. If all sessions started their sequence numbers at 1, then it would be much easier to end up in situations where you mix up packets from various sessions between two hosts (though there are other measures in place to avoid this, like randomizing the source port).
+
+---> another view:
+During the TCP three-way handshake process, the Linux kernel maintains two queues, namely:
+
+SYN Queue
+Accept Queue
+Normal TCP three-way handshake process:
+
+The Clionnection. The Client side enters the SYN_SENT state.
+After the Server side receives the SYN request from the Client side, the Server side enters the SYN_RECV state. At this time, the kernel will store the connection in the SYN queue and reply to the Client side with SYN+ACK.
+After the Client side receives the SYN + ACK from the server side, the Client replies and enters the ESTABLISHED state.
+After the Server side receives the ACK from the Client side, the kernel removes the connection from the SYN queue and adds it to the accept queue. The Server side enters the ESTABLISHED state.
+When the Server side application calls the accept function, the connection is taken out of the accept queue.
+Both the SYN queue and the Accept queue have length and size limits. If the limit is exceeded, the kernel discards the connection Drop or returns the RST packet.
+s
+
+![](images/socket/20230819194443.png)
+
+### TCP connection termination
+
+We have two peers: A and B
+
+A calls close()
+A sends FIN to B
+A goes into FIN_WAIT_1 state
+B receives FIN
+B sends ACK to A
+B goes into CLOSE_WAIT state
+A receives ACK
+A goes into FIN_WAIT_2 state
+B calls close()
+B sends FIN to A
+B goes into LAST_ACK state
+A receives FIN
+A sends ACK to B
+A goes into TIME_WAIT state
+B receives ACK
+B goes to CLOSED state – i.e. is removed from the socket tables
+
+FIN_WAIT timeouts are normally 60 seconds
+
+CLOSE_WAIT - Indicates that the server has received the first FIN signal from the client and the connection is in the process of being closed. This means the socket is waiting for the application to execute close() . A socket can be in CLOSE_WAIT state indefinitely until the application closes
+
+This is where the problem starts. The (127.0.0.1:5000, 127.0.0.1:some-port) socket is still in CLOSE_WAIT state, while (127.0.0.1:some-port, 127.0.0.1:5000) has been cleaned up and is ready to be reused. When this happens the result is a total mess. One part of the socket won't be able to advance from the SYN_SENT state, while the other part is stuck in CLOSE_WAIT. The SYN_SENT socket will eventually give up failing with ETIMEDOUT.
+resource: https://blog.cloudflare.com/this-is-strictly-a-violation-of-the-tcp-specification/
+
 
 
 ### Intresting fields inside TCP segment
@@ -157,9 +262,6 @@ When a receiver advertises a window size of 0, the sender stops sending data and
 
 ### Linux socket options
 
-##### /proc/sys/net/ipv4/tcp_window_scaling
- window scale - MAX value establishes during SYN packet(connection)! reciever can advertises futher recive window size in ACKs. The maximum size is 65K, but it can be scaled up to 1GB! The settings is controled by =0/1 in Linux to enable or disable it
-
 ## Congestion control
 
 *lost packets (presumed due to congestion) trigger a reduction in data delivery rate*
@@ -190,6 +292,27 @@ The urgent pointer only alters the processing on the remote host and doesn't exp
 
 
 # Sockets API
+
+## socket()
+
+### Intresting options
+
+**TCP_NODELAY** ON means send the data (partial frames) the moment you get, regardless if you have enough frames for a full network packet.
+**TCP_NODELAY** OFF means Nagles Algoritm which means send the data when it is bigger than the MSS or waiting for the receiving acknowledgement before sending data which is smaller.
+**TCP_CORK** ON means don't send any data (partial frames) smaller than the MSS until the application says so or until 200ms later.
+**TCP_CORK** OFF means send all the data (partial frames) now
+
+
+**SO_SNDTIMEOUT** 
+**SO_REDVTIMEOUT** 
+could be used for blocking sockeets to control timeouts on send and recv! if you doing blocking UDP then EGAIN error will indicate timeout!
+
+
+**SO_REUSEADDR**
+
+Setting SO_REUSEADDR on the client side doesn't help the server side unless it also sets SO_REUSEADDR. This  will NOT fix the issue of CLOSE_WAIT where if the the other side gets FIN and does not call close().
+
+
 
 ## accept()
 
@@ -352,7 +475,155 @@ You should just do the send, and only select for writability if the send incurre
               a process attribute that affects all threads in the
               process.
 
-# Closing session
+## close()
+
+
+**WARNINING -->>>>>** A successful close does not guarantee that the data has been
+successfully saved to disk, as the kernel uses the buffer cache
+to defer writes.  Typically, filesystems do not flush buffers
+when a file is closed.  If you need to be sure that the data is
+physically stored on the underlying disk, use fsync(2).  (It will
+depend on the disk hardware at this point.)
+
+It is probably unwise to close file descriptors while they may be
+in use by system calls in other threads in the same process.
+Since a file descriptor may be reused, there are some obscure
+race conditions that may cause unintended side effects.
+
+On Linux (and possibly some other systems), the behavior is
+different.  the blocking I/O system call holds a reference to the
+underlying open file description, and this reference keeps the
+description open until the I/O system call completes.  (See
+open(2) for a discussion of open file descriptions.)  Thus, the
+blocking system call in the first thread may successfully
+complete after the close() in the second thread
+
+Retrying the close() after a failure return is the wrong thing to
+do, since this may cause a reused file descriptor from another
+thread to be closed
+
+A careful programmer will check the return value of close(),
+since it is quite possible that errors on a previous write(2)
+operation are reported only on the final close() that releases
+the open file description. 
+
+A careful programmer who wants to know about I/O errors may
+precede close() with a call to fsync(2).
+
+So the POSIX-suggested handling of an EINTR, which is to retry the close(), could actually be quite dangerous on Linux. For that reason, Mark Mentovai suggested a change to the glibc manual to avoid recommending retrying close() on Linux.
+
+
+## Important notes
+
+### RENTR
+
+The code which calls write (or other blocking operations) has to be aware of EINTR. If a signal occurs during a blocking operation, then the operation will either (a) return partial completion, or (b) return failure, do nothing, and set errno to EINTR.
+
+  > int total = 0;
+  > while(size > 0) {
+  >    int written = write(filedes, buf, size);
+  >    if (written == -1) {
+  >        if (errno == EINTR) continue;
+  >        return (total == 0) ? -1 : total;
+  >    }
+  >    buf += written;
+  >    total += written;
+  >    size -= written;
+  > }
+  > return total; // bytes written
+
+
+# Sockets config
+
+## netdev_max_backlog 
+
+2000 default per CPU queue to sore data from NIC and push it to sockets
+
+## tcp_mem [low,pressure,limit] 
+
+in PAGES!
+ low - no regulation for memory allocation!
+ pressure - starts to regulate buffer memory allocation!
+ limit - no more allocation!This value overrides any other limits imposed by the kernel
+
+## tcp_retries1 (integer; default: 3; since Linux 2.2)
+      The number of times TCP will attempt to retransmit a packet on an established connection normally, without the extra effort of getting the network layers involved.  Once  we  exceed  this
+      number of retransmits, we first have the network layer update the route if possible before each new retransmit.  The default is the RFC specified minimum of 3.
+
+## tcp_retries2 (integer; default: 15; since Linux 2.2)
+      The  maximum  number of times a TCP packet is retransmitted in established state before giving up.  The default value is 15, which corresponds to a duration of approximately between 13 to
+      30 minutes, depending on the retransmission timeout.  The RFC 1122 specified minimum limit of 100 seconds is typically deemed too short.
+
+## /proc/sys/net/ipv4/tcp_window_scaling
+ window scale - MAX value establishes during SYN packet(connection)! reciever can advertises futher recive window size in ACKs. The maximum size is 65K, but it can be scaled up to 1GB! The settings is controled by =0/1 in Linux to enable or disable it
+
+
+## tcp_window_scaling (Boolean; default: enabled; since Linux 2.2)
+
+Enable  RFC 1323  TCP  window  scaling.   This feature allows the use of a large window (> 64 kB) on a TCP connection, should the other end support it
+
+## tcp_fin_timeout (integer; default: 60; since Linux 2.2)
+
+This specifies how many seconds to wait for a final FIN packet before the socket is forcibly closed.  This is strictly a violation of  the  TCP  specification,  but  required  to  prevent
+denial-of-service attacks.  In Linux 2.2, the default value was 180
+
+
+## /proc/sys/net/core/somaxconn
+
+ kernel parameter in Linux that determines the maximum number of connections that can be queued in the TCP/IP stack backlog per socket
+
+
+# Linux commands
+
+## Packet errors
+
+overruns - not enogh space in ring buffers
+dropped - not enough space in buffers TCP/UDP.
+errors - ill-formed packets
+
+
+## Troubleshooting socket queues for listen and established sockets
+
+You can view the information of a fully connected queue by ss.
+
+ -n Does not resolve the service name
+ -t only show tcp sockets
+ -l Displays LISTEN-state sockets
+
+$ ss -lnt
+State      Recv-Q Send-Q    Local Address:Port         Peer Address:Port
+LISTEN     0      128       [::]:2380                  [::]:*
+LISTEN     0      128       [::]:80                    [::]:*
+LISTEN     0      128       [::]:8080                  [::]:*
+LISTEN     0      128       [::]:8090                  [::]:*
+
+$ ss -nt
+State      Recv-Q Send-Q    Local Address:Port         Peer Address:Port
+ESTAB      0      0         [::ffff:33.9.95.134]:80                   [::ffff:33.51.103.59]:47452
+ESTAB      0      536       [::ffff:33.9.95.134]:80                  [::ffff:33.43.108.144]:37656
+ESTAB      0      0         [::ffff:33.9.95.134]:80                   [::ffff:33.51.103.59]:38130
+ESTAB      0      536       [::ffff:33.9.95.134]:80                   [::ffff:33.51.103.59]:38280
+ESTAB      0      0         [::ffff:33.9.95.134]:80                   [::ffff:33.51.103.59]:38204
+For sockets in LISTEN states
+
+Recv-Q: The size of the current accept queue, which means the three connections have been completed and are waiting for the application accept() TCP connections.
+Send-Q: the maximum length of the accept queue, which is the size of the accept queue.
+For sockets in non-LISTEN state
+
+Recv-Q: the number of bytes received but not read by the application.
+Send-Q: the number of bytes sent but not acknowledged.
+
+# Best practices
+
+
+## Closing session 1
+
+  When a stream socket peer has performed an orderly shutdown, the
+   return value will be 0 (the traditional "end-of-file" return).
+What the manpage means here is, orderly shutdown is done by one end (A) choosing to call shutdown(SHUT_WR), which causes a FIN packet to be sent to the peer (B), and this packet takes the form of a 0 return code from recv inside B. (Note: the FIN packet, being an implementation aspect, is not mentioned by the manpage). The "EOF" as the manpage calls it, means there will be no more transmission from A to B, but application B can, and should continue to send what it was in the process of sending, and even send some more, potentially (A is still receiving). When that sending is done (shortly), B should itself call shutdown(SHUT_WR) to close the other half of the duplex. Now app A receives EOF and all transmission has ceased. The two apps are OK to call shutdown(SHUT_RD) to close their sockets for reading and then close() to free system resources associated with the socket (TODO I haven't found clear documentation taht says the 2 calls to shutdown(SHUT_RD) are sending the ACKs in the termination sequence FIN --> ACK, FIN --> ACK, but this seems logical
+
+
+## Closing session 2
 
 Some operating systems, such as Linux and HP-UX,[citation needed] implement a half-duplex close sequence. If the host actively closes a connection, while still having unread incoming data available, the host sends the signal RST (losing any received data) instead of FIN. This assures that a TCP application is aware there was a data loss
 
@@ -361,11 +632,24 @@ The OS does not discard data you have written when you call shutdown(SHUT_WR). I
 
 The FIN is treated like part of the data. It has to be retransmitted if the other end doesn't receive it, and it doesn't get processed until everything before it has been received. This is called "graceful shutdown" or "graceful close". This is unlike RST, which signals that the connection should be aborted immediately
 
----------
+Linger off means that close() doesn't block. Linger on with a positive timeout means that close() blocks for up to the timeout. Linger on with a zero timeout causes RST, and this is what the question is about
+When you close a socket with the SO_LINGER time set to zero:
+TCP discards any data in the send buffer
+TCP sends a RST packet to the peer
+The socket resource are deallocated.
+The socket does not enter TIME-WAIT
 
 
------------------
----------
-----------------
+# Misc
 
-netdev_max_backlog - 2000 default per CPU queue to sore data from NIC and push it to sockets
+## RoCE 
+
+stands for RDMA over Converged Ethernet. It is a standard that enables
+ passing RDMA traffic over an Ethernet network.
+
+## FCoE
+
+Fibre Channel over Ethernet (FCoE) is a computer network technology that encapsulates Fibre Channel frames 
+over Ethernet network
+
+
