@@ -181,3 +181,26 @@ Move assignment operator. Replaces the contents with those of other using move s
 
 (35) 
 A value-initialized ForwardIterator behaves like the past-the-end iterator of some unspecified empty container: it compares equal to all value-initialized ForwardIterators of the same type
+
+(36)
+The elements of an unordered associative container are organized into buckets. Keys with the same hash code appear in the same bucket. The number of buckets is automatically increased as elements are added to an unordered associative container, so that the average number of elements per bucket is kept below a bound. Rehashing invalidates iterators, changes ordering between elements, and changes which buckets elements appear in, but does not invalidate pointers or references to elements. For unordered_multiset and unordered_multimap, rehashing preserves the relative ordering of equivalent elements
+
+
+(37)
+
+unique (1)
+template<class ForwardIt>
+ForwardIt unique(ForwardIt first, ForwardIt last)
+{
+    if (first == last)
+        return last;
+ 
+    ForwardIt result = first;
+    while (++first != last)
+        //result would get stuck at unique one until
+        // first advances all unique ones in a group and hits a distinct element
+        if (!(*result == *first) && ++result != first) 
+            *result = std::move(*first);
+ 
+    return ++result;
+}
