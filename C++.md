@@ -1,4 +1,19 @@
 ﻿
+# Virtual functions, vptr, table
+
+## thunk
+
+a way to re-adjust this pointer for classes not linearly represented in the hiarechy
+
+
+
+
+
+
+
+
+
+
 An array type whose elements are cv-qualified is also considered to have the same cv-qualifications as its elements.
 [Note 2: Cv-qualifiers applied to an array type attach to the underlying element type, so the notation “cv T”, where T is an array type, refers to an array whose elements are so-qualified ([dcl.array]). — end note]
 [Example 1:

@@ -1,3 +1,26 @@
+
+# primitive types
+
+## integral promotion 
+
+For each of the standard signed integer types, there exists a corresponding (but different) standard unsigned integer type: “unsigned char”, “unsigned short int”, “unsigned int”, “unsigned long int”, and “unsigned long long int”.
+
+ype char is a distinct type that has an implementation-defined choice of “signed char” or “unsigned char” as its underlying type. The three types char, signed char, and unsigned char are collectively called ordinary character types. The ordinary character types and char8_t are collectively called narrow character types. For narrow character types, each possible bit pattern of the object representation represents a distinct value.
+
+Every integer type has an integer conversion rank defined as follows:
+(1.1) No two signed integer types other than char and signed char (if char is signed) have the same rank, even if they have the same representation.
+(1.2) The rank of a signed integer type is greater than the rank of any signed integer type with a smaller width.
+(1.3) The rank of long long int is greater than the rank of long int, which is greater than the rank of int, which is greater than the rank of short int, which is greater than the rank of signed char.
+(1.4) The rank of any unsigned integer type equals the rank of the corresponding signed integer type.
+(1.5) The rank of any standard integer type is greater than the rank of any extended integer type with the same width.
+(1.6) The rank of char equals the rank of signed char and unsigned char.
+(1.7) The rank of bool is less than the rank of all standard integer types.
+(1.8) The ranks of char8_t, char16_t, char32_t, and wchar_t equal the ranks of their underlying types ([basic.fundamental]).
+(1.9) The rank of any extended signed integer type relative to another extended signed integer type with the same width is implementation-defined, but still subject to the other rules for determining the integer conversion rank.
+(1.10) For all integer types T1, T2, and T3, if T1 has greater rank than T2 and T2 has greater rank than T3, then T1 has greater rank than T3.
+
+A prvalue that is not a converted bit-field and has an integer type other than bool, char8_t, char16_t, char32_t, or wchar_t whose integer conversion rank ([conv.rank]) is less than the rank of int can be converted to a prvalue of type int if int can represent all the values of the source type; otherwise, the source prvalue can be converted to a prvalue of type unsigned int.
+
 -------------------
 Strinct Aliasing Rules
 --------------------
