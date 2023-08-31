@@ -131,7 +131,7 @@ A standart-layout class is a class that
 has no non-static data members of type non-standard-layout class (or array of such types) or reference,
 has no virtual functions and no virtual base classes,
 has the same access control for all non-static data members,
-has no non-standard-layout base classes,
+has no non-standard-layout base classes and just one of such classes with data memberes,
 has all non-static data members and bit-fields in the class and its base classes first declared in the same class,
 arrays of standart layout classes are standart layout too
  Informally, none of the base classes has the same type as the first non-static data membe

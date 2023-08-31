@@ -33,6 +33,12 @@ A memory location is either an object of scalar type that is not a bit-field or 
       - the null pointer value for that type, (for all objects : one *logical value* , not sure about one representation as technically you cannot reintepret_cast between diffrent types of null pointer values)
       - an invalid pointer value. (for all objects: one *logical value*, many value representations)
 
+      IMPORTANT ->>>> pointers point to OBJECTS not to ADDRESSES 
+      struct B{int i;}; struct B1{int b;} struct D : B, B1 {}
+      D* d = D;
+      B2* b = d;
+      if (b == d) !!will always be true even though addresses are diffrent
+
 
 
       ***** (AND ONLY AND ONLY ) For purposes of pointer arithmetic (7.6.6) and comparison (7.6.9, 7.6.10) **********, a pointer past the end of the

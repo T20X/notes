@@ -42,6 +42,7 @@ gcc using in vector _gnu_cxx::_allocator_traits which is based on
    std::allocator::deallocate - std::allocator::value_type -
    std::allocator::size_type - std::allocator::difference_type -
 
+
   The rest can be done by std::allocator_traits
 
 7. Why comparions operator is required for allocators ?
@@ -91,3 +92,11 @@ function is defined to return a pointer, not to the array, but to the
 first element of the array
 
 After calling allocate() and before construction of elements, pointer arithmetic of T* is well-defined within the allocated array, but the behavior is undefined if elements are accessed.
+
+
+12. 
+
+::operator delete does not call destrcutor because type info is lost
+::operator [] new is meant to implement special array indexing strategy where allocated size won't be exactly  N * sizeof(T)
+bad_alloc can also happen because of heap corruption
+

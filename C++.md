@@ -1,33 +1,74 @@
 ﻿
 # Virtual functions, vptr, table
 
+## vptr and table
+
+Each class gets VPTR created for it. Note that when object is initially created its own VPTR is set rather than the one of the most derived. note that an extra vptr for any class which is deviated in the hiaricy is created as it would not be able to re-use the very first vptr since itis members may be diffrent !
+
+Extra data in VPTR:
+- offset to virtual base classes if any present
+- offset to the most derviced object start -to allow dynamic_cast conversions
+- RTTI pointer if enabled!
+![](/images/c++/2023-08-26-15-47-01.png)
+
+
+```
+Another example:
+Vtable for C
+C::_ZTV1C: 14 entries
+0     (int (*)(...))0 //offset to most derived object start
+8     (int (*)(...))(& _ZTI1C)
+16    (int (*)(...))C::~C
+24    (int (*)(...))C::~C
+32    (int (*)(...))C::f1
+40    (int (*)(...))A::f2
+48    (int (*)(...))A::f12
+56    (int (*)(...))C::f3
+64    (int (*)(...))C::f6
+72    (int (*)(...))-72 //offset to most derived object start, note that B's virtual table is embeded here!
+80    (int (*)(...))(& _ZTI1C)
+88    (int (*)(...))C::_ZThn72_N1C2f3Ev
+96    (int (*)(...))B::f4
+104   (int (*)(...))B::f5
+
+Class C
+   size=80 align=8
+   base size=80 base align=8
+C (0x0x7fd1cc514310) 0
+    vptr=((& C::_ZTV1C) + 16)
+A (0x0x7fd1cc4ff8a0) 0
+      primary-for C (0x0x7fd1cc514310)
+B (0x0x7fd1cc4ff900) 72 nearly-empty
+      vptr=((& C::_ZTV1C) + 88)
+```
+## pointer adjustment 
+
+can be done if suboject is at diffrent offset and does not require vptr. Also can be done when you got non-linear subobject like B in 
+class C : public A, public B {
+
+![](/images/c++/2023-08-26-15-49-41.png)
+
+
 ## thunk
 
-a way to re-adjust this pointer for classes not linearly represented in the hiarechy
+a way to re-adjust this pointer for classes not linearly represented in the hiarechy. Note that even for destructor it would get generated too so that most derived class destructor gets called
+
+![](/images/c++/2023-08-26-14-26-00.png)
+
+## virtual base classes
+
+virtual base classes can introduce another indirection if they contain data since normally they located at the end of object and their vptr would contain an offset to them which requires another indirectoin to access their data.
+
+![](images/c++/2023-08-26-15-12-01.png)
+
+
+![](images/c++/2023-08-26-15-12-55.png)
 
 
 
+# smart pointers
 
-
-
-
-
-
-
-An array type whose elements are cv-qualified is also considered to have the same cv-qualifications as its elements.
-[Note 2: Cv-qualifiers applied to an array type attach to the underlying element type, so the notation “cv T”, where T is an array type, refers to an array whose elements are so-qualified ([dcl.array]). — end note]
-[Example 1:
-typedef char CA[5];
-typedef const char CC;
-CC arr1[5] = { 0 };
-const CA arr2 = { 0 };
-The type of both arr1 and arr2 is “array of 5 const char”, and the array type is considered to be const-qualified. — end example]
-
-
-
----------------------------
-
-
+## owner_less 
 
 template <class T> struct owner_less; /* undefined */
 (since C++ 11)(until C++ 17) template <class T = void>
@@ -36,633 +77,14 @@ struct owner_less; /* undefined */
 (2)(since C++ 11) template <class T> struct owner_less<std::weak_ptr<T>>;
 (3)(since C++ 11) template <> struct owner_less<void>;
 (4)(since C++ 17) This function object provides owner -
-        based(as opposed to value - based) mixed -
-        type ordering of both std::weak_ptr and std::shared_ptr
-            .The order is such that two smart pointers compare equivalent only
-        if they are both empty
-    or if they share ownership,
-    even if the values of the raw pointers obtained by get() are different(
-        e.g.because they point at different subobjects within the same object)
-        .
+ based(as opposed to value - based) mixed - type ordering of both std::weak_ptr and std::shared_ptr .The order is such that two smart pointers compare equivalent only if they are both empty or if they share ownership,
+ even if the values of the raw pointers obtained by get() are different(
+ e.g.because they point at different subobjects within the same object)
 
-    -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -C
-    ++ inline namespaces dont hide symbols and also allow ADL to work !
+# Name lookup, ADL
 
-    -- -- -- -- -- -- --lambdas
-    -- -- -- -- -- -- --auto *ptr =
-        +[](int, int) {} // possible!
+inline namespaces dont hide symbols and also allow ADL to work !
 
-        -- -- -- -- -- -- --values-- -- -- -- -- -- --
-
-        If an indeterminate value is produced by an evaluation,
-                             the behavior is undefined
-
-                                 -- -
-
-                                 objects-- --
-
-                                 size(can be determined with sizeof);
-alignment requirement(can be determined with alignof);
-storage duration(automatic, static, dynamic, thread - local);
-lifetime(bounded by storage duration or temporary);
-type;
-value (which may be indeterminate, e.g. for default-initialized non-class types);
-optionally, a name.
-
-An object that is not a subobject of any other object is called a complete object
-
-A function is not an object, regardless of whether or not it occupies storage in the way that objects do
-
-A class S is an implicit-lifetime class if
-- it is an aggregate or
-- it has at least one trivial eligible constructor and a trivial, non-deleted destructor.
-
-For objects insdie complete ojbect, an object has nonzero size if it
-(8.1) is not a potentially-overlapping subobject, or
-(8.2) is not of class type, or
-(8.3) is of a class type with virtual member functions or virtual base classes, or
-(8.4) has subobjects of nonzero size or unnamed bit-fields of nonzero length.
-Otherwise, if the object is a base class subobject of a standard-layout class type with no non-static data members, it has zero size
-
-
-A pointer value becomes invalid when the storage it denotes reaches the end of its storage duration
-
-
-For purposes of pointer arithmetic ([expr.add]) and comparison ([expr.rel], [expr.eq]), a pointer past the end of the last element of an array x of n elements is considered to be equivalent to a pointer to a hypothetical array element n of x and an object of type T that is not an array element is considered to belong to an array with one element of type T. The value representation of pointer types is implementation-defined. 
-
-While pointer values are implementation defined, there is exist a concept of byte and statement that each byte has unique address
-
-object is not its value! value exists independetnly of objects
-
-The following entities are not objects: value, reference, function, enumerator, type, non-static class member, template, class or function template specialization, namespace, parameter pack, and this.
-
-A variable is an object or a reference that is not a non-static data member, that is introduced by a declaration.
-
-
-Each object with automatic storage duration is destroyed if it has been constructed, but not yet destroyed, since the try block was entered. That means this code is invvalid because n is destroyed first (before a)!
-
-Every object and reference has a lifetime, which is a runtime property: for any object or reference, there is a point of execution of a program when its lifetime begins, and there is a moment when it ends.
-
-
-When storage for an object with automatic or dynamic storage duration is obtained, the object has an indeterminate value, and if no initialization is performed for the object, that object retains an indeterminate value until that value is replaced ([expr.ass]). [ Note: Objects with static or thread storage duration are zero-initialized, see [basic.start.static]. — end note ]
-
-------
-object lifetime
------
-
-If a program attempts to access the stored value of an object through a glvalue whose type is not similar to one of the following types the behavior is undefined:45
-- the dynamic type of the object,
-- a type that is the signed or unsigned type corresponding to the dynamic type of the object, or
-- a char, unsigned char, or std​::​byte type.
-(Only glvalues of scalar type can be used to access objects)
-
-The lifetime of an object begins when:
-
-storage with the proper alignment and size for its type is obtained, and
-its initialization (if any) is complete (including default initialization via no constructor or trivial default constructor), except that
-if the object is a union member or subobject thereof, its lifetime only begins if that union member is the initialized member in the union, or it is made active,
-if the object is nested in a union object, its lifetime may begin if the containing union object is assigned or constructed by a trivial special member function,
-an array object's lifetime may also begin if it is allocated by std::allocator::allocate.
-Some operations implicitly create objects of implicit-lifetime types in given region of storage and start their lifetime. If a subobject of an implicitly created object is not of an implicit-lifetime type, its lifetime does not begin implicitly.
-
-The lifetime of an object ends when:
-
-if it is of a non-class type, the object is destroyed (maybe via a pseudo-destructor call), or
-if it is of a class type, the destructor call *STARTS*, or
-the storage which the object occupies is released, or is reused by an object that is not nested within it.
-Lifetime of an object is equal to or is nested within the lifetime of its storage, see storage duration.
-
-The lifetime of a reference begins when its initialization is complete and ends as if it were a scalar object.
-
-Note: the lifetime of the referred object may end before the end of the lifetime of the reference, which makes dangling references possible.
-
-Lifetimes of non-static data members and base subobjects begin and end following class initialization order.
-
-
-If a new object is created at the address that was occupied by another object, then all pointers, references, and the name of the original object will automatically refer to the new object and, once the lifetime of the new object begins, can be used to manipulate the new object, but only if the original object is transparently replaceable by the new object.
-
-
-**********************************
-Object x is transparently replaceable by object y if:
-*******************************
-
-
-If, after the lifetime of an object has ended and before the storage which the object occupied is reused or released, a new object is created at the storage location which the original object occupied, a pointer that pointed to the original object, a reference that referred to the original object, or the name of the original object will automatically refer to the new object and, once the lifetime of the new object has started, can be used to manipulate the new object, if the original object is transparently replaceable (see below) by the new object. An object o1 is transparently replaceable by an object o2 if:
-
-
-(8.1) the storage that o2 occupies exactly overlays the storage that o1 occupied, and 
-(8.2) o1 and o2 are of the same type (ignoring the top-level cv-qualifiers), and
-(8.3) o1 is not a complete const object, and
-(8.4) neither o1 nor o2 is a potentially-overlapping subobject ([intro.object]), and
-(8.5) either o1 and o2 are both complete objects, or o1 and o2 are direct subobjects of objects p1 and p2 , respectively, and p1 is transparently replaceable by p2 .
-
-
-struct C {
-  int i;
-  void f();
-  const C &operator=(const C &);
-};
-
-const C &C::operator=(const C &other) {
-  if (this != &other) {
-    this->~C();          // lifetime of *this ends
-    new (this) C(other); // new object of type C created
-    f();                 // well-defined
-  }
-  return *this;
-}
-
-C c1;
-C c2;
-c1 = c2; // well-defined
-c1.f();  // well-defined; c1 refers to a new object of type C
-
-Creating a new object within the storage that a const complete object with static, thread, or automatic storage duration occupies, or within the storage that such a const object used to occupy before its lifetime ended, results in undefined behavior. [ Example:
-struct B {
-  B();
-  ~B();
-};
-
-const B b;
-
-void h() {
-  b.~B();
-  new (const_cast<B *>(&b)) const B; // undefined behavior
-
-  -- -- -types-- - An object of trivially copyable or
-      standard - layout type([basic.types.general])
-                     shall occupy contiguous bytes of storage.
-
-                 The declared type of an array object might be an array of
-                     incomplete class type and therefore incomplete;
-  if the
-    class type is completed later on in the translation unit,
-        the array type becomes complete;
-
-  Objects shall not be defined to have an incomplete type.
-
-      An object type is
-      a(possibly cv - qualified) type that is not a function type,
-      not a reference type,
-      and not cv void.
-
-              Two types cv1 T1 and
-          cv2 T2 are layout - compatible types if T1 and T2 are the same type,
-      layout - compatible enumerations,
-      or layout - compatible standard -
-                  layout class types.
-
-                  Two standard -
-                  layout struct([class.prop]) types are layout -
-                  compatible classes if their common initial sequence comprises
-                      all members and
-              bit -
-                  fields of both classes([basic.types])
-                      .
-
-                  Unsigned arithmetic does not overflow
-
-                      Incompletely -
-                  defined object types and
-              cv void are incomplete type
-
-                  Specifies that a type is a literal type.Literal types are the
-                      types of constexpr variables and
-              they can be constructed,
-      manipulated,
-      and returned from constexpr functions.
-
-          A literal type is any of the following
-      : A literal type is any of the following :
-
-      possibly cv -
-          qualified void(so that constexpr functions can return void);
-  (since C++ 14) scalar type;
-  reference type;
-  an array of literal type;
-  possibly cv - qualified class type that has all of the following properties
-      : has a
-        trivial(until C++ 20) constexpr(since C++ 20) destructor,
-      is one of a closure type,
-      (since C++ 17)an aggregate union type that has no variant members,
-      or has at least one variant member of non - volatile literal type,
-      a non - union aggregate type,
-      and each of its anonymous union members has no variant members,
-      or has at least one variant member of non - volatile literal type,
-      a type with at least one constexpr(possibly template)
-              constructor that is not a copy or
-          move constructor,
-
-      Arithmetic types([basic.fundamental]), enumeration types, pointer types,
-      pointer - to - member types([basic.compound]), std​::​nullptr_­t,
-      and cv - qualified versions of these types are collectively called scalar
-                   types.Scalar types,
-      trivially copyable class types([class.prop]), arrays of such types,
-      and cv - qualified versions of these types are collectively called
-                   trivially copyable types.Scalar types,
-      trivial class types([class.prop]),
-      arrays of such types and
-          cv - qualified versions of these types are collectively called trivial
-                   types.Scalar types,
-      standard - layout class types([class.prop]),
-      arrays of such types and cv -
-                                   qualified versions of these types are
-                                       collectively called standard -
-                                   layout types.Scalar types,
-      implicit - lifetime class types([class.prop]), array types,
-      and cv -
-          qualified versions of these types are collectively called implicit -
-          lifetime types.
-
-          An aggregate is one of the following types
-      : (note that is not recursive !)
-
-            array type class type(typically, struct or union),
-      that has no private or
-          protected direct(since C++ 17) non - static data members no user -
-              declared or
-          inherited constructors no virtual,
-      private, or protected(since C++ 17) base classes An aggregate class or
-                   array may include non - aggregate public bases(since C++ 17),
-      members, or elements,
-      which are initialized as described above(
-          e.g.copy - initialization from the corresponding initializer clause)
-
-              here are two kinds of types
-      : fundamental types and
-        compound types.Types describe objects,
-      references,
-      or
-          functions
-
-              -- -- -- -- -- --ODR-- -- -- -- -- -One and
-              only one definition of every non - inline function or
-          variable that is odr -
-              used(see below) is required to appear in the entire program(
-                  including any standard and user - defined libraries)
-                  .The compiler is not required to diagnose this violation,
-      but the behavior of the program that violates it is undefined
-
-          Informally,
-      an object is odr -
-              used if its value is read(unless it is a compile time constant) or
-          written,
-      its address is taken, or a reference is bound to it;
-  a reference is odr -
-      used if it is used and its referent is not known at compile time;
-  and a function is odr - used if a function call to it is made or
-      its address is taken.If an object,
-      a reference or a function is odr - used,
-      its definition must exist somewhere in the program;
-  a violation of that is usually a link - time error
-
-                                              For an inline function or
-      inline variable(since C++ 17),
-      a definition is required in every translation unit where it is odr -
-          used.
-
-          There can be more than one definition in a program of each of the
-              following : class type,
-      enumeration type, inline function, inline variable(since C++ 17),
-      templated entity(template or member of template,
-                       but not full template specialization),
-      as long as all of the following is true :
-
-      each definition appears in a different translation unit the definitions
-          are not attached to a named
-          module(since C++ 20) each definition consists of the same sequence of
-          tokens(typically, appears in the same header file)
-
-              -- -- -- -- --struct Ref {
-    const int &r;
-  };
-
-  brace initialization extends ref lifetime Ref r1{
-      GetInt()};    // OK, lifetime is extended
-  Ref r1(GetInt()); // dangled reference
-
-  -- -- -- -- -- -- -- -- -- -- -- -- -- -- --C -
-      style cast-- -- -- -- -- -- -- -- -- -- --It would attempt
-          to do other casts in the following order :
-
-      const_cast static_cast reinterpret_cast
-
-
- Sorry for the thread necromancy, but I just happened across this and your code above is likely not safe. This is because youre using reinterpret_cast to cast a void *, whereas you should always use a static_cast for related type conversions (and void * is related to all other pointer types).
--------------
-Union
----------------
-
-In C and in C++ prior to C++11, unions are restricted to trivial types.
-
-Starting from C++11, it is possible to use unions with non-trivial types with the following limitations :
-
-You have to manually handle the lifetime of the active member, using placement new and explicit object destruction.
-You have to define special members like destructor and copy-constructor while taking into consideration the active member.
-
-
-It says that we are allowed to read the non-static data member of the non-active member if it is part of the common initial sequence of the the structs [class.mem.general]p25.
-
-struct T1 {
-   int a, b;
- };
- struct T2 {
-   int c;
-   double d;
- };
- union U {
-   T1 t1;
-   T2 t2;
- };
- int f() {
-   U u = {{1, 2}}; // active member is t1
-   return u.t2.c;  // OK, as if u.t1.a were nominated
-
-   union A {
-     struct {
-       int x, y;
-     } a;
-     struct {
-       int x, y;
-     } b;
-   };
-   int f() {
-     A a = {.a = {}};
-     a.b.x = 1;    // Change active member, starts lifetime of b
-                   // there is no initialization of y
-     return a.b.y; // UB
-   }
-
-   In a standard - layout union with an active member of struct type T1,
-       it is permitted to read a non -
-           static data member m of another union member of struct type T2
-               provided m is part of the common initial sequence of T1 and T2; the behavior is as if the corresponding member of T1 were nominated. [ Example:
-struct T1 {
-      int a, b; };
-struct T2 {
-      int c;
-      double d; };
-union U {
-      T1 t1;
-      T2 t2; };
-int f() {
-      U u = {{1, 2}}; // active member is t1
-      return u.t2.c;  // OK, as if u.t1.a were nominated
-}
-
-
-
-----
-
-type pune 
-
----------------
-
-some room with reinterpret_cast,
-more standart way : memcpy and std::bit_cast
-
-
-ntoe that compiler optimizes mempcy and std::bit_cast very well to avoid actuall copy
-
--------------------
-ways to do type copy / pune
--------------------
-
-(1) 
-
-For any object (other than a potentially-overlapping subobject) of trivially copyable type T, whether or not the object holds a valid value of type T, the underlying bytes ([intro.memory]) making up the object can be copied into an array of char, unsigned char, or std​::​byte ([cstddef.syn]).30 If the content of that array is copied back into the object, the object shall subsequently hold its original value
-
-constexpr std::size_t N = sizeof(T);
-char buf[N];
-T obj;                          // obj initialized to its original value
-std::memcpy(buf, &obj, N);      // between these two calls to std​::​memcpy, obj might be modified
-std::memcpy(&obj, buf, N);      // at this point, each subobject of obj of scalar type holds its original value
-
-(2) 
-
-For two distinct objects obj1 and obj2 of trivially copyable type T, where neither obj1 nor obj2 is a potentially-overlapping subobject, if the underlying bytes ([intro.memory]) making up obj1 are copied into obj2,31 obj2 shall subsequently hold the same value as obj1
-
-T* t1p;
-T* t2p;
-    // provided that t2p points to an initialized object ...
-std::memcpy(t1p, t2p, sizeof(T));
-    // at this point, every subobject of trivially copyable type in *t1p contains
-    // the same value as the corresponding subobject in *t2p
-
-(3)
-
-struct T1 {
-      int a, b; };
-struct T2 {
-      int c;
-      double d; };
-union U {
-      T1 t1;
-      T2 t2; };
-int f() {
-      U u = {{1, 2}}; // active member is t1
-      return u.t2.c;  // OK, as if u.t1.a were nominated
-
-      (4)
-
-          struct C {
-        int i;
-        void f();
-        const C &operator=(const C &);
-      };
-
-      const C &C::operator=(const C &other) {
-        if (this != &other) {
-          this->~C();          // lifetime of *this ends
-          new (this) C(other); // new object of type C created
-          f();                 // well-defined
-        }
-        return *this;
-      }
-
-      C c1;
-      C c2;
-      c1 = c2; // well-defined
-      c1.f();  // well-defined; c1 refers to a new object of type C
-
-      (4) unique_ptr<char[]> Stream::read() {
-        // ... determine data size ...
-        unique_ptr<char[]> buffer(new char[N]);
-        // ... copy data into buffer ...
-        // if OBJECT IS TRIVIALLY COPYABLE THAT IS FINE IT DOES NOT EVEN NEED
-        // TO HAVE TRIVIAL CONSTRUCTOR
-        return buffer;
-      }
-
-      void process(Stream * stream) {
-        unique_ptr<char[]> buffer = stream->read();
-        if (buffer[0] == FOO)
-          process_foo(reinterpret_cast<Foo *>(buffer.get())); // #1
-        else
-          process_bar(reinterpret_cast<Bar *>(buffer.get())); // #2
-      }
-
-      -- -- -- -- -- -- --ways NOT to do type pune-- -- -- -- -
-
-                        (1)
-
-                            Before the lifetime of an object has started but
-                                after the storage which the object will occupy
-                                    has been allocated29 or
-          ,
-          after the lifetime of an object has ended and before the storage which
-                  the object occupied is reused or
-              released,
-          any pointer that represents the address of the storage location where
-                  the object will be or
-              was located may be used but only in limited ways.For an object
-                  under construction or
-              destruction,
-          see[class.cdtor].Otherwise,
-          such a pointer refers to allocated storage(
-              [basic.stc.dynamic.allocation]),
-          and using the pointer as if the pointer were of type void *is well -
-              defined.Indirection through such a pointer is permitted but the
-                  resulting lvalue may only be used in limited ways,
-          as described below.The program has undefined behavior if :
-
-          struct B {
-        virtual void f();
-        void mutate();
-        virtual ~B();
-      };
-
-      struct D1 : B {
-        void f();
-      };
-      struct D2 : B {
-        void f();
-      };
-
-      void B::mutate() {
-        new (this) D2; // reuses storage --- ends the lifetime of *this
-        f();           // undefined behavior
-
-        (2) If a program ends the lifetime of an object of type T with static,
-            thread, or automatic storage duration and if T has a non -
-                            trivial destructor,
-            30 the program must ensure that an object of the original type
-                occupies that same storage location when the implicit destructor
-                    call takes place; otherwise the behavior of the program is undefined. This is true even if the block is exited with an exception. [ Example:
-
-class T { };
-struct B {
-          ~B();
-};
-
-void h() {
-          B b;
-          new (&b) T;
-
-   } // b's destrctor is called but storage has been occupied by T
-
-Objects can contain other objects, called subobjects. A subobject can be a member subobject ([class.mem]), a base class subobject ([class.derived]), or an array element. An object that is not a subobject of any other object is called a complete object. If an object is created in storage associated with a member subobject or array element e (which may or may not be within its lifetime), the created object is a subobject of e's containing object if:
-(2.1)
-the lifetime of e's containing object has begun and not ended, and
-(2.2)
-the storage for the new object exactly overlays the storage location associated with e, and
-(2.3)
-the new object is of the same type as e (ignoring cv-qualification).
-3
-#If a complete object is created([expr.new]) in storage associated with        \
-        another object e of type “array of N unsigned char” or                 \
-    of type “array of N std​::​byte”([cstddef.syn]),                       \
-    that array provides storage for the created object if:
-(3.1)
-the lifetime of e has begun and not ended, and
-(3.2)
-the storage for the new object fits entirely within e, and
-(3.3)
-there is no smaller array object that satisfies these constraints.
-[ Note: If that portion of the array previously provided storage for another object, the lifetime of that object ends because its storage was reused
-
-  template<typename ...T>
-struct AlignedUnion {
-          alignas(T...) unsigned char data[max(sizeof(T)...)];
-};
-int f() {
-          AlignedUnion<int, char> au;
-          int *p = new (au.data) int;     // OK, au.data provides storage
-          char *c = new (au.data) char(); // OK, ends lifetime of *p
-
-
-          /* Also no issue with aliasing here, object lifetime has been
-             started with placement new */
-
-          {
-            // Statically allocate the storage with automatic storage duration
-            // which is large enough for any object of type `T`.
-            alignas(T) unsigned char buf[sizeof(T)];
-
-            T *tptr = new (buf)
-                T; // Construct a `T` object, placing it directly into your
-                   // pre-allocated storage at memory address `buf`.
-
-            tptr->~T(); // You must **manually** call the object's destructor
-
---------------------
-zero initializing array
-std::byte[10] = {}
-----------------------
-Strict aliasing
-Accessing(READING IT) an object using an expression of a type other than the type with which it was created is undefined behavior in many cases, see reinterpret_cast for the list of exceptions and examples.
-note these rules only kick in if you try to read objects value
-
-basically you cannot just defined an array of std:;byte and use it to change types of int or float
-
-
-When it is needed to interpret the bytes of an object as a value of a different type, std::memcpy or std::bit_cast (since C++20)can be used
-
-
-A float can not validly alias an int object
-aliasing anything into std::byte, char, unsgined char is totally fine
-
-
-
-
--------------------------
-
-If we are going to create objects automatically, we need a bare minimum of the following two properties for the type:
-
-1) Creating an instance of the type runs no code. For class types, having a trivially default constructible type is often the right constraint. However, we should also consider cases where initially creating an object is non-trivial, but copying it (for instance, from an on-disk representation) is trivial.
-
-2) Destroying an instance of the type runs no code. If the type maintains invariants, we should not be implicitly creating objects of that type.
-
-Note that we’re only interested in properties of the object itself here, not of its subobjects. In particular, the above two properties always hold for array types. While creating or destroying array elements might run code, creating the array object (without its elements) does not. For similar reasons, it also seems reasonable to permit implicit object creation for aggregate class types even if the aggregate contains an element with a non-trivial destructor.
-
-This suggests that the largest set of types we could apply this to is:
-
-Scalar types
-
-Aggregate types (arrays with any element type, aggregate classes with any members)
-
-Class types with a trivial destructor and a trivial constructor (of any kind)
-
-(Put another way, we can apply this to all types other than function type, reference type, void, and class types where all constructors are non-trivial or where the destructor is non-trivial.)
-
-We will call types that satisfy the above constraints implicit-lifetime types
-
-------------
-std::unordered_map does not guarantee iterators are valid after rehashing, only refrences
--------------
-::operator delete does not call destrcutor because type info is lost
-::operator [] new is meant to implement special array indexing strategy where allocated size won't be exactly  N * sizeof(T)
-----------------------------------------
-
-bad_alloc can also happen because of heap corruption
------------
-structured binding is just a way to introduce refrences to destructured elements it is pointing to
-auto [a,b] = f();
-
-it really does this under the hood auto _e_hidden_ = f();
-auto& a = std::get<0>(_e_hidden_)
-auto& b = std::get<1>(_e_hidden_)
--------------------O
 ADL is been performed for unqualified calls (and for explicit templates since C++20).
 ADL considers only function arguments, not template arguments
 say f<A::X>() won't look at A::X for us because of template argument
@@ -685,10 +107,11 @@ if ADL finds something which is not a function, ADL will stop completely
 So in short, since unqualified lookup will always search in the global namespace, ADL will never apply to global namespace.
 
 
-
 The friend functions that are found by ADL might have been declared in the namespace enclosing the associated type, or they might be declared nowhere else (the so-called “hidden friend” idiom, about which I hope to write more later). However, when the associated type declares a friend function using explicit namespace-qualification (as in friend void NS::f(int)), ADL will ignore that declaration. So even though it is technically possible to befriend functions from other namespaces, those functions will not thereby become ADL candidates
 
-----------------------
+
+## Lookup details
+
 name lookup in C++ works from innermost scope to outtermost scope. for example if you do this
 void f()
 
@@ -700,6 +123,23 @@ void p()
 
 Then compiler wont even look at f() from above,
     but rather would execute other::f;
+
+
+# Lambdas 
+
+## As function pointers
+auto *ptr = +[](int, int) {} // possible, but it has to be stateless
+
+# Intresting features 
+
+## structured binding
+structured binding is just a way to introduce refrences to destructured elements it is pointing to
+auto [a,b] = f();
+
+it really does this under the hood auto _e_hidden_ = f();
+auto& a = std::get<0>(_e_hidden_)
+auto& b = std::get<1>(_e_hidden_)
+
 -------------
 you can make your ::operator new and ::operator delete private to your library by building with -fvisibility=hiddnen and explicitly marking the functions you do want to export with __attribute__((visibility("default")))
 ------------------------
