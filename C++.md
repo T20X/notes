@@ -125,20 +125,43 @@ Then compiler wont even look at f() from above,
     but rather would execute other::f;
 
 
+# auto
+
+auto type deduction is usually the same as template type deduction, but auto type deduction assumes that a braced initializer represents a std::initializer_list, and template type deduction doesn’t
+
+another diffrence is that with templates to have a non-type paramter you need to do this 
+
+```
+template< class T, T v >
+struct integral_constant;
+```
+
+but not with auto
+
+```
+template<auto v >
+struct integral_constant;
+```
+
+## structured binding
+structured binding is just a way to introduce refrences to destructured elements it is pointing to
+```
+auto [a,b] = f();
+```
+
+it really does this under the hood auto _e_hidden_ = f();
+```
+auto& a = std::get<0>(_e_hidden_)
+auto& b = std::get<1>(_e_hidden_)
+```
+
+
 # Lambdas 
 
 ## As function pointers
 auto *ptr = +[](int, int) {} // possible, but it has to be stateless
 
 # Intresting features 
-
-## structured binding
-structured binding is just a way to introduce refrences to destructured elements it is pointing to
-auto [a,b] = f();
-
-it really does this under the hood auto _e_hidden_ = f();
-auto& a = std::get<0>(_e_hidden_)
-auto& b = std::get<1>(_e_hidden_)
 
 -------------
 you can make your ::operator new and ::operator delete private to your library by building with -fvisibility=hiddnen and explicitly marking the functions you do want to export with __attribute__((visibility("default")))

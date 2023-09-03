@@ -89,6 +89,11 @@ A memory location is either an object of scalar type that is not a bit-field or 
 
       As far as C++ is concerned, pointers are not integers; theyre just pointers. You can use casts to convert between pointer values and integer values, and the result should be meaningful in terms of the underlying machines memory model, but not much is guaranteed about the results. You can perform arithmetic on pointers, but on the language level thats not at all the same thing as integer arithmetic (though its probably implemented as scaled integer arithmetic on the machine level).
 
+      -------------------------
+
+      std::has_unique_object_representations
+      checks if the two object with the same values also got the same object representation. Note that they must not have padding bits basically or in case of flaot/double to give diffrent object representation for the same value!
+
       --------------------------------------------
 
       Usually, value representation determines the value of an object. Meaning, that if you change the value, it’s value representation changes as well. Pointers are an exception to that rule! You can change the value without changing its value representation. For example:

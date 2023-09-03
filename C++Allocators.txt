@@ -100,3 +100,14 @@ After calling allocate() and before construction of elements, pointer arithmetic
 ::operator [] new is meant to implement special array indexing strategy where allocated size won't be exactly  N * sizeof(T)
 bad_alloc can also happen because of heap corruption
 
+
+13.  *** IMPORTANT ***
+The value of the operand of delete may be a null pointer value, a pointer to a non-array object created by a previous new-expression, or a pointer to a subobject representing a base class of such an object. If not, the behavior is undefined
+
+  void *ptr = new int;
+  delete ptr; // bad ! undefined behaviour as cannot call delete on pointer to void reliably ! no hard error by compiler!
+  struct S;
+  S *s;
+  delete s; // bad ! undefined behaviour as type S is incomplete, no hard-error
+            // by compiler!
+
