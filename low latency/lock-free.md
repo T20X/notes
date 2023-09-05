@@ -98,28 +98,30 @@ atomic_thread_fence(memory_order_release)
 B part
 
 prevents all preceding reads and writes from moving past all subsequent stores.
+A release fence prevents the memory reordering of any read or write which precedes it in program order with any write which follows it in program order
 
 ### acuire fence
 
-An acquire fence prevents the memory reordering of any read which precedes it in program order with any read or write which follows it in program order.
+An acquire fence prevents the memory reordering of any read which precedes it in program order with any read or write which follows it in program order
 
 A part
 atomic_thread_fence(memory_order_aqcuire)
 B part
 
 B part cannot re-order with loads from A part (can with STOREs!),however A part stores can apear in B part
-
+ in this range no read / writes *below* below the fance  can re-order with *any* read above the fence in program order
 Say
-(Ln)
-(S)
-(L1)--------------------
-(S)		      | in this range both L1 and `L1 can slide as long as they dont' cross!
+(Ln) //nothing below fence can re-order with it
+(S) //this can slide up or down 
+(L1) //nothing below fence can re-order with it
+(S1) //this can slide up or down		      
 atomic_thread_fence(memory_order_aqcuire)
-(S)		      | 	
-(`L1)--------------------- 
-(S)                      | nothing can espace this!And loads from L1 to Ln won't appear here - but writes can!
-(`Ln)-----------------------
+(S2)		      | 	
+(`L1)
+(S) 
+(`Ln)
 
+UNKNOWN: can Ln reorder with L1 above the  fence? Most likely it is possible!
 
 ### Example
 
