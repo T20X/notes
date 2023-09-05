@@ -40,6 +40,7 @@ x.load(acquire)
 B part
 B part cannot cross BEFORE x load, however A part can be moved past X. Note  A operations can apear in B!
 
+![](../images/2023-09-03-22-09-15.png)
 
 
 
