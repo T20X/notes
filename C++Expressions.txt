@@ -1,3 +1,42 @@
+# Side effects
+
+Reading an object designated by a volatile glvalue ([basic.lval]), modifying an object, calling a library I/O function, or calling a function that does any of those operations are all side effects, which are changes in the state of the execution environment. Evaluation of an expression (or a subexpression) in general includes both value computations (including determining the identity of an object for glvalue evaluation and fetching a value previously assigned to an object for prvalue evaluation) and initiation of side effects. When a call to a library I/O function returns or an access through a volatile glvalue is evaluated the side effect is considered complete, even though some external actions implied by the call (such as the I/O itself) or by the volatile access may not have completed yet.
+8
+
+# Sequenced before
+
+Sequenced before is an asymmetric, transitive, pair-wise relation between evaluations executed by a single thread ([intro.multithread]), which induces a partial order among those evaluations. Given any two evaluations A and B, if A is sequenced before B (or, equivalently, B is sequenced after A), then the execution of A shall precede the execution of B. If A is not sequenced before B and B is not sequenced before A, then A and B are unsequenced.
+[Note 3: The execution of unsequenced evaluations can overlap. — end note]
+Evaluations A and B are indeterminately sequenced when either A is sequenced before B or B is sequenced before A, but it is unspecified which.
+[Note 4: Indeterminately sequenced evaluations cannot overlap, but either can be executed first. — end note]
+
+An expression X is said to be sequenced before an expression Y if every value computation and every side effect associated with the expression X is sequenced before every value computation and every side effect associated with the expression Y.
+
+
+Every value computation and side effect associated with a full-expression is sequenced before every value computation and side effect associated with the next full-expression to be evaluated.37
+
+Except where noted, evaluations of operands of individual operators and of subexpressions of individual expressions are unsequenced.
+[Note 5: In an expression that is evaluated more than once during the execution of a program, unsequenced and indeterminately sequenced evaluations of its subexpressions need not be performed consistently in different evaluations. — end note]
+The value computations of the operands of an operator are sequenced before the value computation of the result of the operator. If a side effect on a memory location ([intro.memory]) is unsequenced relative to either another side effect on the same memory location or a value computation using the value of any object in the same memory location, and they are not potentially concurrent ([intro.multithread]), the behavior is undefined.
+[Note 6: The next subclause imposes similar, but more complex restrictions on potentially concurrent computations. — end note]
+[Example 3: 
+void g(int i) {
+  i = 7, i++, i++;              // i becomes 9
+
+  i = i++ + 1;                  // the value of i is incremented
+  i = i++ + i;                  // undefined behavior
+  i = i + 1;                    // the value of i is incremented
+}
+— end example]
+
+
+When invoking a function (whether or not the function is inline), every argument expression and the postfix expression designating the called function are sequenced before every expression or statement in the body of the called function. For each function invocation or evaluation of an await-expression F, each evaluation that does not occur within F but is evaluated on the same thread and as part of the same signal handler (if any) is either sequenced before all evaluations that occur within F or sequenced after all evaluations that occur within F;38 if F invokes or resumes a coroutine ([expr.await]), only evaluations subsequent to the previous suspension (if any) and prior to the next suspension (if any) are considered to occur within F.
+Several contexts in C++ cause evaluation of a function call, even though no corresponding function call syntax appears in the translation unit.
+[Example 4: Evaluation of a new-expression invokes one or more allocation and constructor functions; see [expr.new]. For another example, invocation of a conversion function ([class.conv.fct]) can arise in contexts in which no function call syntax appears. — end example]
+The sequencing constraints on the execution of the called function (as described above) are features of the function calls as evaluated, regardless of the syntax of the expression that calls the function.
+
+
+
 Once an rvalue has been bound to a name, it's an lvalue again, whether it's a wrapping type as std::tuple or rvalue references or a plain rvalue reference.
 -----------------
 

@@ -16,21 +16,120 @@ Visibility determines when other threads will see changes made by the current th
 
 However, there is an interesting deviation - on x86 architecture non-temporal stores (made with instructions like MOVNTDQ) and stores made to WC (Write-Combining) region of memory are effectively non cache-coherent. That is, they will be propagated to other processors/cores only before execution of SFENCE instruction, MFENCE instruction, LOCKed instruction or other serializing action
 
-# Ordering 
-
-if you mix aqc-release oprations with seq_const operations then seq_const operations behave like ack-release operations!
-
-## std::atomic<T> variables
-
-## global fences
-
 # std::atomic & std::atomic_ref
 
 std::atomic_ref is used to refrence another non-atomic variable and make operatoins on it atomic!
 note that atomic  operations only work on value representation since C++20! so padding bits are all ignored now!
 atomic on floating types is not atomic inc/dec, but store and load are!
 
-## stomic store and load ordering
+In addition, there are relaxed atomic operations, which are not synchronization operations, and atomic read-modify-write operations, which have special characteristics
+
+# Ordering 
+
+if you mix aqc-release oprations with seq_const operations then seq_const operations behave like ack-release operations!
+
+A synchronization operation on one or more memory locations is either a consume operation, an acquire operation, a release operation, or both an acquire and release operation
+
+
+##  "is sequenced before"
+
+"is sequenced before" is strictly intra-thread(within single thread)
+
+Sequenced before is an asymmetric, transitive, pair-wise relation between evaluations executed by a single thread ([intro.multithread]), which induces a partial order among those evaluations. Given any two evaluations A and B, if A is sequenced before B (or, equivalently, B is sequenced after A), then the execution of A shall precede the execution of B. If A is not sequenced before B and B is not sequenced before A, then A and B are unsequenced.
+[Note 3: The execution of unsequenced evaluations can overlap. — end note]
+Evaluations A and B are indeterminately sequenced when either A is sequenced before B or B is sequenced before A, but it is unspecified which.
+[Note 4: Indeterminately sequenced evaluations cannot overlap, but either can be executed first. — end note]
+
+## Side effects
+
+Reading an object designated by a volatile glvalue ([basic.lval]), modifying an object, calling a library I/O function, or calling a function that does any of those operations are all side effects, which are changes in the state of the execution environment. Evaluation of an expression (or a subexpression) in general includes both value computations (including determining the identity of an object for glvalue evaluation and fetching a value previously assigned to an object for prvalue evaluation) and initiation of side effects. When a call to a library I/O function returns or an access through a volatile glvalue is evaluated the side effect is considered complete, even though some external actions implied by the call (such as the I/O itself) or by the volatile access may not have completed yet.
+8
+
+## "synchronize with"
+
+An atomic operation A that performs a release operation on an atomic object M synchronizes with an atomic operation B that performs an acquire operation on M and takes its value from any side effect in the release sequence headed by A.
+
+## "inter-thread happens before" 
+
+An evaluation A "inter-thread happens before" an evaluation B 
+if A synchronizes with B, or 
+for some evaluation X, 
+  - A synchronizes with X and X is sequenced before B, or
+  - A is sequenced before X and X inter-thread happens before B, or
+  - A inter-thread happens before X and X inter-thread happens before B
+
+The “inter-thread happens before” relation describes arbitrary concatenations of “sequenced before”, “synchronizes with apart from been only concatentaions by "sequenced before"!
+
+The second exception is that a concatenation is not permitted to consist entirely of “sequenced before”. The reasons for this limitation are (1) to permit “inter-thread happens before” to be transitively closed and (2) the “happens before” relation, defined below, provides for relationships consisting entirely of “sequenced before”
+
+The "transitively closed" remark simply means that the relation is transitive: if A inter-thread happens before B and B inter-thread happens before C, then A inter-thread happens before C
+
+
+## "hapens before"
+
+An evaluation A happens before an evaluation B (or, equivalently, B happens after A) if:
+- A is sequenced before B, or
+- A inter-thread happens before B.
+
+## "visible side effect"
+
+A visible side effect A on a scalar object or bit-field M with respect to a value computation B of M satisfies the conditions:
+- A happens before B and
+- there is no other side effect X to M such that A happens before X and X happens before B.
+
+The value of a non-atomic scalar object or bit-field M, as determined by evaluation B, shall be the value stored by the visible side effect A.
+[Note 12: If there is ambiguity about which side effect to a non-atomic object or bit-field is visible, then the behavior is either unspecified or undefined. — end note]
+
+
+## "strongly happens before"
+
+An evaluation A strongly happens before an evaluation D if, either
+- A is sequenced before D, or
+- A synchronizes with D, and both A and D are sequentially consistent atomic operations ([atomics.order]), or
+- there are evaluations B and C such that A is sequenced before B, B simply happens before C, and C is sequenced before D, or
+- there is an evaluation B such that A strongly happens before B, and B strongly happens before D.
+[Note 11: Informally, if A strongly happens before B, then A appears to be evaluated before B in all contexts. Strongly happens before excludes consume operations. — end note]
+
+## Coherence
+
+**non-atomic**
+The value of a non-atomic scalar object or bit-field M, as determined by evaluation B (**read**), shall be the value stored by the *visible side effect* (**write**) A.
+[Note 12: If there is ambiguity about which side effect to a non-atomic object or bit-field is visible, then the behavior is either unspecified or undefined. — end note]
+[Note 13: This states that operations on ordinary objects are not visibly reordered. This is not actually detectable without data races, but it is necessary to ensure that data races, as defined below, and with suitable restrictions on the use of atomics, correspond to data races in a simple interleaved (sequentially consistent) execution. — end note]
+
+
+**atomic**
+The value of an atomic object M, as determined by evaluation B(**read**), shall be the value stored by some side effect(**write**) A that modifies M, where B does not happen before A.
+[Note 14: The set of such side effects is also restricted by the rest of the rules described here, and in particular, by the coherence requirements below. — end note]
+
+### write-write
+
+If an operation A that modifies an atomic object M happens before an operation B that modifies M, then A shall be earlier than B in the modification order of M.
+[Note 15: This requirement is known as write-write coherence. — end note]
+
+### read-read
+
+If a value computation(**read**) A of an atomic object M happens before a value computation B(**read**) of M, and A takes its value from a side effect X on M, then the value computed by B shall either be the value stored by X or the value stored by a side effect Y on M, where Y follows X in the modification order of M.
+[Note 16: This requirement is known as read-read coherence. — end note]
+
+### read-write
+
+If a value computation A of an atomic object M happens before an operation B that modifies M, then A shall take its value from a side effect X on M, where X precedes B in the modification order of M.
+[Note 17: This requirement is known as read-write coherence. — end note]
+18
+
+### write-read
+
+If a side effect X on an atomic object M happens before a value computation B of M, then the evaluation B shall take its value from X or from a side effect Y that follows X in the modification order of M.
+[Note 18: This requirement is known as write-read coherence. — end note]
+
+
+[Note 19: The four preceding coherence requirements effectively disallow compiler reordering of atomic operations to a single object, even if both operations are relaxed loads. This effectively makes the cache coherence guarantee provided by most hardware available to C++ atomic operations. — end note]
+0
+
+[Note 20: The value observed by a load of an atomic depends on the “happens before” relation, which depends on the values observed by loads of atomics. The intended reading is that there must exist an association of atomic loads with modifications they observe that, together with suitably chosen modification orders and the “happens before” relation derived as described above, satisfy the resulting constraints as imposed here. — end note]
+
+## std::atomic<T> variables
 
 ### memory_order_acuqire
 
@@ -43,7 +142,6 @@ B part cannot cross BEFORE x load, however A part can be moved past X. Note  A o
 ![](../images/2023-09-03-22-09-15.png)
 
 
-
 ### memory_order_release 
 
 **memory_order_release** - no reads or writes in the current thread can be reordered after this store. 
@@ -53,12 +151,14 @@ B part
 
 A part cannot be re-ordered AFTER store x, but B part operations can appear before x!
 
-# relaxed
+### memory_order_relaxed
 
 relaxed is a bit more than just a plain normal read/write; it guarantees that read/writes are not "torn" which allows you to implement tear-free shared variables without any imposition from memory barriers
 
 
 ## Fences
+
+A synchronization operation without an associated memory location is a fence and can be either an acquire fence, a release fence, or both an acquire and release fence
 
 **IMPORTANT ----> note that they are opposite to atomic variable fences!**
 

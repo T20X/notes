@@ -24,3 +24,8 @@ POSIX.1 distinguishes the notions of signals that are directed to the process as
 If you want a dedicated thread in your process to handle some signals, here is an example from pthread_sigmask(3) shows you how to do it:
 
 The program below blocks some signals in the main thread, and then creates a dedicated thread to fetch those signals via sigwait(3). The following shell session demonstrates its use:
+-----
+For a signal handler that is not executed as a result of a call to the std​::​raise function, it is unspecified which thread of execution contains the signal handler invocation
+
+If a signal handler is executed as a result of a call to the std​::​raise function, then the execution of the handler is sequenced after the invocation of the std​::​raise function and before its return.
+[Note 7: When a signal is received for another reason, the execution of the signal handler is usually unsequenced with respect to the rest of the program. — end note]
