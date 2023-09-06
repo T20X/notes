@@ -40,6 +40,50 @@ Sequenced before is an asymmetric, transitive, pair-wise relation between evalua
 Evaluations A and B are indeterminately sequenced when either A is sequenced before B or B is sequenced before A, but it is unspecified which.
 [Note 4: Indeterminately sequenced evaluations cannot overlap, but either can be executed first. — end note]
 
+
+### Example
+The sequenced-before relationship, and the rules concerning it are a "tidying up" of the prior rules on sequence points, defined in a consistent way with the other memory model relationships such as happens-before and synchronizes-with so that it can be precisely specified which operations and effects are visible under which circumstances.
+
+The consequences of the rules are unchanged for simple single-threaded code.
+
+Let's start with your examples:
+
+1. i = ++i;
+If i is a built-in type such as int then there are no function calls involved, everything is a built-in operator. There are thus 4 things that happen:
+
+(a) The value computation of ++i, which is original-value-of-i +1
+
+(b) The side effect of ++i, which stores original-value-of-i +1 back into i
+
+(c) The value computation of the assignment, which is just the value stored, in this case the result of the value computation of ++i
+
+(d) The side effect of the assignment, which stores the new value into i
+
+All of these things are sequenced-before the following full expression. (i.e. they are all complete by the final semicolon of the statement)
+
+Since ++i is equivalent to i+=1, the side effect of storing the value is sequenced-before the value computation of ++i, so (b) is sequenced-before (a).
+
+The value computation of both operands of an assignment is sequenced-before the value computation of the assignment itself, and that is in turn sequenced-before the side effect of storing the value. Therefore (a) is sequenced before (c), and (c) is sequenced-before (d).
+
+We therefore have (b) -> (a) -> (c) -> (d), and this is thus OK under the new rules, whereas it was not OK under C++98.
+
+
+### Rules
+
+- The value computations of the arguments of a built-in operator are sequenced-before the value computation of the operator itself.
+- The side effects of a built-in assignment operator or preincrement operator are sequenced-before the value computation of the result.
+- The value computation of any other built-in operator is sequenced-before the side effects of that operator.
+- The value computation and side-effects of the left-hand side of the built-in comma operator are sequenced-before the value computation and side-effects of the right-hand side.
+- All value computations and side effects of a full expression are sequenced-before the next full expression.
+- The value computation and side effects of the arguments of a function call are sequenced before the first full expression in the function.
+- The value computation and side effects of everything inside a function are sequenced-before the value computation of the result.
+- For any two function calls in the full expression, either the value computation of the result of one is sequenced-before the call to the other, or vice-versa. If no other rule specifies the ordering, the compiler may choose.
+
+Thus in a()+b(), either a() is sequenced-before b(), or b() is sequenced-before a(), but there is no rule to specify which.
+If there are two side effects that modify the same variable, and neither is sequenced-before the other, the code has undefined behaviour.
+
+If there is a side effect that modifies a variable, and a value computation that reads that variable, and neither is sequenced-before the other, the code has undefined behaviour.
+
 ## Side effects
 
 Reading an object designated by a volatile glvalue ([basic.lval]), modifying an object, calling a library I/O function, or calling a function that does any of those operations are all side effects, which are changes in the state of the execution environment. Evaluation of an expression (or a subexpression) in general includes both value computations (including determining the identity of an object for glvalue evaluation and fetching a value previously assigned to an object for prvalue evaluation) and initiation of side effects. When a call to a library I/O function returns or an access through a volatile glvalue is evaluated the side effect is considered complete, even though some external actions implied by the call (such as the I/O itself) or by the volatile access may not have completed yet.
@@ -102,13 +146,13 @@ An evaluation A strongly happens before an evaluation D if, either
 ## Coherence
 
 **non-atomic**
-The value of a non-atomic scalar object or bit-field M, as determined by evaluation B (**read**), shall be the value stored by the *visible side effect* (**write**) A.
+The value of a non-atomic scalar object or bit-field M, as determined by evaluation B (**read**/**calc**), shall be the value stored by the *visible side effect* (**write**) A.
 [Note 12: If there is ambiguity about which side effect to a non-atomic object or bit-field is visible, then the behavior is either unspecified or undefined. — end note]
 [Note 13: This states that operations on ordinary objects are not visibly reordered. This is not actually detectable without data races, but it is necessary to ensure that data races, as defined below, and with suitable restrictions on the use of atomics, correspond to data races in a simple interleaved (sequentially consistent) execution. — end note]
 
 
 **atomic**
-The value of an atomic object M, as determined by evaluation B(**read**), shall be the value stored by some side effect(**write**) A that modifies M, where B does not happen before A.
+The value of an atomic object M, as determined by evaluation B(**read**/**calc**), shall be the value stored by some side effect(**write**) A that modifies M, where B does not happen before A.
 [Note 14: The set of such side effects is also restricted by the rest of the rules described here, and in particular, by the coherence requirements below. — end note]
 
 ### write-write
@@ -118,7 +162,7 @@ If an operation A that modifies an atomic object M happens before an operation B
 
 ### read-read
 
-If a value computation(**read**) A of an atomic object M happens before a value computation B(**read**) of M, and A takes its value from a side effect X on M, then the value computed by B shall either be the value stored by X or the value stored by a side effect Y on M, where Y follows X in the modification order of M.
+If a value computation(**read**/**calc**) A of an atomic object M happens before a value computation B(**read**/**calc**) of M, and A takes its value from a side effect X on M, then the value computed by B shall either be the value stored by X or the value stored by a side effect Y on M, where Y follows X in the modification order of M.
 [Note 16: This requirement is known as read-read coherence. — end note]
 
 ### read-write
@@ -286,6 +330,8 @@ The order of volatile operations cannot change relative to other volatile operat
 That being said, volatile doesn’t imply any observable ordering in terms of the C++ memory model
 
 http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p1152r0.html
+
+Accesses (reads and writes) to volatile objects occur strictly according to the semantics of the expressions in which they occur. In particular, they are not reordered with respect to other volatile accesses on the same thread
 
 # CAS
 

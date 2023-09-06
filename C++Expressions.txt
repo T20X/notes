@@ -1,7 +1,30 @@
 # Side effects
 
 Reading an object designated by a volatile glvalue ([basic.lval]), modifying an object, calling a library I/O function, or calling a function that does any of those operations are all side effects, which are changes in the state of the execution environment. Evaluation of an expression (or a subexpression) in general includes both value computations (including determining the identity of an object for glvalue evaluation and fetching a value previously assigned to an object for prvalue evaluation) and initiation of side effects. When a call to a library I/O function returns or an access through a volatile glvalue is evaluated the side effect is considered complete, even though some external actions implied by the call (such as the I/O itself) or by the volatile access may not have completed yet.
-8
+
+#  as-if rule
+
+According to the as-if rule, C++ allows any and all code transformations that do not change the observable behavior of
+
+
+The semantic descriptions in this International Standard define a parameterized nondeterministic abstract machine. This International Standard places no requirement on the structure of conforming implementations. In particular, they need not copy or emulate the structure of the abstract machine. Rather, conforming implementations are required to emulate (only) the observable behavior of the abstract machine as explained below
+
+
+This provision is sometimes called the “as-if” rule, because an implementation is free to disregard any requirement of this International Standard as long as the result is as if the requirement had been obeyed, as far as can be determined from the observable behavior of the program. For instance, an actual implementation need not evaluate part of an expression if it can deduce that its value is not used and that no side effects affecting the observable behavior of the program are produced
+
+
+The least requirements on a conforming implementation are:
+  - Accesses through volatile glvalues are evaluated strictly according to the rules of the abstract machine.
+  - At program termination, all data written into files shall be identical to one of the possible results that execution of the program according to the abstract semantics would have produced.
+  - The input and output dynamics of interactive devices shall take place in such a fashion that prompting output is actually delivered before a program waits for input. What constitutes an interactive device is implementation-defined.
+These collectively are referred to as the observable behavior of the program.
+[Note 2: More stringent correspondences between abstract and actual semantics can be defined by each implementation. — end note]
+6) This provision is sometimes called the “as-if” rule, because an implementation is free to disregard any requirement of this document as long as the result is as if the requirement had been obeyed, as far as can be determined from the observable behavior of the program. For instance, an actual implementation need not evaluate part of an expression if it can deduce that its value is not used and that no side effects affecting the observable behavior of the program are produced.
+
+# Sequence points
+
+The C++11 and C++14 versions of the standard do not formally contain 'sequence points'; operations are 'sequenced before' or 'unsequenced' or 'indeterminately sequenced' instead. The net effect is essentially the same, but the terminology is different.
+
 
 # Sequenced before
 
