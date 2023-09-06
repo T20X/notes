@@ -53,6 +53,7 @@ An atomic operation A that performs a release operation on an atomic object M sy
 
 An evaluation A "inter-thread happens before" an evaluation B 
 if A synchronizes with B, or 
+
 for some evaluation X, 
   - A synchronizes with X and X is sequenced before B, or
   - A is sequenced before X and X inter-thread happens before B, or
@@ -70,6 +71,14 @@ The "transitively closed" remark simply means that the relation is transitive: i
 An evaluation A happens before an evaluation B (or, equivalently, B happens after A) if:
 - A is sequenced before B, or
 - A inter-thread happens before B.
+
+At least in C++11, strictly speaking, happens-before is not transitive. According to the standard, §1.10:12 (I am referring to the N3337 draft), an evaluation A happens before an evaluation B if A is sequenced before B, or A inter-thread happens before B.
+
+For example, assume that operation A is dependency-ordered before B (see §1.10:11 for a definition; this is where consume operations come into play). In particular this means that A inter-thread happens before B. Further assume that B is sequenced before C.
+
+Then A happens before B, B happens before C, but A is not required to happen before C by the standard.
+
+This shows that happens-before is not transitive in C++11. **IMPORTANT--------------->** But if you ignore "consume" opratoins that it is transitive.
 
 ## "visible side effect"
 
