@@ -30,6 +30,17 @@ if you mix aqc-release oprations with seq_const operations then seq_const operat
 
 A synchronization operation on one or more memory locations is either a consume operation, an acquire operation, a release operation, or both an acquire and release operation
 
+## full expression 
+
+A full-expression is an expression that is not a subexpression of another expression. If a language construct is defined to produce an implicit call of a function, a use of the language construct is considered to be an expression for the purposes of this definition. A call to a destructor generated at the end of the lifetime of an object other than a temporary object is an implicit full-expression
+
+## value computations
+
+ value computations (including determining the identity of an object for glvalue evaluation and fetching a value previously assigned to an object for prvalue evaluation)
+
+## "evaluation"
+
+Evaluation of an expression (or a subexpression) in general includes both value computations (including determining the identity of an object for glvalue evaluation and fetching a value previously assigned to an object for prvalue evaluation) and initiation of side effects. 
 
 ##  "is sequenced before"
 
@@ -40,6 +51,25 @@ Sequenced before is an asymmetric, transitive, pair-wise relation between evalua
 Evaluations A and B are indeterminately sequenced when either A is sequenced before B or B is sequenced before A, but it is unspecified which.
 [Note 4: Indeterminately sequenced evaluations cannot overlap, but either can be executed first. — end note]
 
+
+An expression X is said to be sequenced before an expression Y if every value computation and every side effect associated with the expression X is sequenced before every value computation and every side effect associated with the expression Y.
+
+
+Every value computation and side effect associated with a full-expression is sequenced before every value computation and side effect associated with the next full-expression to be evaluated. Basicaly it says that "A is sequenced before B"
+A = 1;
+B = 3;
+
+**IMPORTANT----->But note "as-if" rule!**
+The compiler does not have to do anything at all in the order the programmer wrote, as long as the observable effects occur in the same order that they would have when obeying the sequencing rules. Reordering statements that have no dependency on each other is a very common violation of "sequenced before", and it is the "as-if" rule that permits it
+
+
+------------>>>>> **Except where noted, evaluations of operands of individual operators and of subexpressions of individual expressions are unsequenced.** <<----------------this is important as basically the standard dictates on the sequence before relationship for SUB-EXPRESIONS and OPERANDS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+If a side effect on a scalar object is unsequenced relative to either another side effect on the same scalar object or a value computation using the value of the same scalar object, the behavior is undefined
+
+
+The value computations of the operands of an operator are sequenced before the value computation of the result of the operator.
+That means in x + y the value computation of x and y are sequenced before the value computation of (x + y)
 
 ### Example
 The sequenced-before relationship, and the rules concerning it are a "tidying up" of the prior rules on sequence points, defined in a consistent way with the other memory model relationships such as happens-before and synchronizes-with so that it can be precisely specified which operations and effects are visible under which circumstances.
@@ -70,19 +100,43 @@ We therefore have (b) -> (a) -> (c) -> (d), and this is thus OK under the new ru
 
 ### Rules
 
-- The value computations of the arguments of a built-in operator are sequenced-before the value computation of the operator itself.
-- The side effects of a built-in assignment operator or preincrement operator are sequenced-before the value computation of the result.
-- The value computation of any other built-in operator is sequenced-before the side effects of that operator.
-- The value computation and side-effects of the left-hand side of the built-in comma operator are sequenced-before the value computation and side-effects of the right-hand side.
-- All value computations and side effects of a full expression are sequenced-before the next full expression.
-- The value computation and side effects of the arguments of a function call are sequenced before the first full expression in the function.
-- The value computation and side effects of everything inside a function are sequenced-before the value computation of the result.
-- For any two function calls in the full expression, either the value computation of the result of one is sequenced-before the call to the other, or vice-versa. If no other rule specifies the ordering, the compiler may choose.
+1) Each value computation and side effect of a full expression, that is
+- unevaluated operand
+constant expression
+- an entire initializer, including any comma-separated constituent expressions
+- the destructor call generated at the end of the lifetime of a non-temporary object
+- an expression that is not part of another full-expression (such as the entire expression statement, controlling expression of a for/while loop, conditional expression of if/switch, the expression in a return statement, etc),
+-  including implicit conversions applied to the result of the expression, destructor calls to the temporaries, default member initializers (when initializing aggregates), and every other language construct that involves a function call, is sequenced before each value computation and side effect of the next full expression.
+2) The value computations (but not the side-effects) of the operands to any operator are sequenced before the value computation of the result of the operator (but not its side-effects).
+3) When calling a function (whether or not the function is inline, and whether or not explicit function call syntax is used), every value computation and side effect associated with any argument expression, or with the postfix expression designating the called function, is sequenced before execution of every expression or statement in the body of the called function.
+4) The value computation of the built-in post-increment and post-decrement operators is sequenced before its side-effect.
+5) The side effect of the built-in pre-increment and pre-decrement operators is sequenced before its value computation (implicit rule due to definition as compound assignment)
+6) Every value computation and side effect of the first (left) argument of the built-in logical AND operator && and the built-in logical OR operator || is sequenced before every value computation and side effect of the second (right) argument.
+7) Every value computation and side effect associated with the first expression in the conditional operator ?: is sequenced before every value computation and side effect associated with the second or third expression.
+8) The side effect (modification of the left argument) of the built-in assignment operator and of all built-in compound assignment operators is sequenced after the value computation (but not the side effects) of both left and right arguments, and is sequenced before the value computation of the assignment expression (that is, before returning the reference to the modified object)
+9) Every value computation and side effect of the first (left) argument of the built-in comma operator , is sequenced before every value computation and side effect of the second (right) argument.
+10) In list-initialization, every value computation and side effect of a given initializer clause is sequenced before every value computation and side effect associated with any initializer clause that follows it in the brace-enclosed comma-separated list of initalizers.
+11) A function call that is not sequenced before or sequenced after another function call is indeterminately sequenced (the program must behave as if the CPU instructions that constitute different function calls were not interleaved, even if the functions were inlined).
+The rule 11 has one exception: a function calls made by a standard library algorithm executing under std::par_unseq execution policy are unsequenced and may be arbitrarily interleaved.	(since C++17)
+12) The call to the allocation function (operator new) is indeterminately sequenced with respect to (until C++17)sequenced before (since C++17) the evaluation of the constructor arguments in a new-expression
+13) When returning from a function, copy-initialization of the temporary that is the result of evaluating the function call is sequenced-before the destruction of all temporaries at the end of the operand of the return statement, which, in turn, is sequenced-before the destruction of local variables of the block enclosing the return statement.
+(since C++14)
+14) In a function-call expression, the expression that names the function is sequenced before every argument expression and every default argument.
+15) In a function call, value computations and side effects of the initialization of every parameter are indeterminately sequenced with respect to value computations and side effects of any other parameter.
+16) Every overloaded operator obeys the sequencing rules of the built-in operator it overloads when called using operator notation.
+17) In a subscript expression E1[E2], every value computation and side-effect of E1 is sequenced before every value computation and side effect of E2
+18) In a pointer-to-member expression E1.*E2 or E1->*E2, every value computation and side-effect of E1 is sequenced before every value computation and side effect of E2 (unless the dynamic type of E1 does not contain the member to which E2 refers)
+19) In a shift operator expression E1<<E2 and E1>>E2, every value computation and side-effect of E1 is sequenced before every value computation and side effect of E2
+20) In every simple assignment expression E1=E2 and every compound assignment expression E1@=E2, every value computation and side-effect of E2 is sequenced before every value computation and side effect of E1
+21) Every expression in a comma-separated list of expressions in a parenthesized initializer is evaluated as if for a function call (indeterminately-sequenced)
+22) For any two function calls in the full expression, either the value computation of the result of one is sequenced-before the call to the other, or vice-versa. If no other rule specifies the ordering, the compiler may choose.
 
 Thus in a()+b(), either a() is sequenced-before b(), or b() is sequenced-before a(), but there is no rule to specify which.
 If there are two side effects that modify the same variable, and neither is sequenced-before the other, the code has undefined behaviour.
 
 If there is a side effect that modifies a variable, and a value computation that reads that variable, and neither is sequenced-before the other, the code has undefined behaviour.
+
+
 
 ## Side effects
 
@@ -96,9 +150,9 @@ An atomic operation A that performs a release operation on an atomic object M sy
 ## "inter-thread happens before" 
 
 An evaluation A "inter-thread happens before" an evaluation B 
-if A synchronizes with B, or 
 
-for some evaluation X, 
+- if A synchronizes with B, or 
+- for some evaluation X, 
   - A synchronizes with X and X is sequenced before B, or
   - A is sequenced before X and X inter-thread happens before B, or
   - A inter-thread happens before X and X inter-thread happens before B
@@ -124,6 +178,18 @@ Then A happens before B, B happens before C, but A is not required to happen bef
 
 This shows that happens-before is not transitive in C++11. **IMPORTANT--------------->** But if you ignore "consume" opratoins that it is transitive.
 
+
+
+
+## "Modification order"
+
+All modifications to a particular atomic object M occur in some particular total order, called the modification order of M.
+[Note 3: There is a separate order for each atomic object. There is no requirement that these can be combined into a single total order for all objects. In general this will be impossible since different threads can observe modifications to different objects in inconsistent orders. — end note]
+
+## "release sequence"
+
+A release sequence headed by a release operation A on an atomic object M is a maximal contiguous sub-sequence of side effects in the modification order of M, where the first operation is A, and every subsequent operation is an atomic read-modify-write operation
+
 ## "visible side effect"
 
 A visible side effect A on a scalar object or bit-field M with respect to a value computation B of M satisfies the conditions:
@@ -131,7 +197,11 @@ A visible side effect A on a scalar object or bit-field M with respect to a valu
 - there is no other side effect X to M such that A happens before X and X happens before B.
 
 The value of a non-atomic scalar object or bit-field M, as determined by evaluation B, shall be the value stored by the visible side effect A.
-[Note 12: If there is ambiguity about which side effect to a non-atomic object or bit-field is visible, then the behavior is either unspecified or undefined. — end note]
+[Note 12: If there is ambiguity about which side effect to a non-atomic object or bit-field is visible, then the behavior is either unspecified or undefined. — end note]o
+
+
+The value of an atomic object M, as determined by evaluation B, shall be the value stored by some side effect A that modifies M, where B does not happen before A.
+[Note 14: The set of such side effects is also restricted by the rest of the rules described here, and in particular, by the coherence requirements below. — end note]
 
 
 ## "strongly happens before"
@@ -206,7 +276,7 @@ A part cannot be re-ordered AFTER store x, but B part operations can appear befo
 
 ### memory_order_relaxed
 
-relaxed is a bit more than just a plain normal read/write; it guarantees that read/writes are not "torn" which allows you to implement tear-free shared variables without any imposition from memory barriers
+relaxed is a bit more than just a plain normal read/write; it guarantees that read/writes are not "torn" which allows you to implement tear-free shared variables without any imposition from memory barriers. **Also relexed operations relative to the same atomic object cannot be re-ordered!**
 
 
 ## Fences
