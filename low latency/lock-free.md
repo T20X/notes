@@ -136,6 +136,12 @@ If there are two side effects that modify the same variable, and neither is sequ
 
 If there is a side effect that modifies a variable, and a value computation that reads that variable, and neither is sequenced-before the other, the code has undefined behaviour.
 
+## release operation
+
+ Informally, performing a release operation on A forces prior side effects on *other*(exactly not specified on which ones) memory locations to become visible to other threads that later perform a consume or an acquire operation on A. “Relaxed” atomic operations are not synchronization operations even though, like synchronization operations, they cannot contribute to data races.
+
+An atomic operation A that performs a release operation on an atomic object M synchronizes with an atomic operation B that performs an acquire operation on M and ***IMPORTANT------->takes its value from any side effect in the release sequence headed by A.***
+
 
 
 ## Side effects
@@ -190,6 +196,14 @@ All modifications to a particular atomic object M occur in some particular total
 
 A release sequence headed by a release operation A on an atomic object M is a maximal contiguous sub-sequence of side effects in the modification order of M, where the first operation is A, and every subsequent operation is an atomic read-modify-write operation
 
+
+If the "initialized" bit is set by a memory_order_release operation, additional bits in the same location are added using any atomic read-modify-write operations, and then the "initialized" bit is read via a memory_order_acquire load, we guarantee that the initial release operation still synchronizes with the final acquire load, even if the intervening read-modify-write operations are relaxed operations. In order for a release store to synchronize with an acquire load on the same location, the acquire load must observe either the value stored by the original release operation, or another store operation in the "release sequence" headed by the release store. Read-modify-write operations are included in the release sequence, and hence the appropriate synchronizes-with relationship is established, and a thread observing the "initialized" bit set is guaranteed to see the intialization of the associated objec
+
+The standard implementation of reference counting relies heavily on the fact that atomic read-modify-write operations are included in release sequences
+
+**IMPORTANT--> changes in C++20**
+Except for the initial release operation, a release sequence consists solely of atomic read-modify-write operationsffect on original feature: If a memory_order_release atomic store is followed by a memory_order_relaxed store to the same variable by the same thread, then reading the latter value with a memory_order_acquire load no longer provides any "happens before" guarantees, even in the absence of intervening stores by another thread.
+
 ## "visible side effect"
 
 A visible side effect A on a scalar object or bit-field M with respect to a value computation B of M satisfies the conditions:
@@ -213,6 +227,21 @@ An evaluation A strongly happens before an evaluation D if, either
 - there is an evaluation B such that A strongly happens before B, and B strongly happens before D.
 [Note 11: Informally, if A strongly happens before B, then A appears to be evaluated before B in all contexts. Strongly happens before excludes consume operations. — end note]
 
+## out of thin air updates
+
+Implementations should ensure that no “out-of-thin-air” values are computed that circularly depend on their own computation.
+[Note 6: For example, with x and y initially zero,
+```
+// Thread 1:
+r1 = y.load(memory_order::relaxed);
+x.store(r1, memory_order::relaxed);
+// Thread 2:
+r2 = x.load(memory_order::relaxed);
+y.store(r2, memory_order::relaxed);
+```
+
+this recommendation discourages producing r1 == r2 == 42, since the store of 42 to y is only possible if the store to x stores 42, which circularly depends on the store to y storing 42. Note that without this restriction, such an execution is possible. — end note]
+
 ## Coherence
 
 **non-atomic**
@@ -224,6 +253,9 @@ The value of a non-atomic scalar object or bit-field M, as determined by evaluat
 **atomic**
 The value of an atomic object M, as determined by evaluation B(**read**/**calc**), shall be the value stored by some side effect(**write**) A that modifies M, where B does not happen before A.
 [Note 14: The set of such side effects is also restricted by the rest of the rules described here, and in particular, by the coherence requirements below. — end note]
+
+
+all modifications to any particular atomic variable occur in a total order that is specific to this one atomic variable
 
 ### write-write
 
