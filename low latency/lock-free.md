@@ -204,6 +204,10 @@ The standard implementation of reference counting relies heavily on the fact tha
 **IMPORTANT--> changes in C++20**
 Except for the initial release operation, a release sequence consists solely of atomic read-modify-write operationsffect on original feature: If a memory_order_release atomic store is followed by a memory_order_relaxed store to the same variable by the same thread, then reading the latter value with a memory_order_acquire load no longer provides any "happens before" guarantees, even in the absence of intervening stores by another thread.
 
+![](../images/2023-09-08-07-56-33.png)
+
+pre C++20 standard allowed x = rlx 3 to participiate in the release sequence of x in Thread 2. But now if store from Thread 1 interleaved between Xrel1 and Xrlx3 than that would break the release sequence from Xrel1 to Xrlx3 and hence Xacq is not longer synchronize with Xrlx2 or Xrlx3
+
 ## "visible side effect"
 
 A visible side effect A on a scalar object or bit-field M with respect to a value computation B of M satisfies the conditions:
