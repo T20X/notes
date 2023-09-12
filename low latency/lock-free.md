@@ -55,9 +55,11 @@ Evaluations A and B are indeterminately sequenced when either A is sequenced bef
 An expression X is said to be sequenced before an expression Y if every value computation and every side effect associated with the expression X is sequenced before every value computation and every side effect associated with the expression Y.
 
 
-Every value computation and side effect associated with a full-expression is sequenced before every value computation and side effect associated with the next full-expression to be evaluated. Basicaly it says that "A is sequenced before B"
+Every value computation and side effect associated with a full-expression is sequenced before every value computation and side effect associated with the next full-expression to be evaluated. 
+[ Basicaly it says that "A is sequenced before B"
 A = 1;
-B = 3;
+B = 3;]
+
 
 **IMPORTANT----->But note "as-if" rule!**
 The compiler does not have to do anything at all in the order the programmer wrote, as long as the observable effects occur in the same order that they would have when obeying the sequencing rules. Reordering statements that have no dependency on each other is a very common violation of "sequenced before", and it is the "as-if" rule that permits it
@@ -142,6 +144,11 @@ If there is a side effect that modifies a variable, and a value computation that
 
 An atomic operation A that performs a release operation on an atomic object M synchronizes with an atomic operation B that performs an acquire operation on M and ***IMPORTANT------->takes its value from any side effect in the release sequence headed by A.***
 
+Note that above does not limit to just one acquire operation!
+
+that the querent might be thinking that a release store only has enough synchronization "mojo" to sync with one reader, and that reader would use up its ability to sync with anything else. If so, it might help to understand that's not how it works. In real implementations, a release operation in a writer orders access to coherent shared cache/memory wrt. earlier loads/stores in that thread. Acquire is similar for the read side, just ordering this CPU core's access to coherent shared state
+
+In ISO C++ there is not much of a guarantee of a coherent shared state existing, other than the coherency guarantees on single objects. ISO C++ only defines things in terms of syncs-with guaranteeing visibility, so if nobody's looking then a release store can in theory be optimized away or relaxed by the as-if rule. But in practice compilers don't try to prove that an atomic object has no acquire-or-stronger reader
 
 
 ## Side effects
@@ -151,7 +158,30 @@ Reading an object designated by a volatile glvalue ([basic.lval]), modifying an 
 
 ## "synchronize with"
 
-An atomic operation A that performs a release operation on an atomic object M synchronizes with an atomic operation B that performs an acquire operation on M and takes its value from any side effect in the release sequence headed by A.
+An atomic operation A that performs a release operation on an atomic object M synchronizes with an atomic operation B that performs an acquire operation on M and takes its value from any side effect in the release sequence headed by A. (**note that is runtime propperty not something to do with statements, in other words statement to release and acquire don't guarantee it would happen all the time**)
+(**very important about releases sequence, not that while the side effect above can be taken from a releae sequence fundamentally acquire is still synchronizing with the very first release in the release sequence**)
+
+All memory writes (including non-atomic and relaxed atomic) that happened-before the atomic store from the point of view of thread A, become visible side-effects in thread B. That is, once the atomic load is completed, thread B is guaranteed to see everything thread A wrote to memory. This promise only holds if B actually returns the value that A stored, or a value from later in the release sequence.
+
+**But don’t fall into the trap of thinking that synchronizes-with is a relationship between statements in your source code. It isn’t! It’s a relationship between operations which occur at runtime, based on those statements**
+
+The happens-before relationship is about what is guaranteed wrt
+to *other* memory locations.
+
+Thread 1: store to X, RMW on Y.
+Thread 2: RMW on Y, load from X.
+
+If thread 1's RMW on Y does not have (at least) "release" ordering
+and/or the thread 2's RMW on Y does not have (at least) "acquire"
+ordering then even if thread 2's RMW is later in modification order than
+thread 1's, then the compiler/processor/cache is not required to ensure
+visibility of the store to X from thread 1 to the load in thread 2.
+
+However, relaxed RMW ops can form part of a "release sequence" --- a
+store release followed by a series of RMW ops from random threads,
+followed by a load acquire of the last value written is still a
+release-acquire pairing.
+
 
 ## "inter-thread happens before" 
 
@@ -165,7 +195,12 @@ An evaluation A "inter-thread happens before" an evaluation B
 
 The “inter-thread happens before” relation describes arbitrary concatenations of “sequenced before”, “synchronizes with apart from been only concatentaions by "sequenced before"!
 
-The second exception is that a concatenation is not permitted to consist entirely of “sequenced before”. The reasons for this limitation are (1) to permit “inter-thread happens before” to be transitively closed and (2) the “happens before” relation, defined below, provides for relationships consisting entirely of “sequenced before”
+The second exception is that a concatenation i entirely of “sequenced before”|/+* ``
+
+
+
+
+       `
 
 The "transitively closed" remark simply means that the relation is transitive: if A inter-thread happens before B and B inter-thread happens before C, then A inter-thread happens before C
 
@@ -176,6 +211,10 @@ An evaluation A happens before an evaluation B (or, equivalently, B happens afte
 - A is sequenced before B, or
 - A inter-thread happens before B.
 
+**(note that hapens before is defined as an implication -> (if), which means there are other events to be seen as "happens before")**
+
+![](../images/2023-09-08-08-55-58.png)
+
 At least in C++11, strictly speaking, happens-before is not transitive. According to the standard, §1.10:12 (I am referring to the N3337 draft), an evaluation A happens before an evaluation B if A is sequenced before B, or A inter-thread happens before B.
 
 For example, assume that operation A is dependency-ordered before B (see §1.10:11 for a definition; this is where consume operations come into play). In particular this means that A inter-thread happens before B. Further assume that B is sequenced before C.
@@ -185,6 +224,7 @@ Then A happens before B, B happens before C, but A is not required to happen bef
 This shows that happens-before is not transitive in C++11. **IMPORTANT--------------->** But if you ignore "consume" opratoins that it is transitive.
 
 
+The implementation shall ensure that no program execution demonstrates a cycle in the “happens before” relation
 
 
 ## "Modification order"
@@ -192,14 +232,26 @@ This shows that happens-before is not transitive in C++11. **IMPORTANT----------
 All modifications to a particular atomic object M occur in some particular total order, called the modification order of M.
 [Note 3: There is a separate order for each atomic object. There is no requirement that these can be combined into a single total order for all objects. In general this will be impossible since different threads can observe modifications to different objects in inconsistent orders. — end note]
 
+
+modification order does not imply 'happens before', rather the oppositing 'happens before' impliy modification order
+
+
+The modification order for an object is the order a thread would see if it was spinning in a tight loop running while(1) { y.load(relaxed); }, and happened to see every every change. (Not that that's a useful way to actually observe it, but every object has its own modification order that all threads can always agree on, like on real CPUs thanks to MESI exclusive ownership being required to commit a store to L1d cache. Or see it early via private store-forwarding between SMT threads on POWER CPUs.)
+
+
+**different threads may observe modifications to different atomic objects in different orders**
+So if atomic object 1 has the totally ordered sequence of modifications A B C, and atomic object 2 has the totally ordered sequence D E F, then all threads will see A before C and D before F, but threads may disagree whether A comes before D. Therefore, the set of all modifications {A B D C E F} has no total order.
+
+But all threads that agree that B comes before E will also agree that A comes before F. Partial orders still give some guarantee
+
 ## "release sequence"
 
-A release sequence headed by a release operation A on an atomic object M is a maximal contiguous sub-sequence of side effects in the modification order of M, where the first operation is A, and every subsequent operation is an atomic read-modify-write operation
+A release sequence headed by a release operation A on an atomic object M is a maximal contiguous sub-sequence of side effects in the modification order of M, where the first operation is A, and every subsequent operation is an atomic read-modify-write operation. 
 
 
 If the "initialized" bit is set by a memory_order_release operation, additional bits in the same location are added using any atomic read-modify-write operations, and then the "initialized" bit is read via a memory_order_acquire load, we guarantee that the initial release operation still synchronizes with the final acquire load, even if the intervening read-modify-write operations are relaxed operations. In order for a release store to synchronize with an acquire load on the same location, the acquire load must observe either the value stored by the original release operation, or another store operation in the "release sequence" headed by the release store. Read-modify-write operations are included in the release sequence, and hence the appropriate synchronizes-with relationship is established, and a thread observing the "initialized" bit set is guaranteed to see the intialization of the associated objec
 
-The standard implementation of reference counting relies heavily on the fact that atomic read-modify-write operations are included in release sequences
+![](../images/2023-09-11-08-17-52.png)
 
 **IMPORTANT--> changes in C++20**
 Except for the initial release operation, a release sequence consists solely of atomic read-modify-write operationsffect on original feature: If a memory_order_release atomic store is followed by a memory_order_relaxed store to the same variable by the same thread, then reading the latter value with a memory_order_acquire load no longer provides any "happens before" guarantees, even in the absence of intervening stores by another thread.
@@ -231,6 +283,37 @@ An evaluation A strongly happens before an evaluation D if, either
 - there is an evaluation B such that A strongly happens before B, and B strongly happens before D.
 [Note 11: Informally, if A strongly happens before B, then A appears to be evaluated before B in all contexts. Strongly happens before excludes consume operations. — end note]
 
+## sequential consistency
+
+mental model for this is like any store using SC would be seen by any other thread at the very same time. More relaxed aqcuire + release model allows diffrent "orders" to be made visible by diffrent threads, which is a crucial diffrence. It is kind of like not only store have a defined modification order but **loads too**! It is basically like an update to atomic variable M is synchronized with mutex - but only to one variable!
+![](../images/2023-09-09-00-12-39.png)
+
+Strongest and most expensive are sequentially consistent (SC) accesses, whose primary purpose is to restore the simple interleaving semantics of sequential consistency [20] if a program (when executed under SC semantics) only has races on SC accesses
+
+
+pre c++20 very formal definition
+Now, to give semantics to SC atomics, C11 stipulates that
+in consistent executions, there should be a strict total order,
+S, over all SC events, intuitively corresponding to the order
+in which these events are executed. This order is required
+to satisfy a number of conditions (but see Remark 1 below),
+where Esc denotes the set of all SC events in E:
+(S1) S must include hb restricted to SC events
+(formally: [Esc]; hb; [Esc]  S);
+(S2) S must include mo restricted to SC events
+(formally: [Esc]; mo; [Esc]  S);
+(S3) S must include rb restricted to SC events
+(formally: [Esc]; rb; [Esc]  S);
+(S4-7) S must obey a few more conditions having to do with
+SC fences.
+
+## release-acquire
+
+Weaker than SC atomics are release-acquire accesses,
+which can be used to perform “message passing” between
+threads without incurring the implementation cost of a full
+SC access
+
 ## out of thin air updates
 
 Implementations should ensure that no “out-of-thin-air” values are computed that circularly depend on their own computation.
@@ -261,6 +344,9 @@ The value of an atomic object M, as determined by evaluation B(**read**/**calc**
 
 all modifications to any particular atomic variable occur in a total order that is specific to this one atomic variable
 
+
+**NOTE THAT TOTAL ORDER DOES NOT FORM HAPPENS BEFORE RELATIONSHIPS! as the fact that the value was modified does not mean that it was read!**
+
 ### write-write
 
 If an operation A that modifies an atomic object M happens before an operation B that modifies M, then A shall be earlier than B in the modification order of M.
@@ -287,6 +373,9 @@ If a side effect X on an atomic object M happens before a value computation B of
 0
 
 [Note 20: The value observed by a load of an atomic depends on the “happens before” relation, which depends on the values observed by loads of atomics. The intended reading is that there must exist an association of atomic loads with modifications they observe that, together with suitably chosen modification orders and the “happens before” relation derived as described above, satisfy the resulting constraints as imposed here. — end note]
+
+## std::atomic_flag
+std::atomic_flag is an atomic boolean type. Unlike all specializations of std::atomic, it is guaranteed to be lock-free. Unlike std::atomic<bool>, std::atomic_flag does not provide load or store operations.
 
 ## std::atomic<T> variables
 
@@ -439,6 +528,33 @@ http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p1152r0.html
 
 Accesses (reads and writes) to volatile objects occur strictly according to the semantics of the expressions in which they occur. In particular, they are not reordered with respect to other volatile accesses on the same thread
 
+# RWM
+
+Atomic read-modify-write operations shall always read the last value (in the modification order) written before the write associated with the read-modify-write operation
+
+Decrement (inside, say, smart_ptr dtoc)
+  if (control_block_ptr->refs.fetch_sub(1, memory_order_acq_rel) == 0) {
+    delete control_block_ptr;
+
+The release semantics ensure that other (non-atomic) memory accesses
+preceeding the decrement are not reordered after the decrement. For
+instance, if you made some changes to the object, you want these changes
+become visible to other threads before you release the reference to the
+object so that if another thread releases his last reference and calls
+the destructor he has the actual view of the object.
+
+note you could do better as you only need synchrinize-with for deletes, so that fences can work better
+
+  if (x->refcount_.fetch_sub(1, boost::memory_order_release) == 1) {
+      boost::atomic_thread_fence(boost::memory_order_acquire);
+      delete x;
+    }
+
+
+# xchg
+
+lock is implicit in xchg reg, [mem], so don't use xchg with mem to save code-size or instruction count unless performance is irrelevant
+
 # CAS
 
 Since C++20, this has an extra compute in compare_exchange operations now to clear out the padding bits when doing it!
@@ -449,12 +565,23 @@ gcc / clang on x86-64 Linux do use lock cmpxchg16b if available, but gcc7 and la
 However - a lot of professional implementations of lockfree algorithms (such as Boost.Lockfree) don't actually use double-word CAS - instead they rely on single-word CAS and opt to use non-portable pointer-stuffing shenanigans. Since x86_64 architectures only use the first 48 bits of a pointer, you can use the hi 16-bits to stuff in a counte
 
 # x86
+
 As I mentioned, the x86 lock prefix is a full memory barrier, so using num.fetch_add(1, std::memory_order_relaxed); generates the same code on x86 as num++ (the default is sequential consistency), but it can be much more efficient on other architectures (like ARM). Even on x86, relaxed allows more compile-time reordering.
 
 
 - all cores see writes in the same order
 - if one core (1) reads X than writes Y=a, than another core (2) which sees Y=a cannot see older  value of X compared to core (1)
 - reads can re-order with writes to diffrent locations
+
+
+![](../images/2023-09-08-09-36-21.png)
+
+
+ in 2022, Intel retroactively documented that the AVX feature bit implies that aligned 128-bit loads/stores are atomic, at least for Intel CPUs
+
+
+ The P6 family processors (and newer Intel processors since) guarantee that the following additional memory operation will always be carried out atomically:
+Unaligned 16-, 32-, and 64-bit accesses to cached memory that fit within a cache line.
 
 # Spink Lock
 
