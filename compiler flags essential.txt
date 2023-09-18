@@ -5,3 +5,6 @@
  -ftime-report
  --------
  provide hunderds of paramters containing how much each step of the build took!
+
+ ------
+ -mregnames - shows registers in asm output

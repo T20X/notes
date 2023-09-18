@@ -283,12 +283,25 @@ An evaluation A strongly happens before an evaluation D if, either
 - there is an evaluation B such that A strongly happens before B, and B strongly happens before D.
 [Note 11: Informally, if A strongly happens before B, then A appears to be evaluated before B in all contexts. Strongly happens before excludes consume operations. — end note]
 
+in pre c++20 happens before also implied global total order S of evaluations, but now "strong happens before" governs it
+
 ## sequential consistency
 
 mental model for this is like any store using SC would be seen by any other thread at the very same time. More relaxed aqcuire + release model allows diffrent "orders" to be made visible by diffrent threads, which is a crucial diffrence. It is kind of like not only store have a defined modification order but **loads too**! It is basically like an update to atomic variable M is synchronized with mutex - but only to one variable!
 ![](../images/2023-09-09-00-12-39.png)
 
 Strongest and most expensive are sequentially consistent (SC) accesses, whose primary purpose is to restore the simple interleaving semantics of sequential consistency [20] if a program (when executed under SC semantics) only has races on SC accesses
+------------------------------
+
+seq_cst additionally can't be reordered relative to each other
+
+------------------------------
+
+in pre c++20 happens before also implied global total order S of evaluations, but now "strong happens before" governs it
+
+------------------------------
+
+Remember that C++11 only guarantees a single total order for SC operations, so the exchange and the load both need to be SC for C++11 to guarantee i
 
 
 pre c++20 very formal definition
@@ -379,6 +392,9 @@ std::atomic_flag is an atomic boolean type. Unlike all specializations of std::a
 
 ## std::atomic<T> variables
 
+atomic operations are no substitute for barriers where they are needed. When an object isn't used by multiple threads (like a refcount only used in the current thread) the compiler can remove the atomic part and generate fast unthreaded code
+
+
 ### memory_order_acuqire
 
 **memory_order_acquire** - no reads or writes in the current thread can be reordered before this load. 
@@ -399,10 +415,96 @@ B part
 
 A part cannot be re-ordered AFTER store x, but B part operations can appear before x!
 
+
 ### memory_order_relaxed
 
 relaxed is a bit more than just a plain normal read/write; it guarantees that read/writes are not "torn" which allows you to implement tear-free shared variables without any imposition from memory barriers. **Also relexed operations relative to the same atomic object cannot be re-ordered!**
 
+### memory_order_acq_release
+
+x.exchange(1, acq_release)
+If exchange is implemented with a single transaction like on x86, so the load and store are adjacent in the global order of memory operations, then certainly no later operations can be reordered with an acq_rel exchange and it's basically equivalent to seq_cst. But on other CPUs like PowerPC, separate fences may be issues , one for load and another one for store
+
+load x
+load fence 
+store 1 to x <--- "load y may be ordered past store 1 to x"
+store fence
+load y
+
+#this means that load y may be issues after "load fence"!
+
+Also technically that instruction could just turn 'x.exchange(1. acq_release)' into x.store(1) as value x is not read at all
+
+----
+
+also important to realize is that complier would still try to respect the ordering provided in memory order paramater even if it could not apply to a given operation.
+For example this code below 
+```
+v.store(1, std::memory_order_acq_rel);
+```
+may get converted into even though technically that is not required since v.store does not do any read operations!
+xchg    eax, DWORD PTR [rsp-4]
+
+
+
+### memory_order_seq_cst
+
+seq_cst evaluations additionally can't be reordered relative to each other
+
+So, where difference between acq_rel and seq_cst makes sense? Consider
+following example:
+
+atomic<int> x; // = 0
+atomic<int> y; // = 0
+
+// thread 1
+x.store(1, memory_order_acq_rel);
+R1 = y.load(memory_order_acq_rel);
+
+// thread 2
+y.store(1, memory_order_acq_rel);
+R2 = x.load(memory_order_acq_rel);
+
+In the above example the output R1 == R2 == 0 is possible. However, if
+you will replace acq_rel with seq_cst the result will be impossible,
+because there is no such interleaving of threads under which both
+threads will miss update of another
+
+
+seq_cst operations participate in total global order of all
+seq_cst operations, while acq_rel operations do not.
+Consider following example:
+
+Initially X==Y==0
+
+// thread 1
+X.exchange(1, memory_order_acq_rel);
+
+// thread 2
+X.exchange(1, memory_order_acq_rel);
+
+// thread 3
+R1 = X.load(memory_order_acquire);
+R2 = Y.load(memory_order_acquire);
+
+// thread 4
+R3 = Y.load(memory_order_acquire);
+R4 = X.load(memory_order_acquire);
+
+Here, output R1==1, R2==0, R3==1, R4==0 is possible (which basically
+means that thread 3 and 4 see stores in different order(**although NOT true on x86**)).
+However, if you will replace acq_rel and acquire with seq_cst the
+output will be impossible, because seq_cst operations form total
+global order, so other threads can't see stores in different order
+
+
+----------------
+The proposal in Lahav et al is mathematically elegant. Currently the standard requires that the sequential consistency total order S is consistent with the happens before relation. Essentially, if any two sc operations are ordered by happens before, then they must be ordered the same way by S. In our example, this requires x =sc 1 to be ordered before b = fetch_add(y)sc //1 in spite of the fact that the hardware mapping does not sufficiently enforce it. The core fix (S1fix in the paper) is to relax the restriction that a happens before ordering implies ordering in S to only the sequenced before case, or the case in which the happens before ordering between a and b is produced by a chain
+
+a is sequenced before x happens before y is sequenced before b
+
+The downside of this is that "happens before" now has a rather strange meaning, since sequentially consistent operations can appear to execute in an order that's not consistent with it.
+------------------
 
 ## Fences
 
@@ -528,7 +630,19 @@ http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p1152r0.html
 
 Accesses (reads and writes) to volatile objects occur strictly according to the semantics of the expressions in which they occur. In particular, they are not reordered with respect to other volatile accesses on the same thread
 
+# Store buffer re-ordering
+
+CPUs are allowed to see *their own stores* out of order with respect to the stores from other CPUs, and you can't explain this by simple store-load reordering.
+
+This is explained in the Intel manual with statements like "Any two CPUs *other than those performing the stores* see stores in a consistent order". The underlying hardware reason is store-forwarding: a CPU may consume its own stores from the store buffer, long before those stores have become globally visible, resulting in those stores appearing "earlier" to that CPU than to all the other CPUs.
+
+seq_cst would still ensure global ordering even for local changes
+
 # RWM
+
+Since nearly all of the C++ memory model is defined in terms of loads and stores, I believe (others may disagree) that we must treat an atomic read-modify-write as a pair consisting of one load and one store. Its "atomic" nature comes from [atomics.order p10] (in C++20), that the load must see the value that immediately precedes, in the modification order, the value written by the store
+
+----------------
 
 Atomic read-modify-write operations shall always read the last value (in the modification order) written before the write associated with the read-modify-write operation
 
@@ -550,6 +664,8 @@ note you could do better as you only need synchrinize-with for deletes, so that 
       delete x;
     }
 
+-----
+An atomic RMW doesn't have to keep its load/store glued together in the total order of all operations (if one even exists), it just has to make sure no other operations (including loads) on that object intervene
 
 # xchg
 
@@ -564,9 +680,25 @@ gcc / clang on x86-64 Linux do use lock cmpxchg16b if available, but gcc7 and la
 
 However - a lot of professional implementations of lockfree algorithms (such as Boost.Lockfree) don't actually use double-word CAS - instead they rely on single-word CAS and opt to use non-portable pointer-stuffing shenanigans. Since x86_64 architectures only use the first 48 bits of a pointer, you can use the hi 16-bits to stuff in a counte
 
+# ARM
+
+https://www.cl.cam.ac.uk/~pes20/cpp/cpp0xmappings.html - that link shows some possible implementation of atomics on target architechture
+
+
+
+# PowerPC
+
+https://www.cl.cam.ac.uk/~pes20/cpp/cpp0xmappings.html - that link shows some possible implementation of atomics on target architechture
+
+lwsync (short for “lightweight sync”) instruction acts as all three #LoadLoad, #LoadStore and #StoreStore barriers at the same time, yet is less expensive than the sync instruction, which includes a #StoreLoad barrier
+
 # x86
 
-As I mentioned, the x86 lock prefix is a full memory barrier, so using num.fetch_add(1, std::memory_order_relaxed); generates the same code on x86 as num++ (the default is sequential consistency), but it can be much more efficient on other architectures (like ARM). Even on x86, relaxed allows more compile-time reordering.
+https://www.cl.cam.ac.uk/~pes20/cpp/cpp0xmappings.html - that link shows some possible implementation of atomics on target architechture
+
+As I mentioned, the x86 lock prefix is a full memory barrier, so using num.fetch_add(1, std::memory_order_relaxed); generates the same code on x86 as num++ (the default is sequential consistency), **although compiler may reorder statemens!** but it can be much more efficient on other architectures (like ARM). Even on x86, relaxed allows more compile-time reordering.
+
+x86 RMW with LOCK prefix is more powerful than acq_rel, it's actually seq_cst RMW
 
 
 - all cores see writes in the same order
