@@ -42,6 +42,15 @@ One of the neat tricks you can use is to declare a class template, but not imple
   error: invalid use of incomplete type
   'class test;std::string&>'
 
+# Forwarding refrences
+
+Be carefull with those as the the rules for deducing the type of T may be tricky
+template <class T>
+void f(T&& v) {
+}
+
+int v; f(v); //here T would be int&
+int& v; f(v); //here T would be STILL int&, because fundamently it is, however we cannot know if people are passing refrences to us
 
 
 # Template parameters
