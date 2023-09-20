@@ -111,7 +111,9 @@ int main() {
         //temp which points to a02.i get its lifetime ended
     }
 
-
+## pointer to reference
+does not exist!
+//int &*v2 = &p1; cannot be complied 
 
 ## reference compatibility
 
