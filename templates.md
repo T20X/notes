@@ -157,6 +157,25 @@ int f() {return 1;}
 
 ```
 
+
+# Specifialization by member function
+
+template<class B, class MT>
+    struct invoke_impl<MT B::*>
+
+struct A { int fun() const&; };
+ 
+template<typename>
+struct PM_traits {};
+ 
+template<class T, class U>
+struct PM_traits<U T::*> { using member_type = U; };
+
+using T = PM_traits<decltype(&A::fun)>::member_type; // T is int() const&
+
+
+
+
 # Function templates
 
 *  std function template specialization has been disabled since C++20. Only std classed may be specialized - > only if they depend on user-defined type
@@ -363,7 +382,7 @@ he class template std::integer_sequence represents a compile-time sequence of in
   template <class IS, class... T>
     struct indexed_types;
   template <size_t... SZ, class... T>  <---SUPER TRICK because SZ is concrete type, it possible to have another variadic pack after it!
-    struct indexed_types<std::index_sequence<SZ...>,T...> : IndexedType<IS, T>...
+    struct indexed_types<std::index_sequence<SZ...>,T...> : IndexedType<SZ, T>...
   {
   };   
 
