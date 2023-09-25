@@ -115,6 +115,16 @@ int main() {
 does not exist!
 //int &*v2 = &p1; cannot be complied 
 
+## you can have reference to functions as well
+
+void Foo() {}
+
+int main()
+{
+    void(& func)() = Foo;
+    func(); //::Foo();
+}
+
 ## reference compatibility
 
 Given types “cv1 T1” and “cv2 T2”, “cv1 T1” is reference-related to “cv2 T2” if T1 is similar ([conv.qual]) to T2, or T1 is a base class of T2. “cv1 T1” is reference-compatible with “cv2 T2” if a prvalue of type “pointer to cv2 T2” can be converted to the type “pointer to cv1 T1” via a standard conversion sequence ([conv]). In all cases where the reference-compatible relationship of two types is used to establish the validity of a reference binding and the standard conversion sequence would be ill-formed, a program that necessitates such a binding is ill-formed.
@@ -368,6 +378,27 @@ The materialization of a temporary object is generally delayed as long as possib
 TO ALLOW CPU REGISTER OPTIMIZATIONS
 ----------------------
 When an object of class type X is passed to or returned from a function, if X has at least one eligible copy or move constructor ([special]), each such constructor is trivial, and the destructor of X is either trivial or deleted, implementations are permitted to create a temporary object to hold the function parameter or result object. The temporary object is constructed from the function argument or return value, respectively, and the function's parameter or return object is initialized as if by using the eligible trivial constructor to copy the temporary (even if that constructor is inaccessible or would not be selected by overload resolution to perform a copy or move of the object).
+
+# Lifetime extension
+
+“Lifetime extension” is a weird little quirk of C++98 that is still alive and kicking in C++17. The basic idea is that you can write C++ code like this:
+
+int main() {
+    const int& three = 1 + 2;
+    return three;
+}
+and it will just magically work. Sure, it looks like you’re taking a reference to a temporary, there; but actually behind the scenes the compiler will extend the lifetime of that temporary to match the scope of the reference variable to which it’s bound (namely, three).
+
+This magic happens only when the compiler can see that you’re dealing with a temporary, a prvalue expression, of type exactly T. The magic will not happen if you are dealing with an expression of type T&&, or const T&, or anything else that might conceivably be an xvalue. Thus:
+
+int foo(const int& x) { return x; }
+int a        = foo(42);  // OK
+const int& b = foo(42);  // OK
+
+const int& bar(const int& y) { return y; }
+int c        = bar(42);  // OK
+
+
 
 # Unevaluated expressions
 
