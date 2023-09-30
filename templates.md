@@ -321,6 +321,65 @@ T sum(T a, Args... args) { return a + sum(args...); }
 
 In C++14 you can also use auto sum(T a, Args... args) in order to get sum of mixed type
 
+# Concepts
+
+# requires
+
+template <typename T>
+requires Addable<T> // requires-clause, not requires-expression
+    T add(T a, T b) {
+  return a + b;
+}
+
+# requires requires
+
+infamous `requires requires`. First `requires` is requires-clause,
+second one is requires-expression. Useful if you don't want to introduce
+new concept.
+template <typename T>
+requires requires(T a, T b) { a + b; }
+class Foo {
+}
+
+## Concepts vs SFINAE
+
+
+They are not equivalent. Concepts can appear in more places and are partially ordered by subsumption. Some examples:
+
+### Concept subsumption may be used to rank overloads. With SFINAE, this is an error:
+
+template <typename T>
+auto overload(T) -> std::enable_if_t<std::is_copy_constructible_v<T>>;
+template <typename T>
+auto overload(T) -> std::enable_if_t<std::is_move_constructible_v<T>>;
+
+void test() {
+  overload(1); // error: ambiguous
+}
+With concepts, this works:
+
+void overload(std::copy_constructible auto);
+void overload(std::move_constructible auto);
+
+void test() {
+  overload(1);
+}
+
+### Similarly, concept subsumption may be used to rank partial specializations.
+
+### Concepts are allowed on non-template member functions, so they can constrain special member functions.
+
+Since a copy constructor is not a template, SFINAE never applies. When one needs conditional behavior before concepts (e.g. trivial copy constructor if the template argument of the class template is itself trivial), one had to conditionally introduce different base classes.
+
+### Concepts can constrain deduction.
+
+One can statically assert that a type returned satisfies your requirements without asserting the precise type.
+
+std::integral auto i = 1;
+
+### Concepts can be used in abbreviated function templates.
+
+void f(std::integral auto);
 
 # Constexpr
 

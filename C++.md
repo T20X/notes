@@ -65,6 +65,14 @@ virtual base classes can introduce another indirection if they contain data sinc
 ![](images/c++/2023-08-26-15-12-55.png)
 
 
+# Alignment 
+
+How to get it?
+
+```
+std::alignment_of_v<T>
+alingof(T)
+```
 
 # smart pointers
 
