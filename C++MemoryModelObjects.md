@@ -3,9 +3,29 @@ Current issues
  https://cplusplus.github.io/CWG/issues/1997.html 
 At present placement new is not clear on wheather the storages bits been carried over!
 
----------------
-Memory model
+
+https://www.open-std.org/jtc1/sc22/wg21/docs/cwg_active.html#1027
+
+
+https://cplusplus.github.io/CWG/issues/793.html
+
+
+ --EXISTING C++ ISUE (CWG 2115) --------->
+Basically it is not established wheather destructors for automatic variables at the end of block or memory (trivial types) for them is going to be released first. Because trivally destructible types dont need destructor to be run
 --------------
+The relative ordering between destruction of automatic variables on exit from a block and the release of the variables storage is not specified by the Standard: are all the destructors executed first and then the storage released, or are they interleaved?
+
+Notes from the February, 2016 meeting:
+
+CWG agreed that the storage should persist until all destructions are complete, although the “as-if” rule would allow for unobservable optimizations of this ordering.
+<-----------------
+
+
+This means it is entirely possible for the code to work, for n to outlive a. But it is unspecified whether it does work.
+
+
+# Memory model
+
 The fundamental storage unit in the C++ memory model is the byte
 The least significant bit is called the low-order bit; the most significant bit is called the high-order bit. The memory available to a C++ program consists of one or more sequences of contiguous bytes. Every byte has a unique address
 
@@ -19,9 +39,7 @@ There are few terms describing memory model:
 
 A memory location is either an object of scalar type that is not a bit-field or a maximal sequence of adjacent bit-fields all having nonzero width. It is NOT address as it is more logical concept! Just been a locatoin that complier will allow concurrent access to!
 
-      --- 
-      pointer
-      ----
+## pointer
 
       [(1)A value of a pointer type that is a pointer *to*] or [(2)past the end of an object represents] 
       [(1) the address of the first byte in memory ([intro.memory]) occupied by the object35 ] or [(2) the first byte in memory (for arrays) after the end of the storage occupied by the object, respectively].  The value representations of pointers to objects and invalid pointers may overlap
@@ -34,12 +52,13 @@ A memory location is either an object of scalar type that is not a bit-field or 
       - an invalid pointer value. (for all objects: one *logical value*, many value representations)
 
       IMPORTANT ->>>> pointers point to OBJECTS not to ADDRESSES 
+
+      ```
       struct B{int i;}; struct B1{int b;} struct D : B, B1 {}
       D* d = D;
       B2* b = d;
-      if (b == d) !!will always be true even though addresses are diffrent
-
-
+      if (b == d) //will always be true even though addresses are diffrent
+      ```
 
       ***** (AND ONLY AND ONLY ) For purposes of pointer arithmetic (7.6.6) and comparison (7.6.9, 7.6.10) **********, a pointer past the end of the
       last element of an array x of n elements is considered to be equivalent to a pointer to a hypothetical array
@@ -54,6 +73,14 @@ A memory location is either an object of scalar type that is not a bit-field or 
 
       conversions to void* and the other way around preserve pointer values
 
+       pointer to array, again not the same as pointer to the first element:
+      ```
+           int a[5];
+           int (*ptr2)[] = &a;
+           int* firstElement = a;
+           int* firstElement2 = &a[0];
+           assert(firstElement = firstElment2)
+      ```
 
     The type of a pointer to cv void or a pointer to an object type is called an object pointer type.
 
@@ -64,7 +91,7 @@ A memory location is either an object of scalar type that is not a bit-field or 
       In general, pointer is a type of a variable that stores a link to another object. In C and C++, the link is the address of that object in the program memory. Pointers allow to refer to the same object from multiple locations of the source code without copying the object. Also, the same pointer variable may refer to different objects during its lifetime.
 
 
-      The inability to compare two addresses of two discrete objects is down to only one thing: The anachronistic and now utterly irrelevant segmented memory architecture of the 8086. std::less shall offer total order though, but not < operator.
+      The inability to compare two addresses of two discrete objects is down to only one thing: The anachronistic and now utterly irrelevant segmented memory architecture of the 8086. std::less shall offer total order though, while < operator will not.
 
 
       A prvalue of type “pointer to cv T”, where T is an object type, can be converted to a prvalue of type “pointer to cv void”. The pointer value ([basic.compound]) is unchanged by this conversio
@@ -126,6 +153,7 @@ A memory location is either an object of scalar type that is not a bit-field or 
 
       Note that two pointers that represent the same address may nonetheless have different values.
 
+      ```
       struct C
       {
           int x, y;
@@ -138,10 +166,11 @@ A memory location is either an object of scalar type that is not a bit-field or 
       assert(pxe == py); // == tests if two pointers represent the same address
                         // may or may not fire
 
-
+      ```
 
       Another example is array. The first member of array may have diffrent pointer value compared to the pointer to array. Generally pointer-interconvertible define if pointer values are the same.
 
+      ```
       int a[4] = {1, 2, 3, 4};
       void* p1 = &a;
       void* p2 = &a[0];
@@ -150,12 +179,11 @@ A memory location is either an object of scalar type that is not a bit-field or 
 
           int i[100]{0};
           int (*i2) [100] = &i;   /ok 
-          int * p2 = std::launder(reinterpret_cast<int*>(i2)); /ok
+          int * p2 = std::launder(reinterpret_cast<int*>(i2)); /ok . the whole point of laudner is to convert pointers between objects which are not pointer-interconvertible
+      ```
 
 
       An lvalue or rvalue of type “array of N T” or “array of unknown bound of T” can be converted to a prvalue of type “pointer to T”. The temporary materialization conversion ([conv.rval]) is applied. The result is a pointer to the first element of the array
-
-
 
       An object of array type contains a contiguously allocated non-empty set of N subobjects of type T
 
@@ -198,6 +226,7 @@ Aliasing is all about lifetimes. If i place an int into the storage, i may acces
 }
 
 this is now invalid in C++20 as calling destructors on non-class types ends their lifetimes!
+```
 constexpr int f() {
   int a = 123;
   using T = int;
@@ -221,16 +250,16 @@ float pun(int n) {
 
 float do_bad_things(int n) {
   alignof(int) alignof(float)
-    char buffer[max(sizeof(int), sizeof(float))];
+  unsigned  char buffer[max(sizeof(int), sizeof(float))];
   *(int*)buffer = n;      // #1
   new (buffer) std::byte[sizeof(buffer)];
-  return (*float*)buffer; // #2 //undefined behaviour because the lifetime of int ended and float contains intermediate value!
+  return (*float*)buffer; // #2 //undefined behaviour because the lifetime of int ended and float contains intermediate value! otherwise it is valid since char buffer would create an implicit object and using C-style cast would have been fine
 }
+```
 
 
-      -----
-      launder
-      -----
+## launder
+
       When reusing storage denoted by some pointer value p, launder(reinterpret_cast<T*>(new (p) byte[n * sizeof(T)])) can be used to implicitly create a suitable array object and obtain a pointer to it. It is not fully clear if the pointer to array or its first element is returned as the standard clearly does not specify this to choose it based on what would make the program behaviour defined.
 
       The reinterpret_cast gets you a pointer that has the "wrong" value (but represents the "right" address); the launder can be used to attempt to recover the "right" value.  but not all "right" values are recoverable because we dont want to outlaw optimizers.
@@ -326,6 +355,50 @@ float do_bad_things(int n) {
       *p = 0; //UB now in C++20 because while y and p are not transparently replacable, that is not the case for arr and A as both p and y are technically subobjects and in that case complete objects must be transparently replaceble as well!
 
 
+# mempcy
+
+```
+void* memcpy( void* dest, const void* src, std::size_t count );
+```
+
+
+     WARNING !!!! *If the objects are potentially-overlapping or not TriviallyCopyable, the behavior of memcpy is not specified and may be undefined.*
+
+
+
+
+int32_t x_representation;
+std::memcpy(&x_representation, &x, sizeof(x));
+ 
+Implementations now generally outlaw using reinterpret_cast to violate strict aliasing, but allow representation casting to be done via unions.  But even that is an extension, and according to a strict reading of the standard it is UB.  I think that this is exactly the kind of thing that should have "implementation-defined" behavior rather than be UB.  The difference is that usually implementation-defined behavior has bounds to how wild implementations can go, for example: "the resulting value is implementation-defined" vs. "is UB".  It puts boundaries on how non-portable this code is.
+
+Permitting aliasing via unions would wreck performance, as you would never know when two objects of completely different types might alias. The C union visibility rule is highly controversial even within the C community; see e.g. https://gcc.gnu.org/bugzilla/show_bug.cgi?id=65892
+
+# implicit objects creation
+
+# non trival types
+
+The std::memcpy itself is perfectly well-defined (all it does is copy the
+source to the destination as an unsigned char array); it simply fails to
+implicitly create an std::string at the fields address, or an s that can
+be laundered
+
+struct s{
+ int a;
+ std::string str;
+ };
+>
+// is an aggregate according to [dcl.init.aggr] and thus eligible for
+// implicit lifetime
+
+ const s v = s{1, "a very long string to avoid SSO"};
+ unsigned char buffer[sizeof(s)];
+ std::memcpy(buffer, &v, sizeof(s)); //OK
+ s* v2 = std::launder(reinterpret_cast<s*>(buffer)); //UB, s cannot be laundered 
+ v2->str[0] = 'a'; //UB, v2 is invalid pointer!
+
+## from array of byte or unsigned char
+
       std::memcpy does do something special, in that it implicitly creates objects
       in its destination region ([cstring.syn] p3). Since 'buffer' is a char array
       instead of an unsigned char array, it cannot provide storage for any created
@@ -346,6 +419,7 @@ float do_bad_things(int n) {
 
       To access the created int object, we would have to use std::launder:
 
+```
       int i = 42;
       alignas(int) unsigned char buffer[sizeof(int)];
       void* newJ = std::memcpy(buffer, &i, sizeof(int)); //remeber that mempcy would create an implicty object so that newJ would point to it!
@@ -353,23 +427,54 @@ float do_bad_things(int n) {
       int * j  = reintepret_cast<int*>(newJ); //#2 ok
       reintepret_cast<int*>(buffer) = 30; //#3 UB as buffer points to char[];
 
+      alignas(int) char/float buffer2[sizeof(int)];  //not providing storage so creating anything there would end buffer2's lifetime
+      void* newJ = std::memcpy(buffer2, &i, sizeof(int)); 
+      *newJ; //valid!
+      reintepret_cast<int*>(buffer2) = 30; //#3 UB as buffer2 lifetime is over!
+      int* j = std::launder(reinterpret_cast<int*>(buffe2r)); #1 ok
+```
 
+ ## multiple objects possible!
 
-      The std::memcpy itself is perfectly well-defined (all it does is copy the
-      source to the destination as an unsigned char array); it simply fails to
-      implicitly create an std::string at the fields address, or an s that can
-      be laundered
+  #include <cstdlib>
+struct X { int a, b; };
+X *make_x() {
+  // The call to std::malloc implicitly creates an object of type X
+  // and its subobjects a and b, and returns a pointer to that X object
+  // (or an object that is pointer-interconvertible ([basic.compound]) with it),
+  // in order to give the subsequent class member access operations
+  // defined behavior.
+  X *p = (X*)std::malloc(sizeof(struct X) * 2); // me: added the *2
+  p->a = 1;
+  p->b = 2;
+  return p;
+}
+Previously, there was only one set of valid objects that could be created implicitly in that storage - it had to be exactly one X. But now, we have storage for two Xs, but only write to one of them, and nothing in this program ever touches the rest of the bytes. So there are many different sets of objects that could be implicitly created - maybe two Xs, maybe an X and two ints, maybe an X and eight chars, ...
 
+Its not observable which set is created, because if there were any actual observations, that would reduce the possibilities to only those sets which were valid. If we did something like p[1]->a = 3 then the universe of possibilities collapses down to just the one with two Xs.
 
-----------------------------
-int32_t x_representation;
-std::memcpy(&x_representation, &x, sizeof(x));
- 
-Implementations now generally outlaw using reinterpret_cast to violate strict aliasing, but allow representation casting to be done via unions.  But even that is an extension, and according to a strict reading of the standard it is UB.  I think that this is exactly the kind of thing that should have "implementation-defined" behavior rather than be UB.  The difference is that usually implementation-defined behavior has bounds to how wild implementations can go, for example: "the resulting value is implementation-defined" vs. "is UB".  It puts boundaries on how non-portable this code is.
+In other words, multiple sets of implicitly-created-objects are possibly only when there arent enough observations in the program to distinguish their validity. If there were a way to distinguish, then by definition, they wouldnt all be valid
 
-Permitting aliasing via unions would wreck performance, as you would never know when two objects of completely different types might alias. The C union visibility rule is highly controversial even within the C community; see e.g. https://gcc.gnu.org/bugzilla/show_bug.cgi?id=65892
--------------------------
+## pointers to the implicitly created objects
 
+Further, after implicitly creating objects within a specified region of storage, some operations are described as producing a pointer to a suitable created object. These operations select one of the implicitly-created objects whose address is the address of the start of the region of storage, and produce a pointer value that points to that object, if that value would result in the program having defined behavior. If no such pointer value would give the program defined behavior, the behavior of the program is undefined. If multiple such pointer values would give the program defined behavior, it is unspecified which such pointer value is produced.
+12
+#
+[Example 3: 
+#include <cstdlib>
+struct X { int a, b; };
+X *make_x() {
+  // The call to std​::​malloc implicitly creates an object of type X
+  // and its subobjects a and b, and returns a pointer to that X object
+  // (or an object that is pointer-interconvertible ([basic.compound]) with it),
+  // in order to give the subsequent class member access operations
+  // defined behavior.
+  X *p = (X*)std::malloc(sizeof(struct X));
+  p->a = 1;
+  p->b = 2;
+  return p;
+
+# objects partial re-use
 
 partial reuse of the object kills the host object, but not all of its subojects! only those re-used!
 struct A { int y; int x; };
@@ -378,27 +483,9 @@ void f() {
   int &r = a.y;
   static_assert(sizeof(int) == sizeof(float));
   new (&a.x) float; // by [basic.life], this ends the lifetime of a.x and the lifetime of a, but not the lifetime of a.y, because it reuses the storage of a and of a.x to create an object that is nested within neither of them
-  r = 1; // still ok? should be yes!
+  r = 1; // There are open defects in relation to this topic. For example, when the lifetime of o ends the lifetime of o.a should also end, but nothing seems to specify this currently. Presumably a subobject shouldn't stop being a subobject, although I wouldn't be surprised if there are uses of "subobject" in the standard that should refer to alive subobjects
   a.y = 4; //UB, because gvalue is used  for object which lifetime ended, but storage was not yet re-used!
 }
-
-
-   -------------------------------------
-
-struct s{
- int a;
- std::string str;
- };
->
-// is an aggregate according to [dcl.init.aggr] and thus eligible for
-// implicit lifetime
-
- const s v = s{1, "a very long string to avoid SSO"};
- unsigned char buffer[sizeof(s)];
- std::memcpy(buffer, &v, sizeof(s)); //OK
- s* v2 = std::launder(reinterpret_cast<s*>(buffer)); //UB, s cannot be laundered 
- v2->str[0] = 'a'; //UB, v2 is invalid pointer!
-
 
     ----------------------------------------------------
   int main()
@@ -425,28 +512,7 @@ object creation can make `launder` work for that case, but it would do
 so for a `reinterpret_cast` too).
 
 
-  #include <cstdlib>
-struct X { int a, b; };
-X *make_x() {
-  // The call to std::malloc implicitly creates an object of type X
-  // and its subobjects a and b, and returns a pointer to that X object
-  // (or an object that is pointer-interconvertible ([basic.compound]) with it),
-  // in order to give the subsequent class member access operations
-  // defined behavior.
-  X *p = (X*)std::malloc(sizeof(struct X) * 2); // me: added the *2
-  p->a = 1;
-  p->b = 2;
-  return p;
-}
-Previously, there was only one set of valid objects that could be created implicitly in that storage - it had to be exactly one X. But now, we have storage for two Xs, but only write to one of them, and nothing in this program ever touches the rest of the bytes. So there are many different sets of objects that could be implicitly created - maybe two Xs, maybe an X and two ints, maybe an X and eight chars, ...
-
-Its not observable which set is created, because if there were any actual observations, that would reduce the possibilities to only those sets which were valid. If we did something like p[1]->a = 3 then the universe of possibilities collapses down to just the one with two Xs.
-
-In other words, multiple sets of implicitly-created-objects are possibly only when there arent enough observations in the program to distinguish their validity. If there were a way to distinguish, then by definition, they wouldnt all be valid
-
--------
-Object model
--------
+# Object model
 
 The constructs in a C++ program create, destroy, refer to, access, and manipulate objects. An object is created by a definition, by a new-expression ([expr.new]), by an operation that implicitly creates objects (see below), when implicitly changing the active member of a union, or when a temporary object is created ([conv.rval], [class.temporary]). An object occupies a region of storage in its period of construction ([class.cdtor]), throughout its lifetime, and in its period of destruction ([class.cdtor]).
 [Note 1: A function is not an object, regardless of whether or not it occupies storage in the way that objects do. — end note]
@@ -456,16 +522,7 @@ The properties of an object are determined when the object is created.
 - An object has a type ([basic.types]).
 [Note 2: Some objects are polymorphic ([class.virtual]); the implementation generates information associated with each such object that makes it possible to determine that objects type during program execution. — end note]
 
-if T is a class type with a non-trivial destructor ([class.dtor]), the destructor call starts, OR the storage which the object occupies is released, or is reused by an object that is not nested within o
 
-So if indeed it does constitute storage reuse, that is only because "reuse" is defined by plain English, not because the standard has a rule explicitly defining this as one of the cases of "storage reuse".
-I can construct an object at the storage location of an other object but this operation is not a "storage reuses" (Otherwise why would it be written ...before the storage which the object occupied is resused...)
-No. [basic.life]/8 is trying to explain how you can use pointers/references/variable names to an object after that objects lifetime has ended. It explains the circumstances under which those pointers/references/variable names are still valid and can access the new object created in its storage
-
-auto t = new T;
-t->~T(); //Lifetime has ended.
-new (t) T; //object is created before reuse
-new (t) T; //object lifetime's ends by reuse, however sequence is lifetime end -> objected created -> storage reused by creating object, but lifetime has to end before object is created -> this needs clarification!
 
 new (this) C(other); - > new object C is created, than new object reuses storage for the old object---> not clear when lifetins of the old object ends
 
@@ -483,6 +540,7 @@ Objects can contain other objects, called subobjects. A subobject can be a membe
 
 for an object of a scalar type, its lifetime only ends when the storage is reused or released 
 
+```
 struct A {
     T t /*initializer*/;
     U* u;
@@ -492,7 +550,8 @@ struct A {
         u = ::new(static_cast<void*>(&t)) U /*initializer*/; 
       //u does not point to suboject because lifetime of A has not started yet!
     }
-3
+```
+
 #
 If a complete object is created ([expr.new]) in storage associated with another object e of type “array of N unsigned char” or of type “array of N std​::​byte” ([cstddef.syn]), that array provides storage for the created object if:
 (3.1) the lifetime of e has begun and not ended, and
@@ -519,23 +578,12 @@ Two standard-layout struct ([class.prop]) types are layout-compatible classes if
 Pointers to layout-compatible types shall have the same value representation and alignment requirements ([basic.align]).
 
 
-------
-memcpy
------
-If the objects overlap, the behavior is undefined.
-If either dest or src is an invalid (say T* actually refers to D* and they are not pointer-interconvertible) or null pointer, the behavior is undefined, even if count is zero.
-If the objects are potentially-overlapping or not TriviallyCopyable, the behavior of memcpy is not specified and may be undefined.
-
----
-type
----
+# type
 
 Objects, references, functions including function template specializations, and expressions have a property called type, which both restricts the operations that are permitted for those entities and provides semantic meaning to the otherwise generic sequences of bits.
 
 
--------------
-Lifetime
-------------
+# Lifetime
 
 (1) #
 The lifetime of an object or reference is a runtime property of the object or reference. A variable is said to have vacuous initialization if it is default-initialized and, if it is of class type or a (possibly multidimensional) array thereof, that class type has a trivial default constructor. The lifetime of an object of type T begins when:
@@ -755,19 +803,6 @@ Variables with automatic storage duration are initialized each time their declar
 Notice that the order of destruction is specified, but the order of automatic storage release is not specified. This means that the implementation could release the storage right after each variable is destroyed, or release it all at once later, or in some arbitrary other order.
 
 Now, the fact that it uses the singular for storage ("the storage for ... lasts") rather than talking about each variable individually may suggest that the intent is for the storage as a whole to be released at once for that scope. But there is no explicit statement of this in the standard. So as long as a variable is destroyed before its storage is released, any ordering of destruction vs. release appears to be legal, BUT STANDART DID AGREE in 2015 that RELEASE MUST HAPPEN AFTER DESTRUCTION! CWG Issue 2115
-
- --EXISTING C++ ISUE (CWG 2115) --------->
-Basically it is not established wheather destructors for automatic variables at the end of block or memory (trivial types) for them is going to be released first. Because trivally destructible types dont need destructor to be run
---------------
-The relative ordering between destruction of automatic variables on exit from a block and the release of the variables storage is not specified by the Standard: are all the destructors executed first and then the storage released, or are they interleaved?
-
-Notes from the February, 2016 meeting:
-
-CWG agreed that the storage should persist until all destructions are complete, although the “as-if” rule would allow for unobservable optimizations of this ordering.
-<-----------------
-
-
-This means it is entirely possible for the code to work, for n to outlive a. But it is unspecified whether it does work.
 
 (14)
 

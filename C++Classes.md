@@ -1,7 +1,5 @@
 
 
-If an indeterminate value is produced by an evaluation, the behavior is undefined
-    -------------------------------------------------------------
 
 # pointers to member functions
 
@@ -24,9 +22,8 @@ void sample(Fred x, Fred& y, Fred* z, FredMemFn func)
 
 note that they cannot be converted to void*
 
------------------------
-union
--------------------------- 
+ # union
+ 
  A union is a special class type that can hold only one of its non - static data members at a time
 
  A union can have member functions(including constructors and destructors), but not virtual functions.
@@ -34,6 +31,10 @@ union
  A union cannot have base classes and cannot be used as a base class.
 
  A union cannot have non-static data members of reference types.
+
+IMPORTANT!!!! All union objects would start at the same address and would have the same alignment (largest possible)
+IMPORTANT!!!! Union members are pointer interconvertible, but derefercing those pointer may not be valid depending on what active member of the union is
+IMPORTANT!!!  Innitial common sequence can be read from any union member!
 
 If a union contains a non-static data member with a non-trivial special member function(copy / move constructor, copy / move assignment, or destructor), that function is deleted by default in the union and needs to be defined explicitly by the programmer.If a
 union contains a non - static data member with a non - trivial default constructor, the default constructor of the union is deleted by default unless a variant member of the union has a default member initializer .
@@ -75,9 +76,7 @@ A a;
 A b = a;
 will contain a's padding bits as well
 
-----------
-constructors
-----------
+# constructors
 
 user-provided constructor deletes default one
 If no user-declared constructors of any kind are provided for a class type (struct, class, or union), the compiler will always declare a default constructor as an inline public member of its class.
@@ -86,9 +85,8 @@ user-declared copy constructor delete move operators
 
 For an object with a non-trivial constructor, referring to any non-static member or base class of the object before the constructor begins execution results in undefined behavior. For an object with a non-trivial destructor, referring to any non-static member or base class of the object after the destructor finishes execution results in undefined behavior.
 
-********************
-Trivial default constructor
-************************
+## Trivial default constructor
+
 The default constructor for class T is trivial (i.e. performs no action) if all of the following is true:
 
 The constructor is not user-provided (i.e., is implicitly-defined or defaulted on its first declaration).
@@ -101,7 +99,7 @@ The constructor is not user-provided (i.e., is implicitly-defined or defaulted o
 
 A trivial default constructor is a constructor that performs no action. All data types compatible with the C language (POD types) are trivially default-constructible.
 
-**************** Trivally copyable class **********************
+## Trivally copyable class 
 has at least one eligible copy constructor, move constructor, copy assignment operator, or move assignment operator,
 each eligible(the one choosed) copy constructor is trivial
 each eligible(the one choosed) move constructor is trivial
@@ -109,11 +107,11 @@ each eligible(the one choosed) copy assignment operator is trivial
 each eligible(the one choosed) move assignment operator is trivial, and
 has a non-deleted trivial destructor.
 
-----note that you can delete everything above but say copy constructor & destructor and class will still be trivial
-++++++++++++++++++++++++++++++++++++++++++++++++
+note that you can delete everything above but say copy constructor & destructor and class will still be trivial
 
 
-**** Trivial copy constructor ***
+## Trivial copy constructor 
+
 The copy constructor for class T is trivial if all of the following are true:
 
 it is not user-provided (that is, it is implicitly-defined or defaulted) ;
@@ -136,17 +134,14 @@ The implicitly-declared or defaulted copy constructor for class T is defined as 
 - T has a user-defined move constructor or move assignment operator (this condition only causes the implicitly-declared, not the defaulted, copy constructor to be deleted).
 
 
-++++++++++++++++++++++++++++++++++++++++++++++++
-A trivial class is a class that
-++++++++++++++++++++++++++++++++++++++++++++++++
+## A trivial class is a class that
 
 - is trivially copyable, and
 - has one or more eligible default constructors such that each is trivial
 
 
-++++++++++++++++++++++++++++++++++++++++++++++++
-Standard-layout class
-++++++++++++++++++++++++++++++++++++++++++++++++
+## Standard-layout class
+
 A standart-layout class is a class that
 
 has no non-static data members of type non-standard-layout class (or array of such types) or reference,
@@ -195,10 +190,8 @@ Section 9.2.12:
 
 Nonstatic data members of a (non-union) class declared without an intervening access-specifier are allocated so that later members have higher addresses within a class object. The order of allocation of nonstatic data members separated by an access-specifier is unspecified (11.1)"
 
----------------
-classes
---------------
 
+## Empty base class optimization
 The Empty Base Optimization is what will allow an empty base to not "inflate" the object, as you call it. However, you must be careful so that an object does not inherit from the same empty base twice or this optimization won't be allowed
 
 class S{
@@ -209,9 +202,8 @@ class S{
 
 default member initialize
 
-------
-construction
----------
+# construction
+
  For an object with a non - trivial constructor, referring to any non - static member or base class of the object before the constructor begins execution results in undefined behavior.For an object with a non - trivial destructor, referring to any non - static member or base class of the object after the destructor finishes execution results in undefined behavior.
 
  During the construction of an object, if the value of the object or any of its subobjects is accessed through a glvalue that is not obtained, directly or indirectly, from the constructor's this pointer, the value of the object or subobject thus obtained is unspecifie
@@ -229,9 +221,8 @@ An expression e is said to be implicitly convertible to T2 if and only if T2 can
 that is the declaration T2 t = e; is well-formed (can be compiled), for some invented temporary t. Note that this is different from direct initialization (T2 t(e)), where explicit constructors and conversion functions would additionally be considered.
 
 
-*******************
-Implicitly-defined default constructor
-*******************
+#  Implicitly-defined default constructor
+
 If the implicitly-declared default constructor is not defined as deleted, it is defined (that is, a function body is generated and compiled) by the compiler if odr-used or needed for constant evaluation (since C++11), and it has the same effect as a user-defined constructor with empty body and empty initializer list. That is, it calls the default constructors of the bases and of the non-static members of this class. Class types with an empty user-provided constructor may get treated differently than those with an implicitly-defined or defaulted default constructor during value initialization.
 
 

@@ -270,7 +270,7 @@ Whenever a glvalue appears as an operand of an operator that requires a prvalue 
   int n = g(true);    // OK, does not access y.n
   — end example]
   3
-  #
+  
   The result of the conversion is determined according to the following rules:
   (3.1) If T is cv std​::​nullptr_t, the result is a null pointer constant ([conv.ptr]).
   [Note 1: Since the conversion does not access the object to which the glvalue refers, there is no side effect even if T is volatile-qualified ([intro.execution]), and the glvalue can refer to an inactive member of a union ([class.union]). — end note]
@@ -278,7 +278,7 @@ Whenever a glvalue appears as an operand of an operator that requires a prvalue 
   (3.3) Otherwise, if the object to which the glvalue refers contains an invalid pointer value ([basic.stc.dynamic.deallocation]), the behavior is implementation-defined.
   (3.4) Otherwise, the object indicated by the glvalue is read ([defns.access]), and the value contained in the object is the prvalue result.
   4
-  #
+  
   [Note 2: See also [basic.lval]. — end note]
         45) For historical reasons, this conversion is called the “lvalue-to-rvalue” conversion, even though that name does not accurately reflect the taxonomy of expressions described in 
 
@@ -301,6 +301,42 @@ note that complier assumes that for non-class types, rvalues don't occupy storag
 S {int x} a;
 int i = S().a; //S() is used as rvalue expression, we don't say that S() is rvalue
 for S().a to work, S() would need to have a base offset and that means it has to be stored somewhere
+
+# Accessing data
+
+If a program attempts to access the stored value of an object through a glvalue whose type is not similar to one of the following types the behavior is undefined:55
+(11.1) the dynamic type of the object,
+(11.2) a type that is the signed or unsigned type corresponding to the dynamic type of the object, or
+(11.3) a char, unsigned char, or std​::​byte type.
+
+
+For example:
+
+```
+int main() {
+    union U { int i; char c; };    
+    U u{.i=1};
+
+//although this would work in all compliers this is not correct by standard!
+    char c1 = (char&)u;
+    char c2 = (char&)u.i;
+    char c3 = u.c; //reading  inactive member! bad
+    return c1 + c2 + c3;
+}
+```
+
+c1, c2, and c3 are obviously equivalent her
+Note that this uses the "object representation" and aliasing special-cases for "char";
+unfortunately, there are some specification holes in that area.
+
+
+It is a known issue that the current wording of the standard does not technically permit a user to implement their own `memcpy`, because there is no provision in the language to be able to read a byte of an object representation through a char glvalue; see P1839 for discussion. The intent is to fix this wording gap eventually, but it's not so easy.
+
+It is assumed that we will find some kind of solution to this problem, in which the naive strategy of `reinterpret_cast`ing to `char*` and then reading through that pointer will actually be well-defined and yield the object representation, and whatever the resolution is, it will be considered as a DR.
+
+If that's the case, then you can use a `char` glvalue to read the object representation of a `U` object, notwithstanding the fact that the active member is something other than a `char`. In the meantime, you can rely on this not being UB for all practical purposes, even though the wording to make it well-defined has not been figured out yet.
+
+![](images/issue_with_viewing_object_representation.PNG)
 
 # Binding
 

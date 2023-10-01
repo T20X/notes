@@ -438,6 +438,10 @@ constexpr int f(int x) {
 }
 ```
 
+### is_constant_evauluated
+
+this function can check if the current context in constexpr, but it is not realible at least as of gcc11 and clang14
+
 ## Lambdas
 
 lambdas can be declared as template variables! but not constexpr until c++20!
@@ -492,6 +496,11 @@ struct conjunction<B1, Bn...>
     : std::conditional_t<bool(B1::value), conjunction<Bn...>, B1> {};
 
 ```
+
+##  std::common_type
+
+Determines the common type among all types T..., that is the type all T... can be implicitly converted to. If such a type exists (as determined according to the rules below), the member type names that type. Otherwise, there is no member type
+
 ## decay
 
 (1) remove reference
