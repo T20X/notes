@@ -21,24 +21,10 @@ Every integer type has an integer conversion rank defined as follows:
 
 A prvalue that is not a converted bit-field and has an integer type other than bool, char8_t, char16_t, char32_t, or wchar_t whose integer conversion rank ([conv.rank]) is less than the rank of int can be converted to a prvalue of type int if int can represent all the values of the source type; otherwise, the source prvalue can be converted to a prvalue of type unsigned int.
 
--------------------
-Strinct Aliasing Rules
---------------------
-If a program attempts to access the stored value of an object through a glvalue of other than one of the following types the behavior is undefined:
-
-(11.1) the dynamic type of the object,
-(11.2) a cv-qualified version of the dynamic type of the object,
-(11.3) a type similar (as defined in 7.5) to the dynamic type of the object,
-(11.4) a type that is the signed or unsigned type corresponding to the dynamic type of the object,
-(11.5) a type that is the signed or unsigned type corresponding to a cv-qualified version of the dynamic type of the object,
-(11.6) an aggregate or union type that includes one of the aforementioned types among its elements or non-static data members (including, recursively, an element or non-static data member of a subaggregate or contained union),
-(11.7) a type that is a (possibly cv-qualified) base class type of the dynamic type of the object,
-(11.8) a char, unsigned char, or std::byte type.
 
 
----------
-Pointer interconvertible
--------------
+
+# Pointer interconvertible
 
 Two objects a and b are pointer-interconvertible if:
 - they are the same object
@@ -54,12 +40,7 @@ If a standard-layout class object has any non-static data members, its address i
 [Note 11: There can therefore be unnamed padding within a standard-layout struct object inserted by an implementation, but not at its beginning, as necessary to achieve appropriate alignment. — end note]
 
 
-Because the comittee wants to make clear that an array is a low level concept an not a first class object: you cannot return an array nor assign to it for example. Pointer-interconvertibility is meant to be a concept between objects of same level: only standard layout classes or unions
-
-
- ---------
-
-     ************reinterpret_cast ******************
+# reinterpret_cast
 
 
      IMPORTANT POINTS: 
@@ -86,15 +67,13 @@ char *c = reinterpret_cast<char *>(i);
 Here, i and c will have differing representations on Cray T90 (and doing this conversion definitely uses CPU instructions)
 
 
- //////
 
-
-      The result of the expression reinterpret_cast<T>(v) is the result of converting the expression v to type T. If T is an lvalue reference type or an rvalue reference to function type, the result is an lvalue; if T is an rvalue reference to object type, the result is an xvalue; otherwise, the result is a prvalue and the lvalue-to-rvalue, array-to-pointer, and function-to-pointer standard conversions are performed on the expression v. Conversions that can be performed explicitly using reinterpret_cast are listed below. No other conversion can be performed explicitly using reinterpret_cast.
+The result of the expression reinterpret_cast<T>(v) is the result of converting the expression v to type T. If T is an lvalue reference type or an rvalue reference to function type, the result is an lvalue; if T is an rvalue reference to object type, the result is an xvalue; otherwise, the result is a prvalue and the lvalue-to-rvalue, array-to-pointer, and function-to-pointer standard conversions are performed on the expression v. Conversions that can be performed explicitly using reinterpret_cast are listed below. No other conversion can be performed explicitly using reinterpret_cast.
 
 
 
 
-***************static_cast ************************ *
+# static_cast 
 
 MAJOR:
  - allows explicit constructors to be called! 
@@ -165,12 +144,10 @@ Another example for this is
 alingas(A) std::byte storage[sizeof(A)];
 new (storage) T;
 
-static_cast<T*>(   ... <---------------for this to work------------->........ void* )
+static_cast<T*>(   ... <---------------for this to work std::launder is needed ------------->........ void* )
 
 
-----------
-C-style casts
----------
+# C-style casts
 
 When the C-style cast expression is encountered, the compiler attempts to interpret it as the following cast expressions, in this order:
 a) const_cast<new-type>(expression);
@@ -181,38 +158,5 @@ e) reinterpret_cast followed by const_cast.
  The first choice that satisfies the requirements of the respective cast operator is selected, even if it cannot be compiled (see example). If the cast can be interpreted in more than one way as static_cast followed by a const_cast, it cannot be compiled.
  In addition, C-style cast notation is allowed to cast from, to, and between pointers to incomplete class type. If both expression and new-type are pointers to incomplete class types, it is unspecified whether static_cast or reinterpret_cast gets selected
 
-
-
-----
-implicit  created objects
-----
-
-Some operations are described as implicitly creating objects within a specified region of storage. For each operation that is specified as implicitly creating objects, that operation implicitly creates and starts the lifetime of zero or more objects of implicit-lifetime types ([basic.types.general]) in its specified region of storage if doing so would result in the program having defined behavior. If no such set of objects would give the program defined behavior, the behavior of the program is undefined. If multiple such sets of objects would give the program defined behavior, it is unspecified which such set of objects is created.
-[Note 4: Such operations do not start the lifetimes of subobjects of such objects that are not themselves of implicit-lifetime types. — end note]
-11
-#
-Further, after implicitly creating objects within a specified region of storage, some operations are described as producing a pointer to a suitable created object. These operations select one of the implicitly-created objects whose address is the address of the start of the region of storage, and produce a pointer value that points to that object, if that value would result in the program having defined behavior. If no such pointer value would give the program defined behavior, the behavior of the program is undefined. If multiple such pointer values would give the program defined behavior, it is unspecified which such pointer value is produced.
-
-12
-#
-[Example 3:
-#include <cstdlib>
-struct X {
-  int a, b; };
-X *make_x() {
-  // The call to std​::​malloc implicitly creates an object of type X
-  // and its subobjects a and b, and returns a pointer to that X object
-  // (or an object that is pointer-interconvertible ([basic.compound]) with it),
-  // in order to give the subsequent class member access operations
-  // defined behavior.
-  X *p = (X *)std::malloc(sizeof(struct X));
-  p->a = 1;
-  p->b = 2;
-  return p;
-}
-
-A class S is an implicit-lifetime class if
-- it is an aggregate whose destructor is not user-provided or
-- it has at least one trivial eligible constructor and a trivial, non-deleted destructor.
 
 

@@ -14,6 +14,46 @@ Extra data in VPTR:
 
 ```
 Another example:
+
+```
+class A {
+public:
+  virtual ~A() = default;
+  virtual void f1() {}
+  virtual void f2() {}
+  virtual void f12() {}
+  int t1 = 0;
+  int t2 = 0;
+  int t3 = 0;
+  int t4 = 0;
+  int t5 = 0;
+  double a;
+  double k;
+  double k9;
+  double k91;
+  int t6 = 0;
+  int t7 = 0;
+};
+
+class B {
+public:
+  // virtual ~B() = default;
+  virtual void f3() {}
+  virtual void f4() {}
+  virtual void f5() {}
+};
+
+class C : public A, public B {
+public:
+  //  virtual ~C() = default;
+  virtual void f3() {}
+  virtual void f1() {}
+  virtual void f6() {}
+  void test() {}
+};
+
+```
+
 Vtable for C
 C::_ZTV1C: 14 entries
 0     (int (*)(...))0 //offset to most derived object start
@@ -39,12 +79,15 @@ C (0x0x7fd1cc514310) 0
 A (0x0x7fd1cc4ff8a0) 0
       primary-for C (0x0x7fd1cc514310)
 B (0x0x7fd1cc4ff900) 72 nearly-empty
-      vptr=((& C::_ZTV1C) + 88)
+      vptr=((& C::_ZTV1C) + 88) (note B got its own VPTR as it got diffrent functions )
 ```
 ## pointer adjustment 
 
-can be done if suboject is at diffrent offset and does not require vptr. Also can be done when you got non-linear subobject like B in 
+can be done if suboject is at diffrent offset and does not require vptr / virtual functions. Also can be done when you got non-linear subobject like B in 
 class C : public A, public B {
+
+  For example if you want to get a pointer to B from a pointer to C!
+  obvisouly this pointer would need to be readjusted so that B members can be accessed through it
 
 ![](/images/c++/2023-08-26-15-49-41.png)
 

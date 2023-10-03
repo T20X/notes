@@ -7,6 +7,8 @@ At present placement new is not clear on wheather the storages bits been carried
 https://www.open-std.org/jtc1/sc22/wg21/docs/cwg_active.html#1027
 
 
+https://cplusplus.github.io/CWG/issues/2551.html
+
 https://cplusplus.github.io/CWG/issues/793.html
 
 
@@ -60,27 +62,7 @@ A memory location is either an object of scalar type that is not a bit-field or 
       if (b == d) //will always be true even though addresses are diffrent
       ```
 
-      ***** (AND ONLY AND ONLY ) For purposes of pointer arithmetic (7.6.6) and comparison (7.6.9, 7.6.10) **********, a pointer past the end of the
-      last element of an array x of n elements is considered to be equivalent to a pointer to a hypothetical array
-      element n of x and an object of type T that is not an array element is considered to belong to an array
-      with one element of type T. The value representation of pointer types is implementation-defined. Pointers to
-      layout-compatible types shall have the same value representation and alignment requirements (6.7.6).
-      [Note 3 : Pointers to over-aligned types (6.7.6) have no special representation, but their range of valid values is
-      restricted by the extended alignment requirement. —end note]
-      //This is valid code!
-      Derived d;    
-      Derived* d4 = &(&d)[0];
 
-      conversions to void* and the other way around preserve pointer values
-
-       pointer to array, again not the same as pointer to the first element:
-      ```
-           int a[5];
-           int (*ptr2)[] = &a;
-           int* firstElement = a;
-           int* firstElement2 = &a[0];
-           assert(firstElement = firstElment2)
-      ```
 
     The type of a pointer to cv void or a pointer to an object type is called an object pointer type.
 
@@ -585,29 +567,35 @@ Objects, references, functions including function template specializations, and 
 
 # Lifetime
 
-(1) #
+# start of lifetime 
+
+The properties ascribed to objects and references throughout this document apply for a given object or reference only during its lifetime.
+[Note 2: In particular, before the lifetime of an object starts and after its lifetime ends there are significant restrictions on the use of the object, as described below, in [class.base.init], and in [class.cdtor]. Also, the behavior of an object under construction and destruction can differ from the behavior of an object whose lifetime has started and not ended. [class.base.init] and [class.cdtor] describe the behavior of an object during its periods of construction and destruction. — end note]
+
+
+A program may end the lifetime of an object of class type without invoking the destructor, by reusing or releasing the storage as described above.
+[Note 3: A delete-expression ([expr.delete]) invokes the destructor prior to releasing the storage. — end note]
+In this case, the destructor is not implicitly invoked.
+[Note 4: The correct behavior of a program often depends on the destructor being invoked for each object of class type. — end note]
+
+
 The lifetime of an object or reference is a runtime property of the object or reference. A variable is said to have vacuous initialization if it is default-initialized and, if it is of class type or a (possibly multidimensional) array thereof, that class type has a trivial default constructor. The lifetime of an object of type T begins when:
-(1.1)
-storage with the proper alignment and size for type T is obtained, and
-(1.2)
-its initialization (if any) is complete (including vacuous initialization) ([dcl.init]),
-except that if the object is a union member or subobject thereof, its lifetime only begins if that union member is the initialized member in the union ([dcl.init.aggr], [class.base.init]), or as described in [class.union], [class.copy.ctor], and [class.copy.assign], and except as described in [allocator.members]. The lifetime of an object o of type T ends when:
-(1.3) if T is a non-class type, the object is destroyed, or
-(1.4) if T is a class type, the destructor call starts, or
-(1.5) the storage which the object occupies is released, or is reused by an object that is not nested within o ([intro.object]).
+(1.1) storage with the proper alignment and size for type T is obtained, and
+(1.2) its initialization (if any) is complete (including vacuous initialization) ([dcl.init]),
+except that if the object is a union member or subobject thereof, its lifetime only begins if that union member is the initialized member in the union ([dcl.init.aggr], [class.base.init]), or as described in [class.union], [class.copy.ctor], and [class.copy.assign], and except as described in [allocator.members]. 
+
 
 (2) The lifetime of a reference begins when its initialization is complete. The lifetime of a reference ends as if it were a scalar object requiring storage.
 [Note 1: [class.base.init] describes the lifetime of base and member subobjects. 
 
+# end of lifetime
 
 (3) The lifetime of an object o of type T ends when:
-- if T is a class type with a non-trivial destructor ([class.dtor]), the destructor call starts,
-- if T is a class type, the destructor call starts, or
-- the storage which the object occupies is released, or is reused by an object that is not nested within o ([intro.object]).
+The lifetime of an object o of type T ends when:
+(1.3) if T is a non-class type, the object is destroyed, or
+(1.4) if T is a class type, the destructor call starts, or
+(1.5) the storage which the object occupies is released, or is reused by an object that is not nested within o ([intro.object]).
 Right now, even if you called n.~int();, that would not actually end ns lifetime
-
-
- you cannot create an array from allocating two objects adjacently to each othe
 
 
 

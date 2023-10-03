@@ -1,4 +1,32 @@
-1. operator delete
+# dynamic memory
+
+Objects can be created dynamically during program execution, using new-expressions ([expr.new]), and destroyed using delete-expressions ([expr.delete]). A C++ implementation provides access to, and management of, dynamic storage via the global allocation functions operator new and operator new[] and the global deallocation functions operator delete and operator delete[].
+
+## new expression
+[Note 1: The non-allocating forms described in [new.delete.placement] do not perform allocation or deallocation. — end note]
+
+The new-expression attempts to create an object of the type-id or new-type-id ([dcl.name]) to which it is applied. The type of that object is the allocated type. This type shall be a complete object type ([basic.types.general]), but not an abstract class type ([class.abstract]) or array thereof ([intro.object]).
+
+
+If the allocation function is a non-allocating form ([new.delete.placement]) that returns null, the behavior is undefined. Otherwise, if the allocation function returns null, initialization shall not be done, the deallocation function shall not be called, and the value of the new-expression shall be null.
+
+note that placement new don't do allocation or dealocatiion but they still (imaginary) call allocation / deallocation functions
+
+
+When a new-expression calls an allocation function and that allocation has not been extended, the new-expression passes the amount of space requested to the allocation function as the first argument of type std​::​size_t. That argument shall be no less than the size of the object being created; it may be greater than the size of the object being created only if the object is an array and the allocation function is not a non-allocating form ([new.delete.placement]). For arrays of char, unsigned char, and std​::​byte, the difference between the result of the new-expression and the address returned by the allocation function shall be an integral multiple of the strictest fundamental alignment requirement of any object type whose size is no greater than the size of the array being created.
+[Note 9: Because allocation functions are assumed to return pointers to storage that is appropriately aligned for objects of any type with fundamental alignment, this constraint on array allocation overhead permits the common idiom of allocating character arrays into which objects of other types will later be placed. — end note
+
+
+
+A new-expression that creates an object of type T initializes that object as follows:
+(23.1) If the new-initializer is omitted, the object is default-initialized ([dcl.init]).
+[Note 12: If no initialization is performed, the object has an indeterminate value. — end note]
+(23.2) Otherwise, the new-initializer is interpreted according to the initialization rules of [dcl.init] for direct-initialization.
+24
+
+The invocation of the allocation function is sequenced before the evaluations of expressions in the new-initializer. Initialization of the allocated object is sequenced before the value computation of the new-expression.
+
+# operator delete
 Weather implementations are using std::free is not specified
    it is unspecified wheather operator delete(void* ptr) or operator delete(void* ptr, size_t sz) is called, BUT ANY OF THEM MAY BE CALLED!
       from standart " f a function without a size parameter is defined, the program should also define the corresponding function with a size parameter. If a function with a size parameter is defined, the program shall also define the corresponding version without the size parameter
@@ -14,7 +42,7 @@ Weather implementations are using std::free is not specified
 -If a deallocation function terminates by throwing an exception, the behavior is undefined. The value of the first argument supplied to a deallocation function may be a null pointer value;
 if so , and if the deallocation function is one supplied in the standard library, the call has no effec
 
-*************** allocator ********************
+# allocator
 
 std::allocator<T>::allocate returns T[n] and starts the lifetime of the array but not objects themselves __allocator_base = __gnu_cxx::new_allocator<_Tp>;
 
@@ -37,7 +65,7 @@ gcc using in vector _gnu_cxx::_allocator_traits which is based on
     which by default is
     using std::allocator __allocator_base = __gnu_cxx::new_allocator<_Tp>;
 
-6. Since C++ 20 std::allocator requirenments got relaxes.Now,
+ Since C++ 20 std::allocator requirenments got relaxes.Now,
    it only needs to support - std::allocator::allocate -
    std::allocator::deallocate - std::allocator::value_type -
    std::allocator::size_type - std::allocator::difference_type -
@@ -58,9 +86,8 @@ An implementation is allowed to omit a call to a replaceable global allocation f
 
 
 
-9.
 
-operator new []
+# operator new []
 This overhead may be applied in all array new-expressions, including those referencing the library function operator new[](std​::​size_­t, void*) and other placement allocation functions. The amount of overhead may vary from one invocation of new to another.
 
 

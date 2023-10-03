@@ -68,6 +68,8 @@ An expression is a sequence of operators and operands that specifies a computati
 
 # Refenrece
 
+references are not objects
+
 a refenrece is a basically a const pointer that gets dereferenced every time it refered to. a reference yields lvalue expression
 
 refenreces were made to make overloaded operators to work with class types . basically there is a need for something like a pointer but without explicitly taking its address
@@ -302,6 +304,43 @@ S {int x} a;
 int i = S().a; //S() is used as rvalue expression, we don't say that S() is rvalue
 for S().a to work, S() would need to have a base offset and that means it has to be stored somewhere
 
+# Pointer ariphmetic 
+
+For addition or subtraction, if the expressions P or Q have type “pointer to cv T”, where T and the array element type are not similar, the behavior is undefined.
+[Note 2: In particular, a pointer to a base class cannot be used for pointer arithmetic when the array contains objects of a derived class type. — end note]
+80)
+As specified in [basic.compound], an object that is not an array element is considered to belong to a single-element array for this purpose and a pointer past the last element of an array of n elements is considered to be equivalent to a pointer to a hypothetical array element n for this purpose. ⮥
+
+
+ you cannot create an array from allocating two objects adjacently to each othe
+
+
+
+** (AND ONLY AND ONLY ) For purposes of pointer arithmetic (7.6.6) and comparison (7.6.9, 7.6.10) **, a pointer past the end of the
+last element of an array x of n elements is considered to be equivalent to a pointer to a hypothetical array
+element n of x and an object of type T that is not an array element is considered to belong to an array
+with one element of type T. The value representation of pointer types is implementation-defined. Pointers to
+layout-compatible types shall have the same value representation and alignment requirements (6.7.6).
+[Note 3 : Pointers to over-aligned types (6.7.6) have no special representation, but their range of valid values is
+restricted by the extended alignment requirement. —end note]
+//This is valid code!
+Derived d;    
+Derived* d4 = &(&d)[0];
+
+conversions to void* and the other way around preserve pointer values
+
+pointer to array, again not the same as pointer to the first element:
+```
+    int a[5];
+    int (*ptr2)[] = &a;
+    int* firstElement = a;
+    int* firstElement2 = &a[0];
+    assert(firstElement = firstElment2)
+```
+
+Because the comittee wants to make clear that an array is a low level concept an not a first class object: you cannot return an array nor assign to it for example. Pointer-interconvertibility is meant to be a concept between objects of same level: only standard layout classes or unions
+
+
 # Accessing data
 
 If a program attempts to access the stored value of an object through a glvalue whose type is not similar to one of the following types the behavior is undefined:55
@@ -337,6 +376,19 @@ It is assumed that we will find some kind of solution to this problem, in which 
 If that's the case, then you can use a `char` glvalue to read the object representation of a `U` object, notwithstanding the fact that the active member is something other than a `char`. In the meantime, you can rely on this not being UB for all practical purposes, even though the wording to make it well-defined has not been figured out yet.
 
 ![](images/issue_with_viewing_object_representation.PNG)
+
+# Strinct Aliasing Rules
+
+If a program attempts to access the stored value of an object through a glvalue of other than one of the following types the behavior is undefined:
+
+(11.1) the dynamic type of the object,
+(11.2) a cv-qualified version of the dynamic type of the object,
+(11.3) a type similar (as defined in 7.5) to the dynamic type of the object,
+(11.4) a type that is the signed or unsigned type corresponding to the dynamic type of the object,
+(11.5) a type that is the signed or unsigned type corresponding to a cv-qualified version of the dynamic type of the object,
+(11.6) an aggregate or union type that includes one of the aforementioned types among its elements or non-static data members (including, recursively, an element or non-static data member of a subaggregate or contained union),
+(11.7) a type that is a (possibly cv-qualified) base class type of the dynamic type of the object,
+(11.8) a char, unsigned char, or std::byte type.
 
 # Binding
 
