@@ -238,6 +238,43 @@ float do_bad_things(int n) {
   return (*float*)buffer; // #2 //undefined behaviour because the lifetime of int ended and float contains intermediate value! otherwise it is valid since char buffer would create an implicit object and using C-style cast would have been fine
 }
 ```
+# fancy pointer
+
+Fancy pointers
+When the member type pointer is not a raw pointer type, it is commonly referred to as a "fancy pointer". Such pointers were introduced to support segmented memory architectures and are used today to access objects allocated in address spaces that differ from the homogeneous virtual address space that is accessed by raw pointers. An example of a fancy pointer is the mapping address-independent pointer boost::interprocess::offset_ptr, which makes it possible to allocate node-based data structures such as std::set in shared memory and memory mapped files mapped in different addresses in every process. Fancy pointers can be used independently of the allocator that provided them, through the class template std::pointer_traits (since C++11). The function std::to_address can be used to obtain a raw pointer from a fancy pointer. (since C++20)
+
+https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/p0653r2.html
+
+
+It is often necessary to obtain a raw pointer from an object of any pointer-like type. One common use is writing allocator-aware code where an allocator's pointer member type is not a raw pointer type.
+
+Typically the expression addressof(*p) is used but this is not well-defined when p does not reference storage that has an object constructed in it. This means that using this expression to obtain a raw pointer for the purpose of constructing an object (e.g. via a placement new-expression or via an allocator) is incorrect.
+
+A common example of such code:
+
+auto p = a.allocate(1);
+std::allocator_traits<A>::construct(a, std::addressof(*p), v);
+The correct code now looks like:
+
+auto p = a.allocate(1);
+std::allocator_traits<A>::construct(a, std::to_address(p), v);
+To customize the behavior of this function for a pointer-like type, users can specialize pointer_traits for that type and define member function to_address accordingly.
+
+Existing practice
+Typically implementors work around this problem by defining a utility like the following:
+
+template <class Ptr>
+auto to_address(const Ptr& p) noexcept
+{
+  return to_address(p.operator->());
+}
+
+template <class T>
+T* to_address(T* p) noexcept
+{
+  return p;
+}
+This proposal provides a standard library solution, with an optional customization point.
 
 
 ## launder
@@ -336,8 +373,36 @@ float do_bad_things(int n) {
       new (&arr) A;
       *p = 0; //UB now in C++20 because while y and p are not transparently replacable, that is not the case for arr and A as both p and y are technically subobjects and in that case complete objects must be transparently replaceble as well!
 
+# Helpfull utilities
 
-# mempcy
+## std::pointer_traits
+
+The pointer_traits class template provides the standardized way to access certain properties of pointer-like types (fancy pointers, such as boost::interprocess::offset_ptr). The standard template std::allocator_traits relies on pointer_traits to determine the defaults for various typedefs required by Allocator.
+
+https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/p0653r2.html
+
+## construct_at
+
+template< class T, class... Args >
+constexpr T* construct_at( T* p, Args&&... args );
+
+Creates a T object initialized with arguments args... at given address p. Specialization of this function template participates in overload resolution only if ::new(std::declval<void*>()) T(std::declval<Args>()...) is well-formed in an unevaluated context.
+
+Equivalent to, but also can be used in constexpr
+
+```
+::new (const_cast<void*>(static_cast<const volatile void*>(p)))
+    T(std::forward<Args>(args)...);
+```
+
+The reason to "const volatile" added it to be able to work for any pointer includin this one!
+
+```
+const foo * ptr = get_mem();
+ptr = std::construct_at(ptr); 
+```
+
+## mempcy
 
 ```
 void* memcpy( void* dest, const void* src, std::size_t count );
@@ -465,7 +530,8 @@ void f() {
   int &r = a.y;
   static_assert(sizeof(int) == sizeof(float));
   new (&a.x) float; // by [basic.life], this ends the lifetime of a.x and the lifetime of a, but not the lifetime of a.y, because it reuses the storage of a and of a.x to create an object that is nested within neither of them
-  r = 1; // There are open defects in relation to this topic. For example, when the lifetime of o ends the lifetime of o.a should also end, but nothing seems to specify this currently. Presumably a subobject shouldn't stop being a subobject, although I wouldn't be surprised if there are uses of "subobject" in the standard that should refer to alive subobjects
+  r = 1; // There are open defects in relation to this topic. For example, when the lifetime of o ends the lifetime of o.a should also end, but nothing seems to specify this currently. Presumably a subobject shouldn't stop being a subobject, although I wouldn't be surprised if there are uses of "subobject" in the standard that should refer to alive subobjects. I don't know if there's a clause in the standard that says a subobject's lifetime is bounded by the lifetime of the complete object which contains it. Such a thing ought to be part of the definition of "subobject". Because the Standard doesn't define what happens to a subobject when a different part of the storage of its complete object is reused, it falls into "Undefined Behavior by omission"
+
   a.y = 4; //UB, because gvalue is used  for object which lifetime ended, but storage was not yet re-used!
 }
 

@@ -78,7 +78,7 @@ a reference to const T can bind to an expression x that's not an lvalue of type 
 ...if there's a conversion from x's type to T
 
 
-rvalue refenreces buy only to rvalues
+rvalue refenreces buy only to rvalues or to plain values types
 rvalue refrences (type) bind only to rvalues
 
 struct A { int& i; };

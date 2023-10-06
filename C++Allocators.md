@@ -24,7 +24,7 @@ A new-expression that creates an object of type T initializes that object as fol
 (23.2) Otherwise, the new-initializer is interpreted according to the initialization rules of [dcl.init] for direct-initialization.
 24
 
-The invocation of the allocation function is sequenced before the evaluations of expressions in the new-initializer. Initialization of the allocated object is sequenced before the value computation of the new-expression.
+IMPORTANT !!!! The invocation of the allocation function is sequenced before the evaluations of expressions in the new-initializer. Initialization of the allocated object is sequenced before the value computation of the new-expression.
 
 # operator delete
 Weather implementations are using std::free is not specified
