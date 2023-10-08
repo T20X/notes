@@ -323,6 +323,15 @@ In C++14 you can also use auto sum(T a, Args... args) in order to get sum of mix
 
 # Concepts
 
+## to be used with expressions (combined with SFINAE)
+
+```
+    template <class F>
+    bool consume(F &&f) requires(
+        std::is_void_v<decltype((std::forward<F>(f)(std::declval<T>()),
+                                 void()))>) {
+```                                  
+
 ## inside if constexpr
 
 ```
@@ -400,6 +409,7 @@ std::integral auto i = 1;
 ### Concepts can be used in abbreviated function templates.
 
 void f(std::integral auto);
+
 
 # Constexpr
 
