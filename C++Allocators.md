@@ -66,12 +66,24 @@ gcc using in vector _gnu_cxx::_allocator_traits which is based on
     using std::allocator __allocator_base = __gnu_cxx::new_allocator<_Tp>;
 
  Since C++ 20 std::allocator requirenments got relaxes.Now,
-   it only needs to support - std::allocator::allocate -
-   std::allocator::deallocate - std::allocator::value_type -
-   std::allocator::size_type - std::allocator::difference_type -
+   it only needs to support - 
+   std::allocator::allocate -
+   std::allocator::deallocate -
+   std::allocator::value_type -
+   std::allocator::size_type - 
+   std::allocator::difference_type -
 
 
   The rest can be done by std::allocator_traits
+
+
+  Move assignment: vector& operator=( vector&& other );
+     If std::allocator_traits<allocator_type>::propagate_on_container_move_assignment() is true, the target allocator is replaced by a copy of the source allocator
+     f propagate_on_container_move_assignment is false, then the allocator has specified that when the container is moved, the moved-to container should retain its previous allocator. It can't take other's allocator, because that would contradict the propagate flag
+
+    Note that vectors stores allocator instances by copy!
+    Allocators are supposed to have value semantics, which means the vector stores it by value (notice that get_allocator() returns by value). So the constructor can easily take the allocator by const reference and just copy it.
+    In fact all allocators in std lib are stored by values!
 
 7. Why comparions operator is required for allocators ?
 
