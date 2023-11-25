@@ -70,8 +70,32 @@ gcc using in vector _gnu_cxx::_allocator_traits which is based on
    std::allocator::allocate -
    std::allocator::deallocate -
    std::allocator::value_type -
-   std::allocator::size_type - 
-   std::allocator::difference_type -
+   constructor accepting allocator<U>&
+   operator equal
+
+```
+template <class T> class custom_allocator {
+public:
+  typedef T value_type;
+
+  custom_allocator() {}
+  template <class U> custom_allocator(const custom_allocator<U> &u) {}
+
+  T *allocate(std::size_t n) {
+    return static_cast<T *>(
+        ::operator new(sizeof(T) * n, std::align_val_t(alignof(T))));
+  }
+  void deallocate(T *obj, std::size_t n) {
+    ::operator delete(static_cast<void *>(obj), std::align_val_t(alignof(T)));
+  }
+
+  friend bool operator==(const custom_allocator &a1,
+                         const custom_allocator &a2) {
+    return false;
+  }
+};
+```
+   
 
 
   The rest can be done by std::allocator_traits

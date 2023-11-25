@@ -66,6 +66,15 @@ Once an rvalue has been bound to a name, it's an lvalue again, whether it's a wr
 
 An expression is a sequence of operators and operands that specifies a computation.An expression can result in a value and can cause side effects The implementation can regroup operators according to the usual mathematical rules only where the operators really are associative or commutative
 
+
+## value computations
+
+ value computations (including determining the identity of an object for glvalue evaluation and fetching a value previously assigned to an object for prvalue evaluation)
+
+## "evaluation"
+
+Evaluation of an expression (or a subexpression) in general includes both value computations (including determining the identity of an object for glvalue evaluation and fetching a value previously assigned to an object for prvalue evaluation) and initiation of side effects
+
 # Refenrece
 
 references are not objects
@@ -107,7 +116,7 @@ int main() {
         A2 a02{ 4 };
         {
           A2 a12{ 9 };
-          std::construct_at(&a02, a1)2; // a now contains a ref to i2; not UB even rvalue rebounded, but note that  tmp which a02.i pointed to still has not his lifetime ended
+          std::construct_at(&a02, a12); // a now contains a ref to i2; not UB even rvalue rebounded, but note that  tmp which a02.i pointed to still has not his lifetime ended
         }
 
         //temp which points to a02.i get its lifetime ended
@@ -253,14 +262,21 @@ An expression is an xvalue if it is:
   The expressions f(), f().m, static_cast<A&&>(a), and a + a are xvalues. The expression ar is an lvalue. — end example]
 
 
-The result of a glvalue is the entity denoted by the expression. The result of a prvalue is the value that the expression stores into its context; a prvalue that has type cv void has no result. A prvalue whose result is the value V is sometimes said to have or name the value V. The result object of a prvalue is the object initialized by the prvalue; a non-discarded prvalue that is used to compute the value of an operand of a built-in operator or a prvalue that has type cv void has no result object.
+***The result of a glvalue is the entity denoted by the expression.***
+
+ ***The result of a prvalue is the value that the expression stores into its context***
+ 
+ ***a prvalue that has type cv void has no result A prvalue whose result is the value V is sometimes said to have or name the value V***
+ 
+ ***The result object of a prvalue is the object initialized by the prvalue; a non-discarded prvalue that is used to compute the value of an operand of a built-in operator or a prvalue that has type cv void has no result object***
 
 
 
 Whenever a glvalue appears as an operand of an operator that requires a prvalue for that operand, the lvalue-to-rvalue ([conv.lval]), array-to-pointer ([conv.array]), or function-to-pointer ([conv.func]) standard conversions are applied to convert the expression to a prvalue
 
-
-          Example 1:
+Example 1:
+          
+  ```
   struct S { int n; };
   auto f() {
   S x { 1 };
@@ -272,7 +288,8 @@ Whenever a glvalue appears as an operand of an operator that requires a prvalue 
   int n = g(true);    // OK, does not access y.n
   — end example]
   3
-  
+  ```
+
   The result of the conversion is determined according to the following rules:
   (3.1) If T is cv std​::​nullptr_t, the result is a null pointer constant ([conv.ptr]).
   [Note 1: Since the conversion does not access the object to which the glvalue refers, there is no side effect even if T is volatile-qualified ([intro.execution]), and the glvalue can refer to an inactive member of a union ([class.union]). — end note]
@@ -304,10 +321,55 @@ S {int x} a;
 int i = S().a; //S() is used as rvalue expression, we don't say that S() is rvalue
 for S().a to work, S() would need to have a base offset and that means it has to be stored somewhere
 
+
+## implementaitons 
+
+note that foward forces you to provide Tp type as it won't be auto-deduced!
+
+According to the rvalue reference proposal, a named rvalue is no different from an lvalue, except for decltype. That is any named parameter of a function cannot be implicitly casted or used to initialize another rvalue reference; it only copies to lvalue references; but static_cast can explicitly cast the valueness of the reference. So when you pass a named (in contrast to unnamed temporary) object/variable to a function, it can only be captured by lvlaues. To cast back a function argument to rvalue a static_cast is necessary, but it is too verbose about valueness of its output type. Any function such as std::forward has no way of deducing the decltype of its named operand. So the type must be verbosly passed as a template type argument; Correct deduction of return type of forward relies on its type argument. And the two overloads of this special function are necessary: the lvalue overload captures named rvalues and the rvalue overload captures unnamed lvalues who cannot directly bind to lvalue references. The deduction of underlying type of the input reference is prevented by using template type alises and stressed by nesting them in a trait type; either std::type_identity or std::remove_reference or else. This keeps programmers away from the pitfall of unintentionally passing wrong valueness while using std::forward
+
+```
+template<typename _Tp>
+    _GLIBCXX_NODISCARD
+    constexpr _Tp&&
+    forward(typename std::remove_reference<_Tp>::type& __t) noexcept
+    { return static_cast<_Tp&&>(__t); }
+
+  template<typename _Tp>
+    _GLIBCXX_NODISCARD
+    constexpr _Tp&&
+    forward(typename std::remove_reference<_Tp>::type&& __t) noexcept
+    {
+      static_assert(!std::is_lvalue_reference<_Tp>::value,
+	  "std::forward must not be used to convert an rvalue to an lvalue");
+      return static_cast<_Tp&&>(__t);
+    }
+  
+  template<typename _Tp>
+    _GLIBCXX_NODISCARD
+    constexpr typename std::remove_reference<_Tp>::type&&
+    move(_Tp&& __t) noexcept
+    { return static_cast<typename std::remove_reference<_Tp>::type&&>(__t); }
+
+    ```
+
+Also note at this trick from unique_ptr. It tries to get rvalue / lvalue based on the Deleter type! get_deleter always returns a reference. However _ep could be reference / value itself . If it reference you'd just want to pass it along but if it is value, than it make sense to move it from!
+
+```
+      template<typename _Up, typename _Ep, typename = _Require<
+               __safe_conversion_up<_Up, _Ep>,
+	       typename conditional<is_reference<_Dp>::value,``
+				    is_same<_Ep, _Dp>,
+				    is_convertible<_Ep, _Dp>>::type>>
+	unique_ptr(unique_ptr<_Up, _Ep>&& __u) noexcept
+	: _M_t(__u.release(), std::forward<_Ep>(__u.get_deleter()))
+	{ }
+```
+
 # Pointer ariphmetic 
 
-For addition or subtraction, if the expressions P or Q have type “pointer to cv T”, where T and the array element type are not similar, the behavior is undefined.
-[Note 2: In particular, a pointer to a base class cannot be used for pointer arithmetic when the array contains objects of a derived class type. — end note]
+***For addition or subtraction, if the expressions P or Q have type “pointer to cv T”, where T and the array element type are not similar, the behavior is undefined***
+*[Note 2: In particular, a pointer to a base class cannot be used for pointer arithmetic when the array contains objects of a derived class type. — end note]*
 80)
 As specified in [basic.compound], an object that is not an array element is considered to belong to a single-element array for this purpose and a pointer past the last element of an array of n elements is considered to be equivalent to a pointer to a hypothetical array element n for this purpose. ⮥
 
@@ -335,7 +397,10 @@ pointer to array, again not the same as pointer to the first element:
     int (*ptr2)[] = &a;
     int* firstElement = a;
     int* firstElement2 = &a[0];
-    assert(firstElement = firstElment2)
+    assert(firstElement = firstElment2
+    
+    
+    )
 ```
 
 Because the comittee wants to make clear that an array is a low level concept an not a first class object: you cannot return an array nor assign to it for example. Pointer-interconvertibility is meant to be a concept between objects of same level: only standard layout classes or unions

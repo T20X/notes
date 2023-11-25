@@ -43,6 +43,11 @@ A memory location is either an object of scalar type that is not a bit-field or 
 
 ## pointer
 
+---->some pointer values to represent the address, but not much is said about the details of that -------
+A value of a pointer type that is a pointer to or past the end of an object represents the address of the first byte in memory ([intro.memory]) occupied by the object34 or the first byte in memory after the end of the storage occupied by the object, respectively.
+[Note 2: A pointer past the end of an object ([expr.add]) is not considered to point to an unrelated object of the object's type, even if the unrelated object is located at that address. A pointer value becomes invalid when the storage it denotes reaches the end of its storage duration; see [basic.stc]. — end note]
+
+
       [(1)A value of a pointer type that is a pointer *to*] or [(2)past the end of an object represents] 
       [(1) the address of the first byte in memory ([intro.memory]) occupied by the object35 ] or [(2) the first byte in memory (for arrays) after the end of the storage occupied by the object, respectively].  The value representations of pointers to objects and invalid pointers may overlap
 
@@ -53,13 +58,24 @@ A memory location is either an object of scalar type that is not a bit-field or 
       - the null pointer value for that type, (for all objects : one *logical value* , not sure about one representation as technically you cannot reintepret_cast between diffrent types of null pointer values)
       - an invalid pointer value. (for all objects: one *logical value*, many value representations)
 
-      IMPORTANT ->>>> pointers point to OBJECTS not to ADDRESSES 
+      IMPORTANT ->>>> pointers point to OBJECTS not to ADDRESSES, but they do represent addresses which matters for COMPARISONS!
+
+      ------------>pointer comparison<----
+  If at least one of the operands is a pointer, pointer conversions, function pointer conversions, ***and qualification conversions are performed on both operands to bring them to their composite pointer type***. Comparing pointers is defined as follows:
+  (3.1)If one pointer represents the address of a complete object, and another pointer represents the address one past the last element of a different complete object,70 the result of the comparison is unspecified.
+  (3.2)Otherwise, if the pointers are both null, both point to the same function, or both represent the same address, they compare equal.
+  (3.3)Otherwise, the pointers compare unequal.
 
       ```
       struct B{int i;}; struct B1{int b;} struct D : B, B1 {}
       D* d = D;
-      B2* b = d;
-      if (b == d) //will always be true even though addresses are diffrent
+      B1* b = d;
+      if (b == d) //will always be true even though addresses are diffrent becasue d gets converted into B1 before comparing equal!
+
+    void *other = b;
+    D *dptr2 = static_cast<D *>(other);
+    if (dptr2 == b) //will always be false as pointer comparison is based on addresses
+
       ```
 
 
@@ -69,6 +85,12 @@ A memory location is either an object of scalar type that is not a bit-field or 
     [Note 1: A pointer to void does not have a pointer-to-object type, however, because void is not an object type. — end note]
     The type of a pointer that can designate a function is called a function pointer type. A pointer to an object of type T is referred to as a *pointer to T*.
     [Example 1: A pointer to an object of type int is referred to as *pointer to int* and a pointer to an object of class X is called a *pointer to X*. — end example]
+
+
+
+
+
+
 
       In general, pointer is a type of a variable that stores a link to another object. In C and C++, the link is the address of that object in the program memory. Pointers allow to refer to the same object from multiple locations of the source code without copying the object. Also, the same pointer variable may refer to different objects during its lifetime.
 
@@ -130,8 +152,7 @@ A memory location is either an object of scalar type that is not a bit-field or 
 
       ------------------------------
 
-      A pointer that points to an object represents the address of the first byte in memory occupied by the object. A pointer past the end of an object represents the address of the first byte in memory after the end of the storage occupied by the object. Even though two objects may have the same address, their value representations may be diffrent, which means that the scalar value representinting pointer value could have diffrent bits even though they point to the same address.
-
+     
 
       Note that two pointers that represent the same address may nonetheless have different values.
 
@@ -238,6 +259,11 @@ float do_bad_things(int n) {
   return (*float*)buffer; // #2 //undefined behaviour because the lifetime of int ended and float contains intermediate value! otherwise it is valid since char buffer would create an implicit object and using C-style cast would have been fine
 }
 ```
+
+# [[no_unique_addresss]]
+
+Two objects with overlapping lifetimes that are not bit-fields may have the same address if one is nested within the other, or if at least one is a subobject of zero size and they are of different types; otherwise, they have distinct addresses and occupy disjoint bytes of storage
+
 # fancy pointer
 
 Fancy pointers
