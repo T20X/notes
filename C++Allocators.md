@@ -42,6 +42,15 @@ Weather implementations are using std::free is not specified
 -If a deallocation function terminates by throwing an exception, the behavior is undefined. The value of the first argument supplied to a deallocation function may be a null pointer value;
 if so , and if the deallocation function is one supplied in the standard library, the call has no effec
 
+# allocator_traits
+
+The minimal interface for a type conforming to the allocator requirements is that it have a value_type type, allocate and deallocate member functions, and equality comparison operators. The allocator_traits class template provides many other types and functions such as pointer, rebind, and construct. **Generic types that use allocators are required to access the allocator through std::allocator_traits** The latter requirement was intended to allow the allocator interface to be extended without necessarily changing every existing allocator
+
+the idea is to keep std::allocator as lean as possible and than add any other extended functionality to std::allocator_traits! Since C++23 not specializatoin of std::allocator_traits is allowed anymore
+
+https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2022/p2652r0.html
+p2652r0
+
 # allocator
 
 std::allocator<T>::allocate returns T[n] and starts the lifetime of the array but not objects themselves __allocator_base = __gnu_cxx::new_allocator<_Tp>;
