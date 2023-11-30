@@ -26,6 +26,43 @@ CWG agreed that the storage should persist until all destructions are complete, 
 This means it is entirely possible for the code to work, for n to outlive a. But it is unspecified whether it does work.
 
 
+# problems
+
+## creation 
+not clear when objects are created. clearlying name, type and storage duration are properties of ojects at creation, but is storage itself a requirenment for object to be created? does object creation comes before the re-use in placement new?
+
+the following from https://eel.is/c++draft/expr.new#nt:noptr-new-declarator suggest that "obtaining storage" does create the obect as well!
+[Note 11: When the allocation function returns a value other than null, it must be a pointer to a block of storage in which space for the object has been reserved. The block of storage is assumed to be appropriately aligned ([basic.align]) and of the requested size. The address of the created object will not necessarily be the same as that of the block if the object is an array. — end note]
+
+## destroyed
+how is that defined?
+
+# type
+
+Objects, references, functions including function template specializations, and expressions have a property called type, which both restricts the operations that are permitted for those entities and provides semantic meaning to the otherwise generic sequences of bits.
+
+
+# object access
+
+
+
+If a program attempts to access the stored value of an object through a glvalue whose type is not similar to one of the following types the behavior is undefined:48
+
+(11.1) the dynamic type of the object,
+
+(11.2) a type that is the signed or unsigned type corresponding to the dynamic type of the object, or
+
+(11.3) a char, unsigned char, or std​::​byte type.
+
+If a program invokes a defaulted copy/move constructor or copy/move assignment operator for a union of type U with a glvalue argument that does not denote an object of type cv U within its lifetime, the behavior is undefined.
+
+[Note 10: Unlike in C, C++ has no accesses of class type. — end note]   ####################### basically works only on scalars!!!!!!!!!!!!!!
+
+
+
+[defns.access]: [..] [Note 1: Only objects of scalar type can be accessed. Reads of scalar objects are described in [conv.lval] and modifications of scalar objects are describred in [expr.ass], [expr.post.incr], and [expr.pre.incr]. Attempts to read or modify an object of class type typically invoke a constructor or assignment operator; such invocations do not themselves constitute accesses, although they may involve accesses of scalar subobjects. — end note]
+
+
 # Memory model
 
 The fundamental storage unit in the C++ memory model is the byte
@@ -500,7 +537,7 @@ struct s{
       int * j  = reintepret_cast<int*>(newJ); //#2 ok
       reintepret_cast<int*>(buffer) = 30; //#3 UB as buffer points to char[];
 
-      alignas(int) char/float buffer2[sizeof(int)];  //not providing storage so creating anything there would end buffer2's lifetime
+      alignas(int) char/float buffer2[sizeof(int)];  //--->>>not providing storage so creating anything there would end buffer2's lifetime<---- ONLY unsigned char / std::byte provide storage!
       void* newJ = std::memcpy(buffer2, &i, sizeof(int)); 
       *newJ; //valid!
       reintepret_cast<int*>(buffer2) = 30; //#3 UB as buffer2 lifetime is over!
@@ -571,7 +608,7 @@ void f() {
   //  auto d = *reinterpret_cast<std::complex<float>*>(network_data);
   //  std::cout << d << '\n'; // UB: network_data does not point to a complex<float>
   
-  //  auto d = std::launder(*reinterpret_cast<std::complex<float>*>(network_data));
+  //  auto d = std::launder(reinterpret_cast<std::complex<float>*>(network_data));
   //  std::cout << d << '\n'; // Possible UB, related to CWG1997:
   //      the implicitly created complex<float> may hold indeterminate value
   
@@ -652,9 +689,6 @@ Two standard-layout struct ([class.prop]) types are layout-compatible classes if
 Pointers to layout-compatible types shall have the same value representation and alignment requirements ([basic.align]).
 
 
-# type
-
-Objects, references, functions including function template specializations, and expressions have a property called type, which both restricts the operations that are permitted for those entities and provides semantic meaning to the otherwise generic sequences of bits.
 
 
 # Lifetime
@@ -755,6 +789,17 @@ A class S is an implicit-lifetime class if
 (6.3) the pointer is implicitly converted ([conv.ptr]) to a pointer to a virtual base class, or
 (6.4) the pointer is used as the operand of a static_cast ([expr.static.cast]), except when the conversion is to pointer to cv void, or to pointer to cv void and subsequently to pointer to cv char, cv unsigned char, or cv std​::​byte ([cstddef.syn]), or
 (6.5) the pointer is used as the operand of a dynamic_cast ([expr.dynamic.cast]).
+
+nothing says that the lifetime itself is one of the properties
+determined on creation. CREATION OF OBJECT IS NOT CLEAR WHEN IT HAPPENS! ALTHOGH IT SEEMS TO HAPPEN BEFORE OBJECT'S CONSTRUCTION!
+It doesn't really make sense to infer that the listed operations in [intro.object]/1 only create
+objects at the point of completion. Before it completes, a new-expression can
+call a user-defined constructor in order to initialize the new object. For the
+constructor to receive a 'this' pointer referring to the new object under
+construction, the new-expression must have already created that object and
+obtained its storage at some earlier point in time. Thus, at best, we can infer
+from [intro.object]/1 that the listed operations create objects at some
+unspecified point between their start and completion
 
 (9) If a program ends the lifetime of an object of type T with static ([basic.stc.static]), thread ([basic.stc.thread]), or automatic ([basic.stc.auto]) storage duration and if T has a non-trivial destructor,24 and another object of the original type does not occupy that same storage location when the implicit destructor call takes place, the behavior of the program is undefined. This is true even if the block is exited with an exception.
 [Example 3:

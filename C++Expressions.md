@@ -21,6 +21,23 @@ These collectively are referred to as the observable behavior of the program.
 [Note 2: More stringent correspondences between abstract and actual semantics can be defined by each implementation. — end note]
 6) This provision is sometimes called the “as-if” rule, because an implementation is free to disregard any requirement of this document as long as the result is as if the requirement had been obeyed, as far as can be determined from the observable behavior of the program. For instance, an actual implementation need not evaluate part of an expression if it can deduce that its value is not used and that no side effects affecting the observable behavior of the program are produced.
 
+# Expression
+
+expression evaluation -> ( side-effects & value)
+
+ 
+
+An expression is a sequence of operators and operands that specifies a computation.An expression can result in a value and can cause side effects The implementation can regroup operators according to the usual mathematical rules only where the operators really are associative or commutative
+
+
+## value computations
+
+ value computations (including determining the identity of an object for glvalue evaluation and fetching a value previously assigned to an object for prvalue evaluation)
+
+## "evaluation"
+
+Evaluation of an expression (or a subexpression) in general includes both value computations (including determining the identity of an object for glvalue evaluation and fetching a value previously assigned to an object for prvalue evaluation) and initiation of side effects
+
 # Sequence points
 
 The C++11 and C++14 versions of the standard do not formally contain 'sequence points'; operations are 'sequenced before' or 'unsequenced' or 'indeterminately sequenced' instead. The net effect is essentially the same, but the terminology is different.
@@ -62,18 +79,7 @@ The sequencing constraints on the execution of the called function (as described
 
 Once an rvalue has been bound to a name, it's an lvalue again, whether it's a wrapping type as std::tuple or rvalue references or a plain rvalue reference.
 
-# Expressionn
 
-An expression is a sequence of operators and operands that specifies a computation.An expression can result in a value and can cause side effects The implementation can regroup operators according to the usual mathematical rules only where the operators really are associative or commutative
-
-
-## value computations
-
- value computations (including determining the identity of an object for glvalue evaluation and fetching a value previously assigned to an object for prvalue evaluation)
-
-## "evaluation"
-
-Evaluation of an expression (or a subexpression) in general includes both value computations (including determining the identity of an object for glvalue evaluation and fetching a value previously assigned to an object for prvalue evaluation) and initiation of side effects
 
 # Refenrece
 
@@ -87,7 +93,7 @@ a reference to const T can bind to an expression x that's not an lvalue of type 
 ...if there's a conversion from x's type to T
 
 
-rvalue refenreces buy only to rvalues or to plain values types
+rvalue refenreces bind only to rvalues or to plain values types
 rvalue refrences (type) bind only to rvalues
 
 struct A { int& i; };
@@ -138,7 +144,7 @@ int main()
 
 ## reference compatibility
 
-Given types “cv1 T1” and “cv2 T2”, “cv1 T1” is reference-related to “cv2 T2” if T1 is similar ([conv.qual]) to T2, or T1 is a base class of T2. “cv1 T1” is reference-compatible with “cv2 T2” if a prvalue of type “pointer to cv2 T2” can be converted to the type “pointer to cv1 T1” via a standard conversion sequence ([conv]). In all cases where the reference-compatible relationship of two types is used to establish the validity of a reference binding and the standard conversion sequence would be ill-formed, a program that necessitates such a binding is ill-formed.
+Given  types “cv1 T1” and “cv2 T2”, “cv1 T1” is reference-related to “cv2 T2” if T1 is similar ([conv.qual]) to T2, or T1 is a base class of T2. “cv1 T1” is **reference-compatible** with “cv2 T2” if a prvalue of type “pointer to cv2 T2” can be converted to the type “pointer to cv1 T1” via a standard conversion sequence ([conv]). In all cases where the **reference-compatible** relationship of two types is used to establish the validity of a reference binding and the standard conversion sequence would be ill-formed, a program that necessitates such a binding is ill-formed.
 
 
 ## referece initialization
