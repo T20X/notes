@@ -1,22 +1,52 @@
 
+# sequences
+
 total number of all sub-sequences (including empty one) = 2^n
 
+A **subarray** is contiguous part of array and maintains the relative ordering
+A **subsequence** must maintain the relative order of the original sequence. It may or may not be contiguous
+A **subset** MAY NOT maintain relative ordering of elements and can or cannot be a contiguous part of an array
 
 
-# Sliding window
-
-int lengthOfLongestSubstringTwoDistinct(string s) {
-        int res{}, start{};
-        unordered_map<char, int> m;
-
-        for(int i = 0; i < s.size(); i++) {
-            m[s[i]]++;
-            if(m.size() < 3) res = std::max(res, i - start + 1);
-            while(m.size() > 2) if(!--m[s[start++]]) m.erase(s[start-1]);
-        } return res;
-    }
 
 
+# dynamic sets
+
+```
+
+template <class K> using DynamicSet = std::unordered_map<K, std::optional<K>>;
+
+template <class K>
+std::optional<K> find_set(const DynamicSet<K> &S, const K &k) {
+  auto it = S.find(k);
+  while (it != std::end(S) && it->second) {
+    it = S.find(it->second.value());
+  }
+
+  std::optional<K> r = it == std::end(S) ? std::optional<K>() : it->first;
+  std::cout << "find_set k=" << k << "  r=" << (r ? r.value() : "<missing>")
+            << "\n";
+  return r;
+}
+
+template <class K> void union_set(DynamicSet<K> &S, const K &l, const K &r) {
+  auto l_set = find_set(S, l);
+  if (!l_set) {
+    throw std::runtime_error("l_set cannot be found by union_set");
+  }
+
+  auto r_set = find_set(S, r);
+  if (!r_set) {
+    throw std::runtime_error("r_set cannot be found by union_set");
+  }
+
+  std::cout << "union_set l:" << l_set.value() << " r:" << r_set.value()
+            << "\n";
+
+  S[r_set.value()] = l_set.value();
+}
+
+```
  
  
  # hashing
@@ -95,45 +125,41 @@ cross edge (u,v) is not forward,back and tree edge and neither u neither v are a
 
 ## Dejkstra
 
+```
+template <class K, class Weight = int>
+std::unordered_map<K, Vertex<K, Weight>> shortestPath(const Graph<K> &g,
+                                                      const K &from) {
+  std::unordered_map<K, Vertex<K, Weight>> r;
+  std::priority_queue<Vertex<K, Weight>, std::vector<Vertex<K, Weight>>,
+                      std::greater<Vertex<K, Weight>>>
+      q;
 
-    // walktrhough helpers
-    std::priority_queue<DijkstraQItem> Q;
-    std::set<char> visited;  
+  q.emplace(Vertex<K, Weight>{from, 0, from});
+  while (!q.empty()) {
+    Vertex<K, Weight> current = q.top();
+    q.pop();
 
-    // start from the source vertex
-    Q.push({ source, 0 }); 
-    p[index(source)] = 0;
-    d[index(source)] = 0;    
-
-    while (!Q.empty())
-    {
-        DijkstraQItem current = Q.top();
-        Q.pop();
-
-        unsigned y = index(current.vertex);        
-        
-        // discover(NOT visit!) all adjacent vertecies
-        for (unsigned x = 0; x < _N_; x++)
-        {   
-            // only consider if adjacent vertex was not visited before
-            if (graph[y][x] == _edge_missing_ || visited.find(vertex(x)) != visited.end())
-                continue;            
-
-            // make sure adjacent vertices got 
-            // shortest distance from the source vertex
-            unsigned dTx = d[y] + graph[y][x];
-            if (dTx < d[x])
-            {
-                d[x] = dTx; 
-                p[x] = current.vertex;
-            }
-
-            // add unvisited adjacent vertices to Q
-            Q.push({vertex(x), d[x]});
-        }
-
-        visited.insert(current.vertex);
+    std::vector<std::pair<K, Weight>> neighbors =
+        getAdjacentVertecies(current.v, g);
+    for (const auto &neighbor : neighbors) {
+      auto it = r.find(neighbor.first);
+      auto d = current.d + neighbor.second;
+      if (it == std::end(r)) {
+        Vertex<K, Weight> newVertex{current.v, d, neighbor.first};
+        r.emplace(neighbor.first, newVertex);
+        q.emplace(newVertex);
+      } else if (it->second.d > d /*edge w*/) {
+        Vertex<K, Weight> updatedVertex{current.v, d, neighbor.first};
+        q.emplace(updatedVertex);
+        it->second.p = current.v;
+        it->second.d = d;
+      }
     }
+  }
+
+  return r;
+}
+```
 
 ## BFS
 BFS is normally used with only one source vertex and runs once but DFS may be run many times from diffrent sources and is usually part of another algorithm.

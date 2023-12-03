@@ -1,3 +1,18 @@
+
+# Sliding window
+
+int lengthOfLongestSubstringTwoDistinct(string s) {
+        int res{}, start{};
+        unordered_map<char, int> m;
+
+        for(int i = 0; i < s.size(); i++) {
+            m[s[i]]++;
+            if(m.size() < 3) res = std::max(res, i - start + 1);
+            while(m.size() > 2) if(!--m[s[start++]]) m.erase(s[start-1]);
+        } return res;
+    }
+
+
 # sequences
 
 ## printing all sub-sequences
