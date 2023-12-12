@@ -36,6 +36,7 @@ An expression is a sequence of operators and operands that specifies a computati
 
 ## "evaluation"
 
+[https://eel.is/c++draft/basic#intro.execution-7]
 Evaluation of an expression (or a subexpression) in general includes both value computations (including determining the identity of an object for glvalue evaluation and fetching a value previously assigned to an object for prvalue evaluation) and initiation of side effects
 
 # Sequence points
@@ -674,6 +675,7 @@ B b5(1.0, std::move(n)); // OK
         INITIALIZATION which has these rules so explicit defult constructors may
         not work !explicit constructors
     and conversion operators wont work in aggregate initialization
+    Also note that arrays are aggregates!
 
     ""
     ""
@@ -703,6 +705,9 @@ The effects of value initialization are:
 The standard specifies that zero-initialization is not performed when the class has a user-provided or deleted default constructor, which implies that whether said default constructor is selected by overload resolution is not considered. All known compilers performs additional zero-initialization if a non-deleted defaulted default constructor is selected
 
 
+All standard containers (std::vector, std::list, etc.) value-initialize their elements when constructed with a single size_type argument or when grown by a call to resize(), unless their allocator customizes the behavior of constructs
+
+
 ++++++++++++++++++
 aggregate initialization
 ++++++++++++++++
@@ -713,6 +718,9 @@ T object = { arg1, arg2, ... };
 (3)(since C++ 20) T object{.des1 = arg1, .des2{arg2}...};	(4)	(since C++20)
 (6) T array[N] = {other - sequence}; IMPORTANT -> array just just aggregate class!
 
+IMPORTANT :
+**- if no value for a given memeber is given then it is copy-initializate with {}**
+
 all value computations and side effects associated with a given element are sequenced before those of any element that follows it in order of declaration
 
 the way c++ works is that if object is aggregate , aggregate initialization is always been tried on for ither value initialization / list initialization
@@ -721,7 +729,7 @@ the way c++ works is that if object is aggregate , aggregate initialization is a
 element is copy-initialized from the corresponding initializer clause of the initializer list:
 - If the initializer clause is an expression, implicit conversions are allowed as per copy-initialization, except that narrowing conversions are prohibited (since C++11).
 - If the initializer clause is a nested braced-init-list (which is not an expression), list-initialize the corresponding element from that clause, which will (since C++11) recursively apply the rule if the corresponding element is a subaggregate.
-- if no value for a given memeber is given then it is copy-initializate with {}
+**- if no value for a given memeber is given then it is copy-initializate with {}**
 
 If the aggregate is a union and the initializer list is empty, then If any variant member has a default member initializer, that member is initialized from its default member initializer.(since C++ 11)Otherwise, the first member of the union(if any) is copy  initialized from an empty initializer list.
 

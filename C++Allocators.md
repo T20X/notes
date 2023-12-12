@@ -26,7 +26,33 @@ A new-expression that creates an object of type T initializes that object as fol
 
 IMPORTANT !!!! The invocation of the allocation function is sequenced before the evaluations of expressions in the new-initializer. Initialization of the allocated object is sequenced before the value computation of the new-expression.
 
+If any part of the object initialization described above63 terminates by throwing an exception and a suitable deallocation function can be found, the deallocation function is called to free the memory in which the object was being constructed, after which the exception continues to propagate in the context of the new-expression. If no unambiguous matching deallocation function can be found, propagating the exception does not cause the object's memory to be freed.
+[Note 13: This is appropriate when the called allocation function does not allocate memory; otherwise, it is likely to result in a memory leak. — end note]
+
+
+## reuse
+When evalua ting a new-expression, storage is considered reused after it is returned from the allocation function, but before the evaluation of the new-initializer ([expr.new]).
+
+```
+[Example 1: 
+struct S {
+  int m;
+};
+
+void f() {
+  S x{1};
+  new(&x) S(x.m);   // undefined behavior
+}
+```
+
 # operator delete
+
+If the object being deleted has incomplete class type at the point of deletion and the complete class has a non-trivial destructor or a deallocation function, the behavior is undefined.
+
+[Note 2: A pointer to a const type can be the operand of a delete-expression; it is not necessary to cast away the constness ([expr.const.cast]) of the pointer expression before it is used as the operand of the delete-expression. — end note]
+
+
+
 Weather implementations are using std::free is not specified
    it is unspecified wheather operator delete(void* ptr) or operator delete(void* ptr, size_t sz) is called, BUT ANY OF THEM MAY BE CALLED!
       from standart " f a function without a size parameter is defined, the program should also define the corresponding function with a size parameter. If a function with a size parameter is defined, the program shall also define the corresponding version without the size parameter
@@ -81,6 +107,9 @@ gcc using in vector _gnu_cxx::_allocator_traits which is based on
    std::allocator::value_type -
    constructor accepting allocator<U>&
    operator equal
+
+IMPORTANT: std::allocator::construct is now removed in c++20 so if you want allocator_traits to call construct you must create your own allocator which has construct
+   You can create your own allocator type A, which has a construct function. That function will be called by std::allocator_traits<A>::construct
 
 ```
 template <class T> class custom_allocator {

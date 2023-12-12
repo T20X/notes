@@ -1102,6 +1102,8 @@ a type that is a (possibly cv-qualified) base class type of the dynamic type of 
 
 a char, unsigned char, or std​::​byte type.
 
+**It only applies to scalar types though and not to classes.**
+
 -----------------------
  the only way union can be used for type punning is if union is standart layout and it has standart layout struct. then these standarat layout structs can share the common memeber sequence!
  ----------------------
@@ -1123,7 +1125,7 @@ B() {}
  void - type with an empty set of values. It is an incomplete type that cannot be completed (consequently, objects of type void are disallowed). There are no arrays of void, nor references to void. However, pointers to void and functions returning type void (procedures in other languages) are permitted
  ----------------
  One pointer is said to alias another pointer when both refer to the same location or object. 
- Strict aliasing is an assumption, made by the C (or C++) compiler, that dereferencing pointers to objects of different types will never refer to the same memory location (i.e. alias eachother.)
+ Strict aliasing is an assumption, made by the C (or C++) compiler, that dereferencing pointers to objects of different types will never refer to the same memory location (i.e. alias eachother.). It only applies to scalar types though and not to classes.
 
  ------------------------
 

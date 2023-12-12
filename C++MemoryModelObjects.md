@@ -34,6 +34,27 @@ not clear when objects are created. clearlying name, type and storage duration a
 the following from https://eel.is/c++draft/expr.new#nt:noptr-new-declarator suggest that "obtaining storage" does create the obect as well!
 [Note 11: When the allocation function returns a value other than null, it must be a pointer to a block of storage in which space for the object has been reserved. The block of storage is assumed to be appropriately aligned ([basic.align]) and of the requested size. The address of the created object will not necessarily be the same as that of the block if the object is an array. — end note]
 
+The invocation of the allocation function is sequenced before the evaluations of expressions in the new-initializer. Initialization of the allocated object is sequenced before the value computation of the new-expression.
+
+
+
+I think a lot of it comes
+down to when exactly the new object is *created*, which is the precise operation
+that [basic.life]/8 cares about. One possible interpretation can be derived from
+the wording of [intro.object]/10, where implicitly creating objects "creates and
+starts the lifetime" of those objects. If "starting the lifetime" of an object
+includes obtaining its storage per [basic.life]/(1.1), then this implies that
+creating an object occurs *before* obtaining its storage. Thus, under this
+reading, there is no contradiction in [basic.life]/8, since the storage hasn't
+yet been reused at the point when the new object is created.
+
+However, this is not as clear-cut for other methods of creating an object. For
+instance, it is very clear that new-expressions obtain storage ([basic.life]/1)
+and initialize the object ([expr.new]/21) only after the allocation function
+returns. But at what point does it create the object? The standard appears to be
+completely silent on this question. It would definitely be nice of the timing of
+object creation could be clarified in general.
+
 ## destroyed
 how is that defined?
 
@@ -59,8 +80,12 @@ If a program invokes a defaulted copy/move constructor or copy/move assignment o
 [Note 10: Unlike in C, C++ has no accesses of class type. — end note]   ####################### basically works only on scalars!!!!!!!!!!!!!!
 
 
-
 [defns.access]: [..] [Note 1: Only objects of scalar type can be accessed. Reads of scalar objects are described in [conv.lval] and modifications of scalar objects are describred in [expr.ass], [expr.post.incr], and [expr.pre.incr]. Attempts to read or modify an object of class type typically invoke a constructor or assignment operator; such invocations do not themselves constitute accesses, although they may involve accesses of scalar subobjects. — end note]
+
+
+## right now undefined behaviour in the standard to read 
+
+
 
 
 # Memory model
