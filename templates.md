@@ -560,6 +560,12 @@ template<typename T> void f(decltype(*std::declval<T>()) arg);
 not GONNA WORK!
 
 
+f the argument is any other expression of type T, and
+a) if the value category of expression is xvalue, then decltype yields T&&;
+b) if the value category of expression is lvalue, then decltype yields T&;
+c) if the value category of expression is prvalue, then decltype yields T.
+
+
 ## decltype(auto)
 
 decltype(auto) - is good for forwarding functions as if we want to deduce the return type for free and at the same time pass EXACT values.

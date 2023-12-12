@@ -85,8 +85,33 @@ If a program invokes a defaulted copy/move constructor or copy/move assignment o
 
 ## right now undefined behaviour in the standard to read 
 
+![](images/cannot_read_object_representation.PNG)
+
+![](images/issue_with_viewing_object_representation.PNG)
 
 
+# typeid
+
+typeid ( type )	(1)	
+typeid ( expression )	(2)	
+
+Return value: const std::type_info&
+
+```
+const std::type_info& ti1 = typeid(A);
+const std::type_info& ti2 = typeid(A); 
+assert(&ti1 == &ti2); // not guaranteed
+assert(ti1 == ti2); // guaranteed
+
+
+assert(ti1.hash_code() == ti2.hash_code()); // guaranteed
+assert(std::type_index(ti1) == std::type_index(ti2)); // guaranteed
+
+```
+
+
+- If type is a reference type, the result refers to a std::type_info object representing the cv-unqualified version of the referenced type.
+- When applied to an expression of polymorphic type, evaluation of a typeid expression may involve runtime overhead (a virtual table lookup), otherwise typeid expression is resolved at compile tim
 
 # Memory model
 

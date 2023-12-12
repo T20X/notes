@@ -129,6 +129,38 @@ int main() {
         //temp which points to a02.i get its lifetime ended
     }
 
+## refrence coallasing
+
+A const T is a object of type T whose value cannot be modified. However, when T is a reference type, the const modifier is superfluous since references cannot be changed once initialized - they always refer to the same object. Thus, a const T when T=int& is just a T(which in this case is int&). 
+
+
+```
+template <class T>
+void f(const T v) {  //better mental mode is const (T) v
+}
+
+f<int&>(a) // T = int&, const is dropped as refrences are const by definition! 
+
+```
+
+IMPORTANT: There is one way to make const T& refrence like though!
+
+```
+std::add_lvalue_reference_t<std::add_const_t<std::remove_reference_t<in_type>>>
+```
+
+
+typedef int&  lref;
+typedef int&& rref;
+int n;
+ 
+lref&  r1 = n; // type of r1 is int&
+lref&& r2 = n; // type of r2 is int&
+rref&  r3 = n; // type of r3 is int&
+rref&& r4 = 1; // type of r4 is int&&
+
+
+
 ## pointer to reference
 does not exist!
 //int &*v2 = &p1; cannot be complied 
