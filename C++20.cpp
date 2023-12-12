@@ -153,3 +153,10 @@ auto prepare(Func&& func, Args&&... args) {
   };
   return f;
 }
+
+(7) it is possible to compile default comparison operator explicitly
+    // either member form
+    bool
+    operator==(foo const &) const = default;
+// ... or friend form
+friend bool operator==(foo const &, foo const &) = default;

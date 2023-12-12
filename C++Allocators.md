@@ -42,6 +42,15 @@ Weather implementations are using std::free is not specified
 -If a deallocation function terminates by throwing an exception, the behavior is undefined. The value of the first argument supplied to a deallocation function may be a null pointer value;
 if so , and if the deallocation function is one supplied in the standard library, the call has no effec
 
+# allocator_traits
+
+The minimal interface for a type conforming to the allocator requirements is that it have a value_type type, allocate and deallocate member functions, and equality comparison operators. The allocator_traits class template provides many other types and functions such as pointer, rebind, and construct. **Generic types that use allocators are required to access the allocator through std::allocator_traits** The latter requirement was intended to allow the allocator interface to be extended without necessarily changing every existing allocator
+
+the idea is to keep std::allocator as lean as possible and than add any other extended functionality to std::allocator_traits! Since C++23 not specializatoin of std::allocator_traits is allowed anymore
+
+https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2022/p2652r0.html
+p2652r0
+
 # allocator
 
 std::allocator<T>::allocate returns T[n] and starts the lifetime of the array but not objects themselves __allocator_base = __gnu_cxx::new_allocator<_Tp>;
@@ -66,12 +75,48 @@ gcc using in vector _gnu_cxx::_allocator_traits which is based on
     using std::allocator __allocator_base = __gnu_cxx::new_allocator<_Tp>;
 
  Since C++ 20 std::allocator requirenments got relaxes.Now,
-   it only needs to support - std::allocator::allocate -
-   std::allocator::deallocate - std::allocator::value_type -
-   std::allocator::size_type - std::allocator::difference_type -
+   it only needs to support - 
+   std::allocator::allocate -
+   std::allocator::deallocate -
+   std::allocator::value_type -
+   constructor accepting allocator<U>&
+   operator equal
+
+```
+template <class T> class custom_allocator {
+public:
+  typedef T value_type;
+
+  custom_allocator() {}
+  template <class U> custom_allocator(const custom_allocator<U> &u) {}
+
+  T *allocate(std::size_t n) {
+    return static_cast<T *>(
+        ::operator new(sizeof(T) * n, std::align_val_t(alignof(T))));
+  }
+  void deallocate(T *obj, std::size_t n) {
+    ::operator delete(static_cast<void *>(obj), std::align_val_t(alignof(T)));
+  }
+
+  friend bool operator==(const custom_allocator &a1,
+                         const custom_allocator &a2) {
+    return false;
+  }
+};
+```
+   
 
 
   The rest can be done by std::allocator_traits
+
+
+  Move assignment: vector& operator=( vector&& other );
+     If std::allocator_traits<allocator_type>::propagate_on_container_move_assignment() is true, the target allocator is replaced by a copy of the source allocator
+     f propagate_on_container_move_assignment is false, then the allocator has specified that when the container is moved, the moved-to container should retain its previous allocator. It can't take other's allocator, because that would contradict the propagate flag
+
+    Note that vectors stores allocator instances by copy!
+    Allocators are supposed to have value semantics, which means the vector stores it by value (notice that get_allocator() returns by value). So the constructor can easily take the allocator by const reference and just copy it.
+    In fact all allocators in std lib are stored by values!
 
 7. Why comparions operator is required for allocators ?
 

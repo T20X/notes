@@ -26,6 +26,43 @@ CWG agreed that the storage should persist until all destructions are complete, 
 This means it is entirely possible for the code to work, for n to outlive a. But it is unspecified whether it does work.
 
 
+# problems
+
+## creation 
+not clear when objects are created. clearlying name, type and storage duration are properties of ojects at creation, but is storage itself a requirenment for object to be created? does object creation comes before the re-use in placement new?
+
+the following from https://eel.is/c++draft/expr.new#nt:noptr-new-declarator suggest that "obtaining storage" does create the obect as well!
+[Note 11: When the allocation function returns a value other than null, it must be a pointer to a block of storage in which space for the object has been reserved. The block of storage is assumed to be appropriately aligned ([basic.align]) and of the requested size. The address of the created object will not necessarily be the same as that of the block if the object is an array. — end note]
+
+## destroyed
+how is that defined?
+
+# type
+
+Objects, references, functions including function template specializations, and expressions have a property called type, which both restricts the operations that are permitted for those entities and provides semantic meaning to the otherwise generic sequences of bits.
+
+
+# object access
+
+
+
+If a program attempts to access the stored value of an object through a glvalue whose type is not similar to one of the following types the behavior is undefined:48
+
+(11.1) the dynamic type of the object,
+
+(11.2) a type that is the signed or unsigned type corresponding to the dynamic type of the object, or
+
+(11.3) a char, unsigned char, or std​::​byte type.
+
+If a program invokes a defaulted copy/move constructor or copy/move assignment operator for a union of type U with a glvalue argument that does not denote an object of type cv U within its lifetime, the behavior is undefined.
+
+[Note 10: Unlike in C, C++ has no accesses of class type. — end note]   ####################### basically works only on scalars!!!!!!!!!!!!!!
+
+
+
+[defns.access]: [..] [Note 1: Only objects of scalar type can be accessed. Reads of scalar objects are described in [conv.lval] and modifications of scalar objects are describred in [expr.ass], [expr.post.incr], and [expr.pre.incr]. Attempts to read or modify an object of class type typically invoke a constructor or assignment operator; such invocations do not themselves constitute accesses, although they may involve accesses of scalar subobjects. — end note]
+
+
 # Memory model
 
 The fundamental storage unit in the C++ memory model is the byte
@@ -43,6 +80,11 @@ A memory location is either an object of scalar type that is not a bit-field or 
 
 ## pointer
 
+---->some pointer values to represent the address, but not much is said about the details of that -------
+A value of a pointer type that is a pointer to or past the end of an object represents the address of the first byte in memory ([intro.memory]) occupied by the object34 or the first byte in memory after the end of the storage occupied by the object, respectively.
+[Note 2: A pointer past the end of an object ([expr.add]) is not considered to point to an unrelated object of the object's type, even if the unrelated object is located at that address. A pointer value becomes invalid when the storage it denotes reaches the end of its storage duration; see [basic.stc]. — end note]
+
+
       [(1)A value of a pointer type that is a pointer *to*] or [(2)past the end of an object represents] 
       [(1) the address of the first byte in memory ([intro.memory]) occupied by the object35 ] or [(2) the first byte in memory (for arrays) after the end of the storage occupied by the object, respectively].  The value representations of pointers to objects and invalid pointers may overlap
 
@@ -53,13 +95,24 @@ A memory location is either an object of scalar type that is not a bit-field or 
       - the null pointer value for that type, (for all objects : one *logical value* , not sure about one representation as technically you cannot reintepret_cast between diffrent types of null pointer values)
       - an invalid pointer value. (for all objects: one *logical value*, many value representations)
 
-      IMPORTANT ->>>> pointers point to OBJECTS not to ADDRESSES 
+      IMPORTANT ->>>> pointers point to OBJECTS not to ADDRESSES, but they do represent addresses which matters for COMPARISONS!
+
+      ------------>pointer comparison<----
+  If at least one of the operands is a pointer, pointer conversions, function pointer conversions, ***and qualification conversions are performed on both operands to bring them to their composite pointer type***. Comparing pointers is defined as follows:
+  (3.1)If one pointer represents the address of a complete object, and another pointer represents the address one past the last element of a different complete object,70 the result of the comparison is unspecified.
+  (3.2)Otherwise, if the pointers are both null, both point to the same function, or both represent the same address, they compare equal.
+  (3.3)Otherwise, the pointers compare unequal.
 
       ```
       struct B{int i;}; struct B1{int b;} struct D : B, B1 {}
       D* d = D;
-      B2* b = d;
-      if (b == d) //will always be true even though addresses are diffrent
+      B1* b = d;
+      if (b == d) //will always be true even though addresses are diffrent becasue d gets converted into B1 before comparing equal!
+
+    void *other = b;
+    D *dptr2 = static_cast<D *>(other);
+    if (dptr2 == b) //will always be false as pointer comparison is based on addresses
+
       ```
 
 
@@ -69,6 +122,12 @@ A memory location is either an object of scalar type that is not a bit-field or 
     [Note 1: A pointer to void does not have a pointer-to-object type, however, because void is not an object type. — end note]
     The type of a pointer that can designate a function is called a function pointer type. A pointer to an object of type T is referred to as a *pointer to T*.
     [Example 1: A pointer to an object of type int is referred to as *pointer to int* and a pointer to an object of class X is called a *pointer to X*. — end example]
+
+
+
+
+
+
 
       In general, pointer is a type of a variable that stores a link to another object. In C and C++, the link is the address of that object in the program memory. Pointers allow to refer to the same object from multiple locations of the source code without copying the object. Also, the same pointer variable may refer to different objects during its lifetime.
 
@@ -130,8 +189,7 @@ A memory location is either an object of scalar type that is not a bit-field or 
 
       ------------------------------
 
-      A pointer that points to an object represents the address of the first byte in memory occupied by the object. A pointer past the end of an object represents the address of the first byte in memory after the end of the storage occupied by the object. Even though two objects may have the same address, their value representations may be diffrent, which means that the scalar value representinting pointer value could have diffrent bits even though they point to the same address.
-
+     
 
       Note that two pointers that represent the same address may nonetheless have different values.
 
@@ -238,6 +296,11 @@ float do_bad_things(int n) {
   return (*float*)buffer; // #2 //undefined behaviour because the lifetime of int ended and float contains intermediate value! otherwise it is valid since char buffer would create an implicit object and using C-style cast would have been fine
 }
 ```
+
+# [[no_unique_addresss]]
+
+Two objects with overlapping lifetimes that are not bit-fields may have the same address if one is nested within the other, or if at least one is a subobject of zero size and they are of different types; otherwise, they have distinct addresses and occupy disjoint bytes of storage
+
 # fancy pointer
 
 Fancy pointers
@@ -474,7 +537,7 @@ struct s{
       int * j  = reintepret_cast<int*>(newJ); //#2 ok
       reintepret_cast<int*>(buffer) = 30; //#3 UB as buffer points to char[];
 
-      alignas(int) char/float buffer2[sizeof(int)];  //not providing storage so creating anything there would end buffer2's lifetime
+      alignas(int) char/float buffer2[sizeof(int)];  //--->>>not providing storage so creating anything there would end buffer2's lifetime<---- ONLY unsigned char / std::byte provide storage!
       void* newJ = std::memcpy(buffer2, &i, sizeof(int)); 
       *newJ; //valid!
       reintepret_cast<int*>(buffer2) = 30; //#3 UB as buffer2 lifetime is over!
@@ -545,7 +608,7 @@ void f() {
   //  auto d = *reinterpret_cast<std::complex<float>*>(network_data);
   //  std::cout << d << '\n'; // UB: network_data does not point to a complex<float>
   
-  //  auto d = std::launder(*reinterpret_cast<std::complex<float>*>(network_data));
+  //  auto d = std::launder(reinterpret_cast<std::complex<float>*>(network_data));
   //  std::cout << d << '\n'; // Possible UB, related to CWG1997:
   //      the implicitly created complex<float> may hold indeterminate value
   
@@ -626,9 +689,6 @@ Two standard-layout struct ([class.prop]) types are layout-compatible classes if
 Pointers to layout-compatible types shall have the same value representation and alignment requirements ([basic.align]).
 
 
-# type
-
-Objects, references, functions including function template specializations, and expressions have a property called type, which both restricts the operations that are permitted for those entities and provides semantic meaning to the otherwise generic sequences of bits.
 
 
 # Lifetime
@@ -729,6 +789,17 @@ A class S is an implicit-lifetime class if
 (6.3) the pointer is implicitly converted ([conv.ptr]) to a pointer to a virtual base class, or
 (6.4) the pointer is used as the operand of a static_cast ([expr.static.cast]), except when the conversion is to pointer to cv void, or to pointer to cv void and subsequently to pointer to cv char, cv unsigned char, or cv std​::​byte ([cstddef.syn]), or
 (6.5) the pointer is used as the operand of a dynamic_cast ([expr.dynamic.cast]).
+
+nothing says that the lifetime itself is one of the properties
+determined on creation. CREATION OF OBJECT IS NOT CLEAR WHEN IT HAPPENS! ALTHOGH IT SEEMS TO HAPPEN BEFORE OBJECT'S CONSTRUCTION!
+It doesn't really make sense to infer that the listed operations in [intro.object]/1 only create
+objects at the point of completion. Before it completes, a new-expression can
+call a user-defined constructor in order to initialize the new object. For the
+constructor to receive a 'this' pointer referring to the new object under
+construction, the new-expression must have already created that object and
+obtained its storage at some earlier point in time. Thus, at best, we can infer
+from [intro.object]/1 that the listed operations create objects at some
+unspecified point between their start and completion
 
 (9) If a program ends the lifetime of an object of type T with static ([basic.stc.static]), thread ([basic.stc.thread]), or automatic ([basic.stc.auto]) storage duration and if T has a non-trivial destructor,24 and another object of the original type does not occupy that same storage location when the implicit destructor call takes place, the behavior of the program is undefined. This is true even if the block is exited with an exception.
 [Example 3:

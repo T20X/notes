@@ -170,6 +170,13 @@ struct iterator
 
 # Specializations
 
+## std specialization
+
+Unless explicitly prohibited, a program may add a template specialization for any standard library class template to namespace std provided that
+(2.1) the added declaration depends on at least one program-defined type, and
+(2.2) the specialization meets the standard library requirements for the original template
+
+
 in partial specialization, default arguments cannot appear in the argument list
 
 ## Specialization by function type so that its return type and signature can be taken out
