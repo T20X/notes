@@ -30,6 +30,9 @@ If any part of the object initialization described above63 terminates by throwin
 [Note 13: This is appropriate when the called allocation function does not allocate memory; otherwise, it is likely to result in a memory leak. — end note]
 
 
+An implementation is allowed to omit a call to a replaceable global allocation function ([new.delete.single], [new.delete.array]). When it does so, the storage is instead provided by the implementation or provided by extending the allocation of another new-expression.
+
+
 ## reuse
 When evalua ting a new-expression, storage is considered reused after it is returned from the allocation function, but before the evaluation of the new-initializer ([expr.new]).
 
@@ -45,7 +48,18 @@ void f() {
 }
 ```
 
-# operator delete
+# delete
+
+ *** IMPORTANT ***
+The value of the operand of delete may be a null pointer value, a pointer to a non-array object created by a previous new-expression, or a pointer to a subobject representing a base class of such an object. If not, the behavior is undefined
+
+  void *ptr = new int;
+  delete ptr; // bad ! undefined behaviour as cannot call delete on pointer to void reliably ! no hard error by compiler!
+  struct S;
+  S *s;
+  delete s; // bad ! undefined behaviour as type S is incomplete (only it has non-trivial destructor), no hard-error
+            // by compiler!
+
 
 If the object being deleted has incomplete class type at the point of deletion and the complete class has a non-trivial destructor or a deallocation function, the behavior is undefined.
 
@@ -78,6 +92,9 @@ https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2022/p2652r0.html
 p2652r0
 
 # allocator
+
+An implementation is allowed to omit a call to a replaceable global allocation function ([new.delete.single], [new.delete.array]). When it does so, the storage is instead provided by the implementation or provided by extending the allocation of another new-expression.
+
 
 std::allocator<T>::allocate returns T[n] and starts the lifetime of the array but not objects themselves __allocator_base = __gnu_cxx::new_allocator<_Tp>;
 
@@ -147,7 +164,7 @@ public:
     Allocators are supposed to have value semantics, which means the vector stores it by value (notice that get_allocator() returns by value). So the constructor can easily take the allocator by const reference and just copy it.
     In fact all allocators in std lib are stored by values!
 
-7. Why comparions operator is required for allocators ?
+## Why comparions operator is required for allocators ?
 
     [operator==(a1, a2)] returns true only if the storage allocated by the
         allocator a1 can be deallocated through a2.Establishes reflexive, symmetric,
@@ -155,9 +172,14 @@ public:
 
     Although note that still most implemenation also look for is_always_equal member of the allocator in order to determine if the allocator can be reused !Though standart deprecates is_always_equal from C++ 23 in favour of operator==
 
-8.
-An implementation is allowed to omit a call to a replaceable global allocation function ([new.delete.single], [new.delete.array]). When it does so, the storage is instead provided by the implementation or provided by extending the allocation of another new-expression.
 
+
+# operator new
+
+The invocation of the allocation function is sequenced before the evaluations of expressions in the new-initializer. Initialization of the allocated object is sequenced before the value computation of the new-expression.
+
+
+Even though the non-allocating placement new (9,10) cannot be replaced, a function with the same signature may be defined at class scope as described above. In addition, global overloads that look like placement new but take a non-void pointer type as the second argument are allowed, so the code that wants to ensure that the true placement new is called (e.g. std::allocator::construct), must use ::new and also cast the pointer to void*.
 
 
 
@@ -183,10 +205,6 @@ int main()
 }
 
 
-10. The invocation of the allocation function is sequenced before the evaluations of expressions in the new-initializer. Initialization of the allocated object is sequenced before the value computation of the new-expression.
-
-
-11. 
 
 using `std::allocator<T>::allocate` works by fiat; the
 function is defined to return a pointer, not to the array, but to the
@@ -195,20 +213,11 @@ first element of the array
 After calling allocate() and before construction of elements, pointer arithmetic of T* is well-defined within the allocated array, but the behavior is undefined if elements are accessed.
 
 
-12. 
+# ::operator delete
 
 ::operator delete does not call destrcutor because type info is lost
 ::operator [] new is meant to implement special array indexing strategy where allocated size won't be exactly  N * sizeof(T)
 bad_alloc can also happen because of heap corruption
 
 
-13.  *** IMPORTANT ***
-The value of the operand of delete may be a null pointer value, a pointer to a non-array object created by a previous new-expression, or a pointer to a subobject representing a base class of such an object. If not, the behavior is undefined
-
-  void *ptr = new int;
-  delete ptr; // bad ! undefined behaviour as cannot call delete on pointer to void reliably ! no hard error by compiler!
-  struct S;
-  S *s;
-  delete s; // bad ! undefined behaviour as type S is incomplete, no hard-error
-            // by compiler!
 

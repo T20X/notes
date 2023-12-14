@@ -113,6 +113,8 @@ assert(std::type_index(ti1) == std::type_index(ti2)); // guaranteed
 - If type is a reference type, the result refers to a std::type_info object representing the cv-unqualified version of the referenced type.
 - When applied to an expression of polymorphic type, evaluation of a typeid expression may involve runtime overhead (a virtual table lookup), otherwise typeid expression is resolved at compile tim
 
+program needs to use -rdynamic flag in order for this to work cross libraries (but looks like it won't work with libc++).
+
 # Memory model
 
 The fundamental storage unit in the C++ memory model is the byte
@@ -343,7 +345,7 @@ float do_bad_things(int n) {
   unsigned  char buffer[max(sizeof(int), sizeof(float))];
   *(int*)buffer = n;      // #1
   new (buffer) std::byte[sizeof(buffer)];
-  return (*float*)buffer; // #2 //undefined behaviour because the lifetime of int ended and float contains intermediate value! otherwise it is valid since char buffer would create an implicit object and using C-style cast would have been fine
+  return (*float*)buffer; // #2 //undefined behaviour because the lifetime of int ended and float contains intermediate value! otherwise it is valid since std::byte buffer would create an implicit object and using C-style cast would have been fine
 }
 ```
 
@@ -487,6 +489,16 @@ This proposal provides a standard library solution, with an optional customizati
       *p = 0; //UB now in C++20 because while y and p are not transparently replacable, that is not the case for arr and A as both p and y are technically subobjects and in that case complete objects must be transparently replaceble as well!
 
 # Helpfull utilities
+
+##  addressof
+
+```
+template< class T >
+T* addressof( T& arg ) noexcept;
+```
+
+Obtains the actual address of the object or function arg, even in presence of overloaded operator&
+
 
 ## std::pointer_traits
 
