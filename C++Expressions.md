@@ -131,23 +131,6 @@ int main() {
 
 ## refrence coallasing
 
-A const T is a object of type T whose value cannot be modified. However, when T is a reference type, the const modifier is superfluous since references cannot be changed once initialized - they always refer to the same object. Thus, a const T when T=int& is just a T(which in this case is int&). 
-
-
-```
-template <class T>
-void f(const T v) {  //better mental mode is const (T) v
-}
-
-f<int&>(a) // T = int&, const is dropped as refrences are const by definition! 
-
-```
-
-IMPORTANT: There is one way to make const T& refrence like though!
-
-```
-std::add_lvalue_reference_t<std::add_const_t<std::remove_reference_t<in_type>>>
-```
 
 
 typedef int&  lref;
@@ -269,6 +252,7 @@ In all cases except the last (i.e., implicitly converting the initializer expres
 
 
 
+
 # Value Category
       
 Each C++ expression(an operator with its operands, a literal, a variable name, etc.) is characterized by two independent properties : a type and a value category.Each expression has some non-reference type, and each expression belongs to exactly one of the three primary value categories : prvalue, xvalue, and lvalue.
@@ -360,6 +344,85 @@ S {int x} a;
 int i = S().a; //S() is used as rvalue expression, we don't say that S() is rvalue
 for S().a to work, S() would need to have a base offset and that means it has to be stored somewhere
 
+
+## const
+
+
+A const T is a object of type T whose value cannot be modified. However, when T is a reference type, the const modifier is superfluous since references cannot be changed once initialized - they always refer to the same object. Thus, a const T when T=int& (it is kind of to say const (int&) - you see it looks as int& is const now , not int...)is just a T(which in this case is int&). 
+
+
+The main point there is that the const in the original template belongs to T (because you say so in template <typename T> void test(const T& x)). When you instantiate with test<int&>, then T is int&. That turns the function parameter into const (int&) &. This const (int&) is the same as (int&) const, which is int & const, and there, const applies to & and is hence dropped
+
+
+
+```
+template <class T>
+void f(const T v) {  //better mental mode is const (T) v
+}
+
+f<int&>(a) // T = int&, const is dropped as refrences are const by definition! 
+
+```
+
+- IMPORTANT: There is one way to make const T& refrence like though!
+
+```
+std::add_lvalue_reference_t<std::add_const_t<std::remove_reference_t<in_type>>>
+```
+
+- Similarly by value T ommits const as well...
+
+```
+template <typename T> decltype(auto) any_value(T t) { return t; }
+static_assert(std::is_same_v<int, decltype(any_value<const int>(i))>);
+```
+
+## Conversions
+
+- xvalue can bind to lvalue ref!
+  
+```  
+f(const int &v)
+f(std::move(r)) #this works!
+```
+
+## Other things
+
+ - Return value optimization won't kick in and the value would be moved in the best case
+
+auto f() {
+  if (..) {
+    return A();
+  } else {
+    return A();
+  }
+}
+
+- no move from const
+  const A v;
+  std::move(v) #forbidden
+
+
+- no auto move from lvalue's member!
+
+```
+struct A { int b; };
+auto f() {
+  return a.b; //no move here or value optimization, it would be copied!
+  return std::move(a).b; //this would work!
+}
+```
+
+- temporaries may dangle easy in generic code
+
+```
+template <class T>
+decltype(auto) f(T&& v) {
+  return v;
+}
+
+const A& v = f(A());// ***A() will be destroyed right after calling f, leaving v a dangling reference***
+```
 
 ## implementaitons 
 

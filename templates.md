@@ -1100,6 +1100,71 @@ Type deduction does not consider implicit conversions (other than type adjustmen
 
 decltype is explicitly excluded from template argument deduction
 
+
+Template argument deduction attempts to determine template arguments (types for type template parameters Ti, templates for template template parameters TTi, and values for non-type template parameters Ii), which can be substituted into each parameter P to produce the type deduced A, which is the same as the type of the argument A, after adjustments listed below
+
+MENTAL MODEL FOR DEDUCTION IS REALLY FIND SUCH "T" WHICH IF SUBSTITUED WOULD BE EQUAL TO THE GIVEN ARGUMENT!
+
+If there are multiple parameters, each P/A pair is deduced separately and the deduced template arguments are then combined. If deduction fails or is ambiguous for any P/A pair or if different pairs yield different deduced template arguments, or if any template argument remains neither deduced nor explicitly specified, compilation fails.
+
+Before deduction begins, the following adjustments to P and A are made:
+
+1) If P is not a reference type,
+a) if A is an array type, A is replaced by the pointer type obtained from array-to-pointer conversion;
+b) otherwise, if A is a function type, A is replaced by the pointer type obtained from function-to-pointer conversion;
+c) otherwise, if A is a cv-qualified type, the top-level cv-qualifiers are ignored for deduction:
+template<class T>
+void f(T);
+ 
+int a[3];
+f(a); // P = T, A = int[3], adjusted to int*: deduced T = int*
+ 
+void b(int);
+f(b); // P = T, A = void(int), adjusted to void(*)(int): deduced T = void(*)(int)
+ 
+const int c = 13;
+f(c); // P = T, A = const int, adjusted to int: deduced T = int
+2) If P is a cv-qualified type, the top-level cv-qualifiers are ignored for deduction.
+3) If P is a reference type, the referenced type is used for deduction.
+4) If P is an rvalue reference to a cv-unqualified template parameter (so-called forwarding reference), and the corresponding function call argument is an lvalue, the type lvalue reference to A is used in place of A for deduction (Note: this is the basis for the action of std::forward Note: in class template argument deduction, template parameter of a class template is never a forwarding reference(since C++17)):
+template<class T>
+int f(T&&);       // P is an rvalue reference to cv-unqualified T (forwarding reference)
+ 
+template<class T>
+int g(const T&&); // P is an rvalue reference to cv-qualified T (not special)
+ 
+int main()
+{
+    int i;
+    int n1 = f(i); // argument is lvalue: calls f<int&>(int&) (special case)
+    int n2 = f(0); // argument is not lvalue: calls f<int>(int&&)
+ 
+//  int n3 = g(i); // error: deduces to g<int>(const int&&), which
+                   // cannot bind an rvalue reference to an lvalue
+}
+After these transformations, the deduction processes as described below (cf. section Deduction from a type) and attempts to find such template arguments that would make the deduced A (that is, P after adjustments listed above and the substitution of the deduced template parameters) identical to the transformed A, that is A after the adjustments listed above.
+
+If the usual deduction from P and A fails, the following alternatives are additionally considered:
+
+1) If P is a reference type, the deduced A (i.e., the type referred to by the reference) can be more cv-qualified than the transformed A:
+template<typename T>
+void f(const T& t);
+ 
+bool a = false;
+f(a); // P = const T&, adjusted to const T, A = bool:
+      // deduced T = bool, deduced A = const bool
+      // deduced A is more cv-qualified than A
+
+
+2) The transformed A can be another pointer or pointer to member type that can be converted to the deduced A via a qualification conversions or a function pointer conversion(since C++17):
+template<typename T>
+void f(const T*);
+ 
+int* p;
+f(p); // P = const T*, A = int*:
+      // deduced T = int, deduced A = const int*
+      // qualification conversion applies (from int* to const int*)
+      
 # Substitution
 
 Function template parameters are substituted (replaced by template arguments) twice:

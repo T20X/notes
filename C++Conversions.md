@@ -162,5 +162,17 @@ e) reinterpret_cast followed by const_cast.
  The first choice that satisfies the requirements of the respective cast operator is selected, even if it cannot be compiled (see example). If the cast can be interpreted in more than one way as static_cast followed by a const_cast, it cannot be compiled.
  In addition, C-style cast notation is allowed to cast from, to, and between pointers to incomplete class type. If both expression and new-type are pointers to incomplete class types, it is unspecified whether static_cast or reinterpret_cast gets selected
 
+ they are really desirable for these cases for example
+
+```
+const volatile T* __p = ...
+ ::new ((void *)__p) _Up(std::forward<_Args>(__args)...); //this works!, but static_cast / reinterpret_cast won't be able to work!
+
+ ```
+
+
+
+
+
 
 

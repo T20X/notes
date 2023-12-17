@@ -1,3 +1,7 @@
+# std::priority_queue
+
+if you use std::greater<>, note the the container type has to support operator>!
+
 # std::less
 
 Function object for performing comparisons. Unless specialized, invokes operator< on type T.
