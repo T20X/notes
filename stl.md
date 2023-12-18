@@ -1,3 +1,10 @@
+
+# storing nont moveable / noncopyable types in containers
+
+std::vector<std::mutex> v; // WON'T WORK!
+
+std::deque / std::list - would work!
+
 # std::priority_queue
 
 if you use std::greater<>, note the the container type has to support operator>!
@@ -218,3 +225,70 @@ ForwardIt unique(ForwardIt first, ForwardIt last)
  
     return ++result;
 }
+
+
+
+# Don’t blindly prefer emplace_back to push_back
+
+In one of my recent training courses, a student informed me that both clang-tidy and PVS-Studio were complaining about some code of the form
+
+std::vector<Widget> widgets;
+~~~
+widgets.push_back(Widget(foo, bar, baz));
+Both tools flagged this line as “bad style.” clang-tidy even offered a (SARCASM ALERT) helpful fixit:
+
+warning: use emplace_back instead of push_back [modernize-use-emplace]
+    widgets.push_back(Widget(foo, bar, baz));
+            ^~~~~~~~~~~~~~~~~             ~
+            emplace_back(
+The student dutifully changed the line, and both tools reported their satisfaction with the replacement:
+
+widgets.emplace_back(Widget(foo, bar, baz));
+The original line materializes a temporary Widget object on the stack; takes an rvalue reference to it; and passes that reference to vector<Widget>::push_back(Widget&&), which move-constructs a Widget into the vector. Then we destroy the temporary.
+
+The student’s replacement materializes a temporary Widget object on the stack; takes an rvalue reference to it; and passes that reference to vector<Widget>::emplace_back<Widget>(Widget&&), which move-constructs a Widget into the vector. Then we destroy the temporary.
+
+Absolutely no difference.
+
+The change clang-tidy meant to suggest — and in fact did suggest, if you pay very close attention to the underlining in the fixit — was actually this:
+
+widgets.emplace_back(foo, bar, baz);
+This version does not materialize any Widget temporaries. It simply passes foo, bar, baz to vector<Widget>::emplace_back<Foo&, Bar&, Baz&>(Foo&, Bar&, Baz&), which constructs a Widget into the vector using whatever constructor of Widget best matches that bunch of arguments.
+
+emplace_back is not magic C++11 pixie dust
+Even a decade after C++11 was released, I still sometimes see programmers assume that emplace_back is somehow related to move semantics. (In the same way that some programmers assume lambdas are somehow the same thing as std::function, you know?) For example, they’ll rightly observe that this code makes an unnecessary copy:
+
+void example() {
+    auto w = Widget(1,2,3);
+    widgets.push_back(w);  // Copy-constructor alert!
+}
+So they’ll change it to this:
+
+void example() {
+    auto w = Widget(1,2,3);
+    widgets.emplace_back(w);  // Fixed? Nope!
+}
+The original line constructs a Widget object into w, then passes w by reference to vector<Widget>::push_back(const Widget&), which copy-constructs a Widget into the vector.
+
+The replacement constructs a Widget object into w, then passes w by reference to vector<Widget>::emplace_back<Widget&>(Widget&), which copy-constructs a Widget into the vector.
+
+Absolutely no difference.
+
+What the student should have done is ask the compiler to make an rvalue reference to w, by saying either
+
+widgets.push_back(std::move(w));
+or
+
+widgets.emplace_back(std::move(w));
+It doesn’t matter which verb you use; what matters is the value category of w. You must explicitly mention std::move, so that the language (and the human reader) understand that you’re done using w and it’s okay for widgets to pilfer its guts.
+
+emplace_back was added to the language at the same time as std::move — just like lambdas were added at the same time as std::function — but that doesn’t make them the same thing. emplace_back may “look more C++11-ish,” but it’s not magic move-enabling pixie dust and it will never insert a move in a place you don’t explicitly request one.
+
+When all else is equal, prefer push_back to emplace_back
+So, given that these two lines do the same thing and are equally efficient at runtime, which should I prefer, stylistically?
+
+widgets.push_back(std::move(w));
+widgets.emplace_back(std::move(w));
+I recommend sticking with push_back for day-to-day use. You should definitely use emplace_back when you need its particular set of skills — for example, emplace_back is your only option when dealing with a deque<mutex> or other non-movable type — but push_back is the appropriate default.
+
+One reason is that emplace_back is more work for the compiler. push_back is an overload set of two non-template member functions. emplace_back is a single variadic template.
