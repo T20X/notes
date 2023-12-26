@@ -557,6 +557,15 @@ Note that std::declval can only be used in unevaluated contexts and is not requi
 
 std::remove_reference<decltype(declval<DeclvalStruct>())>::type
 
+## std::identity
+
+std::identity is a function object type whose operator() returns its argument unchanged
+
+##  std::mem_fun
+
+Function template std::mem_fn generates wrapper objects for pointers to members, which can store, copy, and invoke a pointer to member. Both references and pointers (including smart pointers) to an object can be used when invoking a std::mem_fn.
+
+
 ## decltype
 
 no deduction inside decltype!

@@ -292,3 +292,15 @@ widgets.emplace_back(std::move(w));
 I recommend sticking with push_back for day-to-day use. You should definitely use emplace_back when you need its particular set of skills — for example, emplace_back is your only option when dealing with a deque<mutex> or other non-movable type — but push_back is the appropriate default.
 
 One reason is that emplace_back is more work for the compiler. push_back is an overload set of two non-template member functions. emplace_back is a single variadic template.
+
+# some good STL implementations
+
+## std::less<>::operator()
+
+member type is_transparent indicates to the caller that this function object is a transparent function object: it accepts arguments of arbitrary types and uses perfect forwarding, which avoids unnecessary copying and conversion when the function object is used in heterogeneous context, or with rvalue arguments. In particular, template functions such as std::set::find and std::set::lower_bound make use of this member type on their Compare types
+```
+std::less<>::operator()
+template< class T, class U >
+constexpr auto operator()( T&& lhs, U&& rhs ) const
+    -> decltype(std::forward<T>(lhs) < std::forward<U>(rhs));
+```

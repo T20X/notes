@@ -1,3 +1,26 @@
+# dynamic programming
+
+the whole point about dynamic programming is about assuming that for optimal solution , sub-problems are not optimal. If you come to he contradiction that the whole solutino is not optimal than it proves that sub-problem are indeed optimal! It is called cut-and-pate argument.
+
+## Max subarray problem - Kancande algorithms
+
+```
+        std::vector<int> solution(s.size(), 0);
+
+        int global_maximum = 0;
+        int local_maximum = 0;
+        solution[0] = local_maximum = weights[s[0]-'a'];
+        if (local_maximum > global_maximum)
+            global_maximum = local_maximum;
+
+        for (size_t i = 1; i < s.size(); ++i) {
+            char idx = s[i]-'a';
+            local_maximum = std::max(solution[i-1] + weights[idx],  weights[idx]);
+            solution[i] = local_maximum;
+            if (local_maximum > global_maximum)
+                global_maximum = local_maximum;
+        }
+```
 
 # sequences
 
@@ -6,6 +29,7 @@ total number of all sub-sequences (including empty one) = 2^n
 A **subarray** is contiguous part of array and maintains the relative ordering
 A **subsequence** must maintain the relative order of the original sequence. It may or may not be contiguous
 A **subset** MAY NOT maintain relative ordering of elements and can or cannot be a contiguous part of an array
+A **substring** is a contiguous sequence of characters in a string
 
 
 
@@ -120,12 +144,15 @@ if grapth is undricted then edges (u,v) and (v,u) are the same and their clasifi
 forward edge (u,v) connects u with its descendent v!
 cross edge (u,v) is not forward,back and tree edge and neither u neither v are ancestors of each other
 
-(1) DFS marks node as visited before considering other nodes. BFS marks the node as visited only after considering other nodes
+(1) DFS marks node as visited before considering other nodes.
+
+# BFS
+!!!!!!!!!!!!!!!!!IMPORTANT !!!!!!! BFS marks the node as visited right after it enques them!
 
 
 ## Dejkstra
 
-THIS ONE SHOULD WORK EVEN WITH NEGATIVE PATHS!
+THIS ONE EASY IMPLEMENTATBLE IN C++
 ```
 template <class K, class Weight = int>
 std::unordered_map<K, Vertex<K, Weight>> shortestPath(const Graph<K> &g,
@@ -135,10 +162,17 @@ std::unordered_map<K, Vertex<K, Weight>> shortestPath(const Graph<K> &g,
                       std::greater<Vertex<K, Weight>>>
       q;
 
+  int path_count = 0;
   q.emplace(Vertex<K, Weight>{from, 0, from});
+  r.emplace(from, Vertex<K, Weight>{from, 0, from});
   while (!q.empty()) {
     Vertex<K, Weight> current = q.top();
     q.pop();
+
+    auto it2 = r.find(current.v);
+    if (it2 != std::end(r) && it2->second.d < current.d) {
+      continue;
+    }
 
     std::vector<std::pair<K, Weight>> neighbors =
         getAdjacentVertecies(current.v, g);
@@ -149,17 +183,17 @@ std::unordered_map<K, Vertex<K, Weight>> shortestPath(const Graph<K> &g,
         Vertex<K, Weight> newVertex{current.v, d, neighbor.first};
         r.emplace(neighbor.first, newVertex);
         q.emplace(newVertex);
+        ++path_count;
       } else if (it->second.d > d /*edge w*/) {
         Vertex<K, Weight> updatedVertex{current.v, d, neighbor.first};
         q.emplace(updatedVertex);
+        ++path_count;
         it->second.p = current.v;
         it->second.d = d;
       }
     }
   }
 
-  return r;
-}
 ```
 
 Anothre type of algo in sudo-code which only works with POSITIVE PATHs
