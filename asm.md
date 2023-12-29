@@ -151,17 +151,20 @@ You might think that every memory transaction needs another one now to read GDT 
 (REAL MODE) physical address = segment base * 16 + offset
 (REAL MODE) All memory addressing through main segment registers (cs, ds, es, and ss) do not consider the GDT values of base and offset anymore. The segment base is always fixed at 0x0 no matter the descriptor contents; the segment sizes are not limited at all. The other descriptor fields, however, are not ignored
 
-REGISTERS
----
+# REGISTERS
+
 GDTR is a register to store GDT address and size.
 
 GS is commonly used as a pointer to a thread local storage (TLS) 
 
 
  RIP register
-  . It is a 64-bit register, which always stores an address of the next instruction to be executed. Branching instructions (e.g., jmp) are in fact modifying it. So, every time any instruction is being executed, rip stores the address of the next instruction to be execute
+  . It is a 64-bit register, which always stores an address of the **next** instruction to be executed. Branching instructions (e.g., jmp) are in fact modifying it. So, every time any instruction is being executed, rip stores the address of the next instruction to be execute
 
 rax..rdx - general purpose! (Accumulator, Base, Counter, Data)
+
+  RAX - normally holds return value in function calls
+
 GS register stores the base address for per-cpu are
 ECX(RCX) - counter register - used mostly within loops
 EAX/EDX - accumulators (have special meaning for multiplication and division)
@@ -229,6 +232,9 @@ If you need any other register to survive function call, save it yourself before
 
 So, the pattern of calling a function is as follows:
 1. Save all caller-saved registers you want to survive function call (you can use push for that). Caller saved registers are all NOT these ones 
+rbx, rbp, rsp, r12-r15
+
+2. saves RIP on the stack as well and sets to the function address to be called
 rbx, rbp, rip, rsp, r12-r15
 
 2. Store arguments in the relevant registers (rdi, rsi, etc.).
@@ -238,13 +244,7 @@ rbx, rbp, rip, rsp, r12-r15
 
 
 
-
-
-
-
 # INSTRUCTIONS
-
-
 
 ## PUSH
 
@@ -313,6 +313,14 @@ LEA EAX, [ EAX + 1 ] and INC EAX is that the latter changes EFLAGS but the forme
 
 
 **WARNING** There's a big difference between 2 operand LEA which is fast and 3 operand LEA which is slow. The Intel Optimization manual says fast path LEA is single cycle and slow path LEA takes three cycles. Moreover, on Skylake there are two fast path functional units (ports 1 and 5) and there's only one slow path functional unit (port 1)
+
+out-of-order CPUs typically run LEA on ALUs
+
+LEA doesn't always calculate; it calculates if the effective address expressed in the source operand calculates. LEA EAX, GLOBALVAR doesn't calculate; it just moves the address of GLOBALVAR into EAX. LEA is not a specific arithmetic instruction; it is a way of intercepting the effective address arising from any one of the processor's memory addressing modes.
+
+This is the reason why people who think that the brackets in LEA are superfluous are severely mistaken; the brackets are not LEA syntax but are part of the addressing mode
+
+LEA is real at the hardware level. The generated instruction encodes the actual addressing mode and the processor carries it out to the point of calculating the address. Then it moves that address to the destination instead of generating a memory reference. (Since the address calculation of an addressing mode in any other instruction has no effect on CPU flags, LEA has no effect on CPU flags.)
 
 ## CMP
 
