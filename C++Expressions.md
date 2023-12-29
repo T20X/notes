@@ -81,7 +81,6 @@ The sequencing constraints on the execution of the called function (as described
 Once an rvalue has been bound to a name, it's an lvalue again, whether it's a wrapping type as std::tuple or rvalue references or a plain rvalue reference.
 
 
-
 # Refenrece
 
 references are not objects
@@ -251,17 +250,56 @@ double&& rrd3 = i3;                 // rrd3 refers to temporary with value 2.0
 In all cases except the last (i.e., implicitly converting the initializer expression to the referenced type), the reference is said to bind directly to the initializer expression.
 
 
+## forwarding refrence
+
+template<typename T> decltype(auto)
+f(T&& t)
+{
+  return g(std::forward<T>(t));
+}
+A function parameter such as T&& t is known as a forwarding reference. It matches arguments of any value category, making t an lvalue reference if the supplied argument was an lvalue or an rvalue reference if the supplied argument was an rvalue. If U is t’s underlying non-reference type (namely std::remove_reference_t<decltype(t)>), then T will be inferred as U& for an lvalue argument and U for an rvalue. (Through reference collapsing, if T is U&, then T&& is also U&.) Regardless of t’s variable decltype, its expression decltype is always an lvalue reference; that’s why you always need to provide an explicit template argument to std::forward.
+
+Note that in the example, f actually demonstrates an appropriate use of decltype(auto) return type to preserve the value category of g’s result (including prvalue). Note also that except for initializer lists, auto bindings use the same type deduction rules as function templates. Hence, “auto &&x = f()” is another form of forwarding reference.
 
 
 # Value Category
+
+The most important thing to remember is that value categories are a taxonomy of expressions. They are not categories of objects or variables or types
+value category is just synonymous with the reference qualification on expression decltype
       
 Each C++ expression(an operator with its operands, a literal, a variable name, etc.) is characterized by two independent properties : a type and a value category.Each expression has some non-reference type, and each expression belongs to exactly one of the three primary value categories : prvalue, xvalue, and lvalue.
 
-- A glvalue is an expression whose evaluation determines the identity of an object or function.
-- A prvalue is an expression whose evaluation initializes an object or computes the value of an operand of an operator, as specified by the context in which it appears, or an expression that has type cv void.
-- An xvalue is a glvalue that denotes an object whose resources can be reused (usually because it is near the end of its lifetime).
-- An lvalue is a glvalue that is not an xvalue.
-- An rvalue is a prvalue or an xvalue.
+
+## glvalue
+
+Formal Definition: A glvalue is an expression whose evaluation determines the identity of an object or function.
+
+Informal Definition: A glvalue is an actual object in your program, constructed with a constructor call if its type is not trivially constructible. (The constructor doesn’t have to have returned yet.) The specification says a glvalue’s “evaluation determines the identity of an object, bit field, or function.” This means you can generally take a glvalue’s address (except bitfields). You can also assign to a non-const glvalue unless it is a function or a user-defined class with a deleted or inaccessible operator=.
+
+## prvalue
+
+Formal Definition: A prvalue is an expression whose evaluation initializes an object or computes the value of an operand of an operator, as specified by the context in which it appears, or an expression that has type cv void.
+
+
+Informal Definition: As of C++17, a prvalue (“pure rvalue”) of type T is an abstract recipe for initializing an object of type T (unless T is void). A prvalue does not correspond to an actual object of type T in your program. Nor does it require constructor invocation. Literal constants such as 5, true, nullptr, and enum tags are prvalues because they initialize objects and operands. For example, the prvalue 5 initializes x in “int x = 5”, initializes the right-hand operand of + in “y + 5”, and initializes the function argument in “std::to_string(5)”. You cannot modify a prvalue (true = 1 [wrong]) or take its address (&this [wrong]).
+
+When you write “auto s = std::string("hello world");”, the cast expression std::string("hello world") is a prvalue. Evaluating the prvalue does not create a string object or invoke the std::string(const char*) constructor. If it did, s would need to be move-constructed from the already-constructed prvalue. Instead, s is constructed directly from the argument "hello world". The object that is ultimately initialized by a prvalue (in this case s) is known as the prvalue’s result object, and the value used to initialize the result object is the prvalue’s result.5
+
+Compilers try to defer “materializing” prvalues as long as possible to avoid unnecessary moves and copies, particularly when handling function return values. A prvalue must eventually be materialized even if its value is discarded, however, so deferring materialization can elide only copy and move constructors, not other constructors.
+
+
+## xvalue
+
+An xvalue is a glvalue that denotes an object whose resources can be reused (usually because it is near the end of its lifetime).
+
+An xvalue (“expiring glvalue”) is a glvalue whose value will soon not matter, for instance because it is a temporary object about to be destroyed at the end of the current full-expression. Xvalues are what make move construction possible: if you no longer care about the contents of an expiring object, you can often move its contents into another object much more efficiently than if you needed to preserve the expiring object’s value. As you might expect, std::move transforms its argument into an xvalue.
+
+## lvalue
+
+ An lvalue is a glvalue that is not an xvalue.
+
+## rvalue
+ An rvalue is a prvalue or an xvalue.
 
 
 
@@ -322,7 +360,7 @@ Example 1:
   4
   
   [Note 2: See also [basic.lval]. — end note]
-        45) For historical reasons, this conversion is called the “lvalue-to-rvalue” conversion, even though that name does not accurately reflect the taxonomy of expressions described in 
+        1)  For historical reasons, this conversion is called the “lvalue-to-rvalue” conversion, even though that name does not accurately reflect the taxonomy of expressions described in 
 
   Whenever a prvalue appears as an operand of an operator that expects a glvalue for that operand, the temporary materialization conversion is applied to convert the expression to an xvalue
 
@@ -344,6 +382,12 @@ S {int x} a;
 int i = S().a; //S() is used as rvalue expression, we don't say that S() is rvalue
 for S().a to work, S() would need to have a base offset and that means it has to be stored somewhere
 
+
+## value category does not bind to lifetime
+
+Guideline: Do not assume that “rvalues are short-lived,” nor that “everything sufficiently long-lived must be an lvalue.” Vice versa, do not assume that “lvalues are long-lived,” nor that “everything sufficiently short-lived must appear as an rvalue.”
+
+Value category is not lifetime.
 
 ## const
 
@@ -379,12 +423,21 @@ static_assert(std::is_same_v<int, decltype(any_value<const int>(i))>);
 
 ## Conversions
 
-- xvalue can bind to lvalue ref!
+An expression’s value category determines what references the expression may initialize. Specifically, if T is a non-reference type, then:
+
+T& can be initialized only from lvalues
+T&& can be initialized only from rvalues
+const T& can be initialized from any value category, but overload resolution will prefer T&& over const T& for rvalues if there are functions accepting both. (This is why copy constructors can fill the role of a missing move constructor.)
+
+
+- xvalue can bind to CONST lvalue ref!
   
 ```  
 f(const int &v)
 f(std::move(r)) #this works!
 ```
+
+Note that when binding a prvalue to a reference, it must be materialized into a temporary object. Generally, a temporary object is destroyed at the end of the full expression, which would leave a dangling reference. To avoid this, C++ extends the lifetime of temporary objects that are bound to references, so that they survive until the reference goes out of scope
 
 ## Other things
 
@@ -424,6 +477,19 @@ decltype(auto) f(T&& v) {
 const A& v = f(A());// ***A() will be destroyed right after calling f, leaving v a dangling reference***
 ```
 
+## tricky examples
+
+struct S {
+  static int static_member;
+  int data_member = 0;
+  int &lref = static_member;
+  int &&rref = std::move(static_member);
+};
+
+S f();
+
+By contrast, f().lref and f().rref both have int& exprtype because the ints they reference won’t be destroyed when the S object returned by f is destroyed. To push further on the file system analogy, destroying a class or array is like recursively deleting a directory—only the regular files in the directory will expire, not the files named by symbolic links in that directory.
+
 ## implementaitons 
 
 note that foward forces you to provide Tp type as it won't be auto-deduced!
@@ -453,7 +519,7 @@ template<typename _Tp>
     move(_Tp&& __t) noexcept
     { return static_cast<typename std::remove_reference<_Tp>::type&&>(__t); }
 
-    ```
+```
 
 Also note at this trick from unique_ptr. It tries to get rvalue / lvalue based on the Deleter type! get_deleter always returns a reference. However _ep could be reference / value itself . If it reference you'd just want to pass it along but if it is value, than it make sense to move it from!
 
@@ -467,6 +533,19 @@ Also note at this trick from unique_ptr. It tries to get rvalue / lvalue based o
 	: _M_t(__u.release(), std::forward<_Ep>(__u.get_deleter()))
 	{ }
 ```
+# std::initializer_list
+
+an initializer list behaves like an array of const T – and since the elements are const, we cannot move them out of the array.
+
+so be careful as this would cause vector to create 3 temporaries and copy them!
+vector<string> v{"adsf", "asdf", "adsf"};
+
+
+# std::move
+
+explicitly move()-ing something that is already an prvalue won’t do anything good. (In fact, Clang with -Wall will warn about a pessemistic move in this case, which is rather nice.)
+
+
 
 # Pointer ariphmetic 
 

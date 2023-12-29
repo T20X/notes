@@ -130,6 +130,8 @@ There are few terms describing memory model:
 
 A memory location is either an object of scalar type that is not a bit-field or a maximal sequence of adjacent bit-fields all having nonzero width. It is NOT address as it is more logical concept! Just been a locatoin that complier will allow concurrent access to!
 
+An object of trivially copyable or standard-layout type ([basic.types]) shall occupy contiguous bytes of storage
+
 ## pointer
 
 ---->some pointer values to represent the address, but not much is said about the details of that -------
@@ -743,12 +745,42 @@ const bool b = &test1 != &test2;
 
 !IMPORTANT: BUT NOTE THAT -------->
 
-If a standard-layout class object has any non-static data members, its address is the same as the address of its first non-static data member if that member is not a bit-field. Its address is also the same as the address of each of its base class subobjects.
-[Note 11: There can therefore be unnamed padding within a standard-layout struct object inserted by an implementation, but not at its beginning, as necessary to achieve appropriate alignment. — end note]
 
-Two standard-layout struct ([class.prop]) types are layout-compatible classes if their common initial sequence comprises all members and bit-fields of both classes ([basic.types]).
+Two types cv1 T1 and cv2 T2 are *layout-compatible* types if T1 and T2 are the same type, layout-compatible enumerations, or layout-compatible standard-layout class types.
 
-Pointers to layout-compatible types shall have the same value representation and alignment requirements ([basic.align]).
+
+The common initial sequence of two standard-layout struct ([class.prop]) types is the longest sequence of non-static data members and bit-fields in declaration order, starting with the first such entity in each of the structs, such that
+(23.1) corresponding entities have layout-compatible types ([basic.types]),
+(23.2) corresponding entities have the same alignment requirements ([basic.align]),
+(23.3) if a has-attribute-expression ([cpp.cond]) is not 0 for the no_unique_address attribute, then neither entity is declared with the no_unique_address attribute ([dcl.attr.nouniqueaddr]), and
+(23.4) either both entities are bit-fields with the same width or neither is a bit-field.
+[Example 4: 
+```
+struct A { int a; char b; };
+struct B { const int b1; volatile char b2; };
+struct C { int c; unsigned : 0; char b; };
+struct D { int d; char b : 4; };
+struct E { unsigned int e; char b; };
+```
+The common initial sequence of A and B comprises all members of either class. The common initial sequence of A and C and of A and D comprises the first member in each case. The common initial sequence of A and E is empty. — end example]
+- Two standard-layout struct ([class.prop]) types are layout-compatible classes if their common initial sequence comprises all members and bit-fields of both classes ([basic.types]).
+- Two standard-layout unions are layout-compatible if they have the same number of non-static data members and corresponding non-static data members (in any order) have layout-compatible types ([basic.types.general]).
+- In a standard-layout union with an active member of struct type T1, it is permitted to read a non-static data member m of another union member of struct type T2 provided m is part of the common initial sequence of T1 and T2; the behavior is as if the corresponding member of T1 were nominated.
+[Example 5: 
+```
+struct T1 { int a, b; };
+struct T2 { int c; double d; };
+union U { T1 t1; T2 t2; };
+int f() {
+  U u = { { 1, 2 } };   // active member is t1
+  return u.t2.c;        // OK, as if u.t1.a were nominated
+}
+```
+— end example]
+[Note 10: Reading a volatile object through a glvalue of non-volatile type has undefined behavior ([dcl.type.cv]). — end note]
+- If a standard-layout class object has any non-static data members, its address is the same as the address of its first non-static data member if that member is not a bit-field. Its address is also the same as the address of each of its base class subobjects.
+[Note 11: There can therefore be unnamed padding within a standard-layout struct object inserted by an implementation, but not at its beginning, as necessary to achieve appropriate alignment. — end note]
+[Note 12: The object and its first subobject are pointer-interconvertible ([basic.compound], [expr.static.cast]). — end note]
 
 
 

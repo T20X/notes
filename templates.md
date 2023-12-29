@@ -330,6 +330,18 @@ In C++14 you can also use auto sum(T a, Args... args) in order to get sum of mix
 
 # Concepts
 
+## you can requries constraint even for type templated paramters like this!
+
+```
+template<typename E>
+struct is_scoped_enum : std::bool_constant<requires
+{
+    requires std::is_enum_v<E>;
+    requires !std::is_convertible_v<E, std::underlying_type_t<E>>;
+}>
+{};
+```
+
 ## to be used with expressions (combined with SFINAE)
 
 ```
@@ -550,6 +562,9 @@ Determines the common type among all types T..., that is the type all T... can b
 (3) if function converts to func pointer
 {4} removes const
 
+
+ The type inference for auto variables, auto return types, and non-reference function-template arguments works this way.
+
 ## decval
 
 decval - Converts any type T to a reference type, making it possible to use member functions in decltype expressions without the need to go through constructors
@@ -568,18 +583,42 @@ Function template std::mem_fn generates wrapper objects for pointers to members,
 
 ## decltype
 
-no deduction inside decltype!
-template<typename T> void f(decltype(*std::declval<T>()) arg);
-not GONNA WORK!
+- Value category is just synonymous with the reference qualification on expression decltype-
+
+- no deduction inside decltype!
+  template<typename T> void f(decltype(*std::declval<T>()) arg);
+  not GONNA WORK!
+
+### variable decltype
+
+If E is an unparenthesized id-expression (e.g., x, s.field, S::field), then decltype(E) returns the exact type with which the variable, field, or non-type template parameter was declared, including an lvalue or rvalue reference if and only if the variable or field was declared as one. This is a bit like the lstat(2) system call, which is one of the few ways to differentiate between files and symbolic links in the file system.
+
+Let’s call this first calculation variable decltype, since it gives us the type with which a variable (or field) was declared.
 
 
-f the argument is any other expression of type T, and
+### expression decltype
+
+If E is anything else, including a parenthesized id-expression (e.g., (x), (s.field)), then C++ makes any reference in E’s type completely transparent and undetectable (think stat(2), not lstat). So decltype(E) takes the underlying, non-reference type T of E and decides whether to make it a reference as follows: If E is a prvalue, then decltype(E) is just T; if E is an lvalue, then decltype(E) is T&; and if E is an xvalue, then decltype(E) is T&&.
+
+Let’s call this second calculation expression decltype, or, to coin a clunky abbreviation, exprtype. Later on, I’ll provide an equivalent formulation that does not depend on value categories, in which case we can run the above rule backwards and say an expression E is a prvalue if decltype((E)) is a non-reference type T, an lvalue if decltype((E)) is T&, and an xvalue if decltype((E)) is T&&.
+
+Expression decltype -> decltype((E))
+E  expression of type T, and
 a) if the value category of expression is xvalue, then decltype yields T&&;
 b) if the value category of expression is lvalue, then decltype yields T&;
 c) if the value category of expression is prvalue, then decltype yields T.
 
+- Function calls, including overloaded operators, have exprtype identical to the function’s return type
 
-## decltype(auto)
+- Unlike other types, string literals, functions, and references to function always have an exprtype of lvalue reference.
+
+  E ->	decltype((E))
+  "hello" ->	const char(&)[6]
+  getpid ->	int(&)()
+  static_cast<int(&)()>(getpid)	-> int(&)()
+  std::move(getpid)	-> int(&)()
+
+### decltype(auto)
 
 decltype(auto) - is good for forwarding functions as if we want to deduce the return type for free and at the same time pass EXACT values.
 
@@ -1138,9 +1177,15 @@ f(c); // P = T, A = const int, adjusted to int: deduced T = int
 4) If P is an rvalue reference to a cv-unqualified template parameter (so-called forwarding reference), and the corresponding function call argument is an lvalue, the type lvalue reference to A is used in place of A for deduction (Note: this is the basis for the action of std::forward Note: in class template argument deduction, template parameter of a class template is never a forwarding reference(since C++17)):
 template<class T>
 int f(T&&);       // P is an rvalue reference to cv-unqualified T (forwarding reference)
- 
+
+if you pass lvalue than T would get used to reference type as well!
+int l;
+f(l) // T = int&, l type is int& as well
+
 template<class T>
 int g(const T&&); // P is an rvalue reference to cv-qualified T (not special)
+
+
  
 int main()
 {
@@ -1173,6 +1218,9 @@ int* p;
 f(p); // P = const T*, A = int*:
       // deduced T = int, deduced A = const int*
       // qualification conversion applies (from int* to const int*)
+
+
+      
       
 # Substitution
 

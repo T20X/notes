@@ -99,7 +99,7 @@ The constructor is not user-provided (i.e., is implicitly-defined or defaulted o
 
 A trivial default constructor is a constructor that performs no action. All data types compatible with the C language (POD types) are trivially default-constructible.
 
-## Trivally copyable class 
+## Trivially copyable class 
 has at least one eligible copy constructor, move constructor, copy assignment operator, or move assignment operator,
 each eligible(the one choosed) copy constructor is trivial
 each eligible(the one choosed) move constructor is trivial
@@ -227,3 +227,15 @@ If the implicitly-declared default constructor is not defined as deleted, it is 
 
 
 If no user-declared constructors of any kind are provided for a class type (struct, class, or union), the compiler will always declare a default constructor as an inline public member of its class
+
+
+# array
+
+Destructors for the array elements are called in reverse order of their construction
+
+
+arrays cannot be copied, this is not valid
+int arr[3];
+int arr2[3] = arr;
+
+but you can copy std::array or class objects which got array sub-objects!

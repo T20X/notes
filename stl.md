@@ -1,3 +1,6 @@
+# iterators
+
+‘input_iterator‘ maynotbecopyable
 
 # storing nont moveable / noncopyable types in containers
 
