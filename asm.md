@@ -217,6 +217,9 @@ In common usage, the word size refers to the size of a processor register.
 
 # FUNCTION CALL on x64
 
+![](images/asm/function_call.JPG)
+
+
 User-level applications use as integer registers for passing the sequence
 %rdi, %rsi, %rdx, %rcx, %r8 and %r9. The kernel interface uses %rdi,
 %rsi, %rdx, %r10, %r8 and %r9.
@@ -226,12 +229,13 @@ If you need any other register to survive function call, save it yourself before
 
 So, the pattern of calling a function is as follows:
 1. Save all caller-saved registers you want to survive function call (you can use push for that). Caller saved registers are all NOT these ones 
-rbx, rbp, rsp, r12-r15
+rbx, rbp, rip, rsp, r12-r15
 
 2. Store arguments in the relevant registers (rdi, rsi, etc.).
 3. Invoke function using call.
 4. After function returns, rax will hold the return value.
 5. Restore caller-saved registers stored before the function cal
+
 
 
 
