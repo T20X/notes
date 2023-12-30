@@ -211,11 +211,9 @@ A lot of compilers offer frame pointer omission as an optimization option; this 
  The first six arguments are passed in rdi, rsi, rdx, rcx, r8, and r9, respectively. The rest is passed on to the stack in reverse order
 
 
-G
------
-In common usage, the word size refers to the size of a processor register.
+
+In common usage, the word size refers to the size of a processor register. However historically word is 16 bit...
  On a 32 bit processor, this will be 32 bits. On a 64 bit processor, this will be 64 bits
-----------------
 
 
 # FUNCTION CALL on x64
@@ -238,9 +236,12 @@ rbx, rbp, rsp, r12-r15
 rbx, rbp, rip, rsp, r12-r15
 
 2. Store arguments in the relevant registers (rdi, rsi, etc.).
-3. Invoke function using call.
-4. After function returns, rax will hold the return value.
-5. Restore caller-saved registers stored before the function cal
+4. Invoke function using call.
+5. On callee side, called function must save calle-saved registers if it wants to use them **rbx, rbp, rsp, r12-r15** !
+6. Execute called function 
+7. Restore calle-saved registers **rbx, rbp, rsp, r12-r15** !
+8. Return back to the caller
+9. Caller would restore its own registers
 
 
 
