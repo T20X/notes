@@ -334,13 +334,11 @@ LEA is real at the hardware level. The generated instruction encodes the actual 
 
 ## CMP
 
-    cmp byte [rdi+rax], 0 ; Check if the current symbol is null-terminator.
-                          ; We absolutely need that 'byte' modifier since
-                          ; the left and the right part of cmp should be
-                          ; of the same size. Right operand is immediate
-                          ; and holds no information about its size,
-                          ; hence we don't know how many bytes should be
-                          ; taken from memory and compared to zero
+cmp arg2, arg1
+
+We use cmp arg2, arg1 when we care about whether arg1 and arg 2 are equal. The processor determines this by subtracting arg2 from arg1, then looking at the result. If the result is zero (that is, arg1 = arg2), then the processor sets the zero flag (by "sets the flag", we mean it sets it to 1). Conversely, if the result isn't zero (that is, arg1 != arg2), then the processor clears the zero flag (i.e, sets it to 0). The result itself is discarded, because we don't care what it is, only whether it's zero or not, which we now know based on whether the zero flag is set. We can then use instructions like JE, JNE, JZ and JNZ that examine the zero flag and jump (or not) based on its value. In the case of JE (jump if equal), the jump will happen if the zero flag is set, which (as we learned above) it will be if the arguments in the cmp were equa
+
+the results of CMP is changing the values of ZF and CF
 
 # integration with C/C++
 
