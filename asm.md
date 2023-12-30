@@ -6,13 +6,15 @@
 
 # Endian 
 
-Big endian multibyte numbers are stored inp memory starting with the most significant bytes.
+Big endian multibyte numbers are stored in memory starting with the most significant bytes.
 
 Little endian multibyte numbers are stored in memory starting with the least significant bytes.
 
 The advantage of little endian is that we can discard the most significant bytes effectively converting the number from a wider format to a narrower one, like 8 bytes.
 
 # syscall 
+
+note that glibc may not have all the supported linux kernel syscalls, but still it gives you entrypoint called "syscall API" which allows you to call a specific syscall supported by the kernel. You may wish not to use glibc at all and use minimalistic libarary shipped with each kernel called **nolibc**
 
 2. A system-call is done via the syscall instruction. The kernel destroys
 registers %rcx and %r11. syscall leaves rcx and r11 changed
@@ -215,6 +217,9 @@ A lot of compilers offer frame pointer omission as an optimization option; this 
 In common usage, the word size refers to the size of a processor register. However historically word is 16 bit...
  On a 32 bit processor, this will be 32 bits. On a 64 bit processor, this will be 64 bits
 
+# VDSO
+
+![](images/asm/vdso.JPG)
 
 # FUNCTION CALL on x64
 
