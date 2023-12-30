@@ -3,6 +3,25 @@
 extern templates can really save a lot of compilation time
 
 
+- header file 
+
+template <class T1, class T2> struct Test {
+  void f() { std::cout << "typename " << typeid(T1).name() << "\n"; }
+};
+
+
+extern template struct Test<int, int>;
+
+- source file
+
+template struct Test<int, int>; // only instantiate it once!
+
+
+In addition to forward declaration of explicit instantiations (with extern), G++ has extended the template instantiation syntax to support instantiation of the compiler support data for a template class (i.e. the vtable) without instantiating any of its members (with inline), and instantiation of only the static data members of a template class, without the support data or member functions (with static):
+
+inline template class Foo<int>;
+static template class Foo<int>;
+
 ## static templated variables
  template <class T>
 struct B

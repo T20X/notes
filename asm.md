@@ -82,8 +82,10 @@ integer math.  The ALU doesn't know about signed/unsigned; the ALU just
 does the binary math and sets the flags appropriately.  It's up to you,
 the programmer, to know which flag to check after the math is done
 
+
 ## Carry Flag
 
+https://teaching.idallen.com/dat2343/10f/notes/040_overflow.txt
 
 The rules for turning on the carry flag in binary/integer math are two:
 
@@ -159,6 +161,8 @@ GDTR is a register to store GDT address and size.
 
 GS is commonly used as a pointer to a thread local storage (TLS) 
 
+
+if you write to EAX (any other 32 bit register), it would zero our remaning bit in RAX (any other 64 bit register)
 
  RIP register
   . It is a 64-bit register, which always stores an address of the **next** instruction to be executed. Branching instructions (e.g., jmp) are in fact modifying it. So, every time any instruction is being executed, rip stores the address of the next instruction to be execute
@@ -337,3 +341,64 @@ LEA is real at the hardware level. The generated instruction encodes the actual 
                           ; and holds no information about its size,
                           ; hence we don't know how many bytes should be
                           ; taken from memory and compared to zero
+
+# integration with C/C++
+
+if you want to globally enable Intel syntax, just pass this in compile flags -masm=intel. This works in both g++ and clang(as of version 14). In reality this Intel syntax for GAS GNU Assembler is only emerging and it does not work very well with inline assembly (though one can use mixed mode when some parts of inline asm are in Intel ASM and another in AT&T one, but again it won't work very well particularly with clang). In fact only -masm=intel seems to work with clang which also breaks mixing Intel and AT&T
+
+For standalone asm files, many people just prefer NASM!
+
+Extended asm statements have to be inside a C function, so to write inline assembly language at file scope (‘top-level’), outside of C functions, you must use basic asm. You can use this technique to emit assembler directives, define assembly language macros that can be invoked elsewhere in the file, or write entire functions in assembly language. Basic asm statements outside of functions may not use any qualifiers.
+
+Functions declared with the naked attribute also require basic asm (see Declaring Attributes of Functions).
+
+Safely accessing C data and calling functions from basic asm is more complex than it may appear. To access C data, it is better to use extended asm.
+Do not expect a sequence of asm statements to remain perfectly consecutive after compilation. If certain instructions need to remain consecutive in the output, put them in a single multi-instruction asm statement. Note that GCC’s optimizers can move asm statements relative to other code, including across jumps. asm statements may not perform jumps into other asm statements. GCC does not know about these jumps, and therefore cannot take account of them when deciding how to optimize. Jumps from asm to C labels are only supported in extended asm.
+
+## links
+
+https://gcc.gnu.org/onlinedocs/gcc/Using-Assembly-Language-with-C.html
+
+# tools
+
+## disassble execuable
+
+objdump -d  ./a.out 
+
+## gdb
+
+disassemble
+
+must have 
+-------
+layout asm
+layout reg
+-----------
+
+
+i r <register_name>: print a single register, e.g i r rax, i r eax
+i r <register_name_1> <register_name_2> ...: print multiple registers, e.g i r rdi rsi,
+i r: print all register except floating point & vector register (xmm, ymm, zmm).
+i r a: print all register, include floating point & vector register (xmm, ymm, zmm).
+i r f: print all FPU floating registers (st0-7 and a few other f*)
+
+# YASM
+
+Previously, because NASM was licensed under LGPL, it led to development of Yasm, a complete rewrite of the NASM under the New BSD License. Yasm offered support for x86-64 earlier than NASM. It also added support for GNU Assembler syntax. So it is preffered assember 
+
+## default rel
+
+enables RIP addressing
+
+# NASM
+
+better stick with it
+
+# GAS AT&T syntax
+
+## PIE data access
+       lea     message(%rip), %rsi   #  PIE : necessary to do like this for position independed code    */
+
+## Non-PIE data acces
+ lea     message, %rsi     # Absolute addressing: necessary to do like this for position independed code 
+

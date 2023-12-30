@@ -712,16 +712,9 @@ x86 RMW with LOCK prefix is more powerful than acq_rel, it's actually seq_cst RM
 ![](../images/2023-09-08-09-36-21.png)
 
 
- in 2022, Intel retroactively documented that the AVX feature bit implies that aligned 128-bit loads/stores are atomic, at least for Intel CPUs
-
-
- The P6 family processors (and newer Intel processors since) guarantee that the following additional memory operation will always be carried out atomically:
-Unaligned 16-, 32-, and 64-bit accesses to cached memory that fit within a cache line.
-
 Intel Guaranteed atomic operations
 
-
-
+![](../images/atomic/guaranteed_atomic_operations.JPG)
 
 
 # Spink Lock
