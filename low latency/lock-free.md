@@ -394,6 +394,9 @@ std::atomic_flag is an atomic boolean type. Unlike all specializations of std::a
 
 atomic operations are no substitute for barriers where they are needed. When an object isn't used by multiple threads (like a refcount only used in the current thread) the compiler can remove the atomic part and generate fast unthreaded code
 
+### the same code with / without atomics is not the same!
+
+![](../images/atomic/atomic_variables_got_price.JPG)
 
 ### memory_order_acuqire
 
@@ -714,6 +717,12 @@ x86 RMW with LOCK prefix is more powerful than acq_rel, it's actually seq_cst RM
 
  The P6 family processors (and newer Intel processors since) guarantee that the following additional memory operation will always be carried out atomically:
 Unaligned 16-, 32-, and 64-bit accesses to cached memory that fit within a cache line.
+
+Intel Guaranteed atomic operations
+
+
+
+
 
 # Spink Lock
 
