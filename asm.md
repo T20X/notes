@@ -6,7 +6,7 @@
 
 # Endian 
 
-Big endian multibyte numbers are stored in memory starting with the most significant bytes.
+Big endian multibyte numbers are stored inp memory starting with the most significant bytes.
 
 Little endian multibyte numbers are stored in memory starting with the least significant bytes.
 
