@@ -58,6 +58,20 @@ object creation could be clarified in general.
 ## destroyed
 how is that defined?
 
+# std::byte
+
+A numeric value n can be converted to a byte value using std::byte{n}, due to C++17 relaxed enum class initialization rules.
+
+A byte can be converted to a numeric value (such as to produce an integer hash of an object) the usual way with an explicit conversion or alternatively with std::to_integer.
+
+std::byte is a distinct type that implements the concept of byte as specified in the C++ language definition.
+
+Like unsigned char, it can be used to access raw memory occupied by other objects (object representation), but unlike unsigned char, it is not a character type and is not an arithmetic type. std::byte models a mere collection of bits, supporting only bitwise and comparison operations
+
+uint8_t implies an interpretation of the bit pattern. But if the blob you're dealing with is actually structured data, that's the wrong interpretation.
+
+std::byte is a type that specifically says "I have no idea what this bag of bytes represents
+
 # type
 
 Objects, references, functions including function template specializations, and expressions have a property called type, which both restricts the operations that are permitted for those entities and provides semantic meaning to the otherwise generic sequences of bits.

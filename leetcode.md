@@ -1,6 +1,7 @@
 
 # Sliding window
 
+```
 int lengthOfLongestSubstringTwoDistinct(string s) {
         int res{}, start{};
         unordered_map<char, int> m;
@@ -11,7 +12,7 @@ int lengthOfLongestSubstringTwoDistinct(string s) {
             while(m.size() > 2) if(!--m[s[start++]]) m.erase(s[start-1]);
         } return res;
     }
-
+```
 
 # sequences
 
@@ -78,6 +79,51 @@ public:
    [- find the beginiing and the end of the biggest range which would work
    - assume the smallest element in this range is part of the solution! Than obviously the rest of all sub-sequences for N-1 elements would also work which is 2^N. ]
    - repeat the same inducative hypotesis for another longest range
+
+
+## longest sub-sequence between two strings
+
+### First property
+
+LCS(X^A,Y^A) = LCS(X,Y)^A, for all strings X, Y and all symbols A, where ^ denotes string concatenation. This allows one to simplify the LCS computation for two sequences ending in the same symbol. For example, LCS("BANANA","ATANA") = LCS("BANAN","ATAN")^"A", Continuing for the remaining common symbols, LCS("BANANA","ATANA") = LCS("BAN","AT")^"ANA".
+
+### Second property
+
+If A and B are distinct symbols (A≠B), then LCS(X^A,Y^B) is one of the maximal-length strings in the set { LCS(X^A,Y), LCS(X,Y^B) }, for all strings X, Y.
+
+For example, LCS("ABCDEFG","BCDGK") is the longest string among LCS("ABCDEFG","BCDG") and LCS("ABCDEF","BCDGK"); if both happened to be of equal length, one of them could be chosen arbitrarily.
+
+To realize the property, distinguish two cases:
+
+If LCS("ABCDEFG","BCDGK") ends with a "G", then the final "K" cannot be in the LCS, hence LCS("ABCDEFG","BCDGK") = LCS("ABCDEFG","BCDG").
+If LCS("ABCDEFG","BCDGK") does not end with a "G", then the final "G" cannot be in the LCS, hence LCS("ABCDEFG","BCDGK") = LCS("ABCDEF","BCDGK").
+
+
+```
+class Solution {
+public:
+    int longestCommonSubsequence(string text1, string text2) {
+        size_t n = text1.size();
+        size_t m = text2.size();
+
+        vector<vector<int>> s(n+1, vector<int>(m+1));
+        for (int i = 0; i <= n; ++i) {
+            for (int j = 0; j <=m; ++j) {
+                if (i == 0 || j == 0) {
+                    continue;
+                } else if (text1[i-1] == text2[j-1]) {
+                    s[i][j] = s[i-1][j-1]+1;
+                } else {
+                    s[i][j] = std::max(s[i-1][j],s[i][j-1]);
+                }
+            }
+        }
+
+        return s[n][m];        
+    }
+};
+
+```
 
 
 

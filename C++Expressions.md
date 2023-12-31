@@ -488,6 +488,9 @@ struct S {
 
 S f();
 
+
+
+
 By contrast, f().lref and f().rref both have int& exprtype because the ints they reference won’t be destroyed when the S object returned by f is destroyed. To push further on the file system analogy, destroying a class or array is like recursively deleting a directory—only the regular files in the directory will expire, not the files named by symbolic links in that directory.
 
 ## implementaitons 

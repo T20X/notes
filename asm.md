@@ -1,4 +1,6 @@
+# Links
 
+https://en.wikibooks.org/wiki/X86_Assembly/X86_Architecture#:~:text=For%20example%2C%20CL%20is%20the,%2C%20and%208%2Dbit%20MSB.
 
 # Tricks
 
@@ -11,6 +13,10 @@ Big endian multibyte numbers are stored in memory starting with the most signifi
 Little endian multibyte numbers are stored in memory starting with the least significant bytes.
 
 The advantage of little endian is that we can discard the most significant bytes effectively converting the number from a wider format to a narrower one, like 8 bytes.
+
+# division
+
+the same asm command idiv used for division and modulo calc. It takes even for int about 20-30 cycles. And there is normally only one on core...It is smart mostly to avoid it  by using some clever bit magic if you optimize at least with O2.
 
 # syscall 
 
@@ -256,6 +262,11 @@ rbx, rbp, rip, rsp, r12-r15
 
 # INSTRUCTIONS
 
+## SAR / SHR 
+
+
+The SHR (Shift Right) and SAR (Arithmetic Shift Right) instructions are both used in computer programming for shifting the bits of a binary number to the right. The main difference between the two instructions lies in how they handle the most significant bit (MSB) during the shift. The SHR instruction shifts all the bits to the right, including the MSB, and fills the vacated MSB position with a 0. On the other hand, the SAR instruction also shifts all the bits to the right, but it preserves the original MSB. This means that the SAR instruction fills the vacated MSB position with the original value of the MSB, effectively preserving the sign of the number when used in signed number representation. In summary, SHR is a logical shift that always fills the MSB with 0, while SAR is an arithmetic shift that preserves the sign of the number by filling the MSB with the original value of the MSB
+
 ## PUSH
 
 This instructs the processor to store the value of the operand onto a stack and decrements stack pointer (ESP register on 32-bit systems and RSP register on 64-bit ones).
@@ -346,12 +357,54 @@ if you want to globally enable Intel syntax, just pass this in compile flags -ma
 
 For standalone asm files, many people just prefer NASM!
 
+## extended asm
+
 Extended asm statements have to be inside a C function, so to write inline assembly language at file scope (‘top-level’), outside of C functions, you must use basic asm. You can use this technique to emit assembler directives, define assembly language macros that can be invoked elsewhere in the file, or write entire functions in assembly language. Basic asm statements outside of functions may not use any qualifiers.
+
+With extended asm you can read and write C variables from assembler and perform jumps from assembler code to C labels. Extended asm syntax uses colons (:) to delimit the operand parameters after the assembler template:
+
+asm asm-qualifiers ( AssemblerTemplate
+                 : OutputOperands
+                 [ : InputOperands
+                 [ : Clobbers ] ])
+
+asm asm-qualifiers ( AssemblerTemplate
+                      : OutputOperands
+                      : InputOperands
+                      : Clobbers
+                      : GotoLabels)
+
+if it can make any side-effect it has to be declared volatile
+
+**AssemblerTemplate**
+This is a literal string that is the template for the assembler code. It is a combination of fixed text and tokens that refer to the input, output, and goto parameters. See Assembler Template.
+
+**OutputOperands**
+A comma-separated list of the C variables modified by the instructions in the AssemblerTemplate. An empty list is permitted. See Output Operands.
+
+**InputOperands**
+A comma-separated list of C expressions read by the instructions in the AssemblerTemplate. An empty list is permitted. See Input Operands.
+
+**Clobbers**
+A comma-separated list of registers or other values changed by the AssemblerTemplate, beyond those listed as outputs. An empty list is permitted. See Clobbers and Scratch Registers.
+
+**GotoLabels**
+When you are using the goto form of asm, this section contains the list of all C labels to which the code in the AssemblerTemplate may jump. See Goto Labels.
+asm statements may not perform jumps into other asm statements, only to the listed GotoLabels. GCC’s optimizers do not know about other jumps; therefore they cannot take account of them when deciding how to optimize.
+The total number of input + output + goto operands is limited to 30.
+
+
+
+## basic asm
+
+volatile by default
 
 Functions declared with the naked attribute also require basic asm (see Declaring Attributes of Functions).
 
 Safely accessing C data and calling functions from basic asm is more complex than it may appear. To access C data, it is better to use extended asm.
 Do not expect a sequence of asm statements to remain perfectly consecutive after compilation. If certain instructions need to remain consecutive in the output, put them in a single multi-instruction asm statement. Note that GCC’s optimizers can move asm statements relative to other code, including across jumps. asm statements may not perform jumps into other asm statements. GCC does not know about these jumps, and therefore cannot take account of them when deciding how to optimize. Jumps from asm to C labels are only supported in extended asm.
+
+For basic asm with non-empty assembler string GCC assumes the assembler block does not change any general purpose registers, but it may read or write any globally accessible variable
 
 ## links
 
