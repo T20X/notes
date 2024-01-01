@@ -14,9 +14,8 @@ Little endian multibyte numbers are stored in memory starting with the least sig
 
 The advantage of little endian is that we can discard the most significant bytes effectively converting the number from a wider format to a narrower one, like 8 bytes.
 
-# division
 
-the same asm command idiv used for division and modulo calc. It takes even for int about 20-30 cycles. And there is normally only one on core...It is smart mostly to avoid it  by using some clever bit magic if you optimize at least with O2.
+
 
 # syscall 
 
@@ -87,6 +86,25 @@ mathematics; the ALU always sets both flags appropriately when doing any
 integer math.  The ALU doesn't know about signed/unsigned; the ALU just
 does the binary math and sets the flags appropriately.  It's up to you,
 the programmer, to know which flag to check after the math is done
+
+## division
+
+the same asm command idiv used for division and modulo calc. It takes even for int about 20-30 cycles. And there is normally only one on core...It is smart mostly to avoid it  by using some clever bit magic if you optimize at least with O2.
+
+## multiplication
+
+normally takes about 4 cycles
+
+![](images/asm/binary_multiplications.JPG)
+
+
+## subtraction
+
+Note that the main about about subtraction in binary is to borrow 1s from the left (most significant side)) in case there is 0 - 1 case (other wise it would be negative number). As you borrow from the left, it becomes 2 so that 2 - 1 is 1.
+
+![](images/asm/binary_subtraction.JPG)
+
+
 
 
 ## Carry Flag
