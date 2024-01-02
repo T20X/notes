@@ -34,6 +34,13 @@ x | (1 << K)
 
 x & ~(1 << k)
 
+# get number with all 1s bits set
+
+-1!
+
+(int)-1 will get you number will all 1s bits set
+(size_t)-1 will get you number will all 1s bits set
+
 #  Why 1U shall be used instead of 1 for bit manipulations
 
 What problems happen when number is a wider type than 1?
@@ -50,6 +57,18 @@ number &= ~(1 << x); // UB
 x = 10;
 
 Generally prefer to use unsigned types for bit manipulation
+
+
+# fast abs calc
+
+```
+int abs(int a) {
+  int const mask = 
+        a >> sizeof(int) * CHAR_BIT - 1;
+    return  = (a + mask) ^ mask;
+}
+```
+
 
 
 (0) -1 trick! N - 1 will get all 1111 to right if N is power of 2

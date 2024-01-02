@@ -231,11 +231,4 @@ If no user-declared constructors of any kind are provided for a class type (stru
 
 # array
 
-Destructors for the array elements are called in reverse order of their construction
 
-
-arrays cannot be copied, this is not valid
-int arr[3];
-int arr2[3] = arr;
-
-but you can copy std::array or class objects which got array sub-objects!

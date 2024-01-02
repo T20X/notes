@@ -1,4 +1,39 @@
 ﻿
+# array
+
+arrays cannot be copied, this is not valid
+
+```
+int arr[3];
+int arr2[3] = arr;
+```
+
+vector<T[]> v1(34); Cannot use array in C++ contaienrs because they must be coppieable / moveable and assinable!
+however this is legal!
+
+```
+  std::vector<int[4]> v(10);
+  v[0][0] = 1;
+```
+
+It is just you cannot do something like this
+
+```
+v.push_back({1,1,1,1});
+v.push_back(int[4]{1,1,1,1});
+```
+
+Destructors for the array elements are called in reverse order of their construction
+but you can copy std::array or class objects which got array sub-objects!
+
+You can initialize an array as a copy of another array if you wrap the array in a struct.
+
+```
+struct myarray {
+  int a[3];
+};
+```
+
 # Virtual functions, vptr, table
 
 ## vptr and table
@@ -1901,4 +1936,3 @@ The expression E1[E2] is identical (by definition) to *((E1)+(E2)).
 
 Do not use pointer arithmetic, including array subscripting, on polymorphic objects.
 
-(68) vector<T[]> v1(34); Cannot use array in C++ contaienrs because they must be coppieable / moveable and assinable!
