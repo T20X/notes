@@ -1073,9 +1073,8 @@ They must actually be the same object.
 (18)
 If a program invokes a defaulted copy/move constructor or copy/move assignment operator for a union of type U with a glvalue argument that does not denote an object of type cv U within its lifetime, the behavior is undefined.
 
-------
-implicitly created objects
--------
+
+# implicitly created objects
 
 -----> it is either aggregate or got trival eglibible constructor  and a trivial non-deleted destructor. Note that in aggregatre if subojbect is not itself implicitly created object than it wont be created. <---------------
 
@@ -1099,9 +1098,9 @@ An invocation of std::memcpy or std::memmove.
 An assignment expression that involves union members if the unions assignment operator is built-in or trivial.
 
 
-***********
-Compound types
-***********
+
+# Compound types
+
 
 Compound types can be constructed in the following ways:
 
@@ -1112,17 +1111,14 @@ Compound types can be constructed in the following ways:
 (1.4.1) lvalue reference
 (1.4.2) rvalue reference
 
-(1.5)
-classes containing a sequence of objects of various types (Clause [class]), a set of types, enumerations and functions for manipulating these objects ([class.mfct]), and a set of restrictions on the access to these entities (Clause [class.access]);
+(1.5) classes containing a sequence of objects of various types (Clause [class]), a set of types, enumerations and functions for manipulating these objects ([class.mfct]), and a set of restrictions on the access to these entities (Clause [class.access]);
 
-(1.6)
-unions, which are classes capable of containing objects of different types at different times, [class.union];
+(1.6) unions, which are classes capable of containing objects of different types at different times, [class.union];
 
-(1.7)
-enumerations, which comprise a set of named constant values. Each distinct enumeration constitutes a different enumerated type, [dcl.enum];
+(1.7) enumerations, which comprise a set of named constant values. Each distinct enumeration constitutes a different enumerated type, [dcl.enum];
 
 
----------------
+# aggregate
 
 An aggregate is one of the following types:
 
@@ -1133,31 +1129,26 @@ no user-provided, inherited, or explicit constructors (explicitly defaulted or d
 no virtual, private, or protected (since C++17) base classes
 no virtual member functions
 
---------------
+# literal type
+
 A literal type is one whose layout can be determined at compile time. The following are the literal types:
 
 void
 scalar types
 references
 Arrays of void, scalar types or references
-A class that has a constexpr destructor, and one or more constexpr constructors that are not move or copy constructors. Additionally, all its non-static data members and base classes must be literal types and not volatile.
+A class that has a constexpr destructor, and one or more constexpr constructors that are not move or copy constructors. Additionally, all its non-static data members and base classes must be literal types and **not volatile**.
 
 
 Specifies that a type is a literal type. Literal types are the types of constexpr variables and they can be constructed, manipulated, and returned from constexmemset pr functions.
 
 
+# memset
 
-
-------------
-copying
----
 memset  will set padding bits to 0
 
+# similar types
 
-
------
-similar types
-----------
 Two types are similar if (ignoring cv):
     - they are the same type;
 or -they are both pointers, and the pointed - to types are similar;
@@ -1167,9 +1158,9 @@ or -they are both arrays of the same size or
     at least one of them is array of unknown bound,
     and the array element types are similar.
 
-------
-const 
----
+
+# const 
+
 A const object is an object of type const T or a non-mutable *subobject* of a const object.
 Except for array types, a compound type ([basic.compound]) is not cv-qualified by the cv-qualifiers (if any) of the types from which it is compounded.
 

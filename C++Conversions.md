@@ -50,7 +50,7 @@ If a standard-layout class object has any non-static data members, its address i
      IMPORTANT POINTS: 
       - 0,NULL CANNOT be converted to the null pointer of the target type . For that static_cast / implicit convertions must be used!
       - you can convert nullptr to integer type, but nothing can be converted to std::nullptr_t
-      - The null pointer value of any pointer type can be converted to any other pointer type, resulting in the null pointer value of that type. Note that the null pointer constant nullptr or any other value of type std::nullptr_t cannot be converted to a pointer with reinterpret_cast: implicit conversion or static_cast should be used for this purpose.
+      - The null pointer constant NULL or integer zero is not guaranteed to yield the null pointer value of the target type; static_cast or implicit conversion should be used for this purpose.
       - pointer-interconvertible rules avoid Strict Aliasing rules been applied,so that this can be done safely
       struct A{
   int i;
@@ -91,7 +91,7 @@ struct M {
 
     M m1 = static_cast<M>(d); // explicit constructor is fine for static cast
 
-- Conversion of any pointer to pointer to void and back to pointer to the original(or more cv - qualified) type preserves its original value.
+- Conversion of any pointer to pointer to void and back to pointer to the original(or more cv - qualified) type preserves its original value. The oposite may not yield the same result, for example if you take interger value, convert it to a pointer and than from pointer back to the integer value
 
   this is totally fine Test t;
 void *p = t;

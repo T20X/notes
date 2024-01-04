@@ -492,11 +492,7 @@ int main() {
 
 A variable declared inline has the same semantics as a function declared inline: it can be defined, identically, in multiple translation units, and in fact each trasnlation unit would still only have a unique definiton of it, and the behavior of the program is as if there was exactly one variable.
 --------------
-zero initialization does not mean litterly memset(0)! it could be in fact set to all bits 1!
-An object of static storage duration is zero initialized
-If T is a scalar type, the objects initial value is the integral constant zero explicitly converted to T
-If T is array type, each element is zero-initialized.
-If T is reference type, nothing is done.
+
 
 ----
 vtable

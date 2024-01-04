@@ -801,6 +801,9 @@ To zero-initialize an object or reference of type T means:
 (6.4) if T is an array type, each element is zero-initialized;
 (6.5) if T is a reference type, no initialization is performed.
 
+zero initialization does not mean litterly memset(0)! it could be in fact set to all bits 1! For example pointers to member objects normally set to 0xffffff...
+
+
 
 ## default-initialize 
 

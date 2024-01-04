@@ -203,3 +203,25 @@ extern "C" {
 - Trivial class req (can be statically initialized and memcpy optimized)
 
 
+# data structures
+
+## Linked lists
+
+### Unrolled linked lists
+
+https://plflib.org/list.htm
+
+The whole idea is to pack multiple elements into a single node, which would improve cache efficincy
+
+### list implemented in vector
+
+the idea is to use vector to store list nodes in slots and use the same vector to store free slots in case they get deallocated in the middle of the list!
+
+### filtered list
+
+When doing data filtering, first you are filling your linked list with data, and then you are removing data that is not according to a certain criterion. Linked lists are also used for this, but the process can be optimized.
+
+In this particular case ordering of values doesn’t change if we remove other values. If we use std::vector to store our data, we can get rid of the next pointer, saving some space but also increasing the data cache hit rate. We can store information about used and freed values in a bitset. Each bit in a bitset corresponds to a value: if the bit set the value is present, otherwise it is left out.
+
+Similarly, for a linked list backed by a vector, we can perform a compact operation to get rid of the gaps and make the memory access more data cache-friendly, after we have performed a sufficient number of element removal.
+
