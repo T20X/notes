@@ -8,7 +8,8 @@ int arr[3];
 int arr2[3] = arr;
 ```
 
-vector<T[]> v1(34); Cannot use array in C++ contaienrs because they must be coppieable / moveable and assinable!
+vector<T[]> v1(34); Cannot use array in C++ contaienrs because they must be coppieable / moveable and assinable! That is done in C for historical reasons
+
 however this is legal!
 
 ```

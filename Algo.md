@@ -1,3 +1,7 @@
+# binary search
+
+the whole point is to track mid
+
 # dynamic programming
 
 the whole point about dynamic programming is about assuming that for optimal solution , sub-problems are not optimal. If you come to he contradiction that the whole solutino is not optimal than it proves that sub-problem are indeed optimal! It is called cut-and-pate argument.

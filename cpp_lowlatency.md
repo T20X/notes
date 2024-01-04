@@ -41,6 +41,19 @@
 
 # code tricks
 
+## prefetch
+
+there is hardware prefetch, which can be used wisefly
+for example, imagine you got a batch of queries for a sparse hash map to do. instead of doing queries one by one whic would take a lot of time due
+to memory acceses, one may run pre-fetch and quickly do another pre-fetch for a given batch, after which we run a batch to access data.
+
+### Nano threads
+batching prefetch and access
+
+## Alternating prefetch/access
+
+instead we can run prefetch for X+n batch, then we start access data for X1 and so on  by alternating prefetch and access
+
 ## fast modulo
 
 modulo could be done like x & (b - 1)

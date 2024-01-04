@@ -229,6 +229,4 @@ If the implicitly-declared default constructor is not defined as deleted, it is 
 If no user-declared constructors of any kind are provided for a class type (struct, class, or union), the compiler will always declare a default constructor as an inline public member of its class
 
 
-# array
-
 

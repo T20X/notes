@@ -758,13 +758,14 @@ struct A1 {
 A1 a(3) // will not work as 2 level conversion
 
 
------
-initialization
---------
+# initialization
 
-Important take aways:
+## Important take aways:
+
  - since C++20 direct aggregate initialization is now possible, though it would allow narrowing conversions and won't extend the liftime of a refrence. Something like this is possible now
  struct A { int i; int j;  };  make_shared<A>(1, 2);
+
+ - in aggregate initialization if a suboject is not initialized, then its default value is taken and if that is not provided than it is value initialized
 
  - basically during value initialization if the object's defualt constructor is not user-provider and not deleted and also trivial than zero initialization during value initialization is possible, otherwise the object would be defualt initialized
 
@@ -773,80 +774,6 @@ Important take aways:
 
  - expression e implicitly converts to T if copy initialization works -> T a = e;
 
-+++++++++++++++++++++
-default initialization
-+++++++++++++++++++++
-default -> T t;
-default->new T;
-+++++++++++++++++++++
-
-Default initialization is performed in three situations:
-
-1) when a variable with automatic, static, or thread-local storage duration is declared with no initializer;
-2) when an object with dynamic storage duration is created by a new-expression with no initializer;
-3) when a base class or a non-static data member is not mentioned in a constructor initializer list and that constructor is called.
-
-The effects of default initialization are:
-
-- if T is a (possibly cv-qualified) class type, the constructors are considered and subjected to overload resolution against the empty argument list. The constructor selected (which is one of the default constructors) is called to provide the initial value for the new object;
-NOTE THAT FOR CLASS TYPE IF NO DEFAULT CONSTRUCTOR CAN BE FOUND THEN IT WOULD
-    COMPILE ERROR !
-- if T is an array type,
-    every element of the array is default - initialized;
-- else otherwise, no initialization is performed:
-  * the objects with automatic / dynamic storage duration(and their subobjects)contain indeterminate values,
-  * static and thread - local objects are zero initialized
-
-
-
------------------------ direct initialization  ----------------------
-
-T object(arg);
-T object(arg1, arg2, ...);
-
- T object { arg };  ----> initialization of an object of non-class type with a single brace-enclosed initializer (note: for class types and other uses of braced-init-list, see list-initialization) 
-// ----> T object { arg, arga2,... }; - note that these refer to list initialization
- T(other) 
-T(arg1, arg2, ...)
-
- static_cast<T>(other)(4) new T(args, ...)(5) Class::Class()
-  : member(args, ...){...}(6)[arg](){...}
-
-      () style direct initialization is more permissive as it allows narrowing
-      conversations and using explicit constructors
-
-while direct - initialization considers all constructors and all user -
-    defined conversion functions
-
-     The effets of direct initialization are : 
-    - If T is an array type the array is initialized as in aggregate initialization, except that narrowing conversions are allowed and any elements without an
-    initializer are value
-     initialized.A a[2]{A(1)}; // OK: initializes a[0] with A(1) and a[1] with A()
- -
-
-(----> PRETTY MUCH ALLOWS LIMITED AGGREGTE like INITIAZLIATOIN SINCE C++20)
-if T is class Type otherwise, if the destination type is a (possibly cv-qualified) aggregate class, it is initialized as described in aggregate initialization except that narrowing conversions are permitted, designated initializers are not allowed, a temporary bound to a reference does not have its lifetime extended, there is no brace elision, and any elements without an initializer are value-initialized.
-struct B
-{
-    int a;
-    int&& r;
-};
- 
-int f();
-int n = 10;
- 
-B b1{1, f()};            // OK, lifetime is extended
-B b2(1, f());            // well-formed, but dangling reference
-B b3{1.0, 1};            // error: narrowing conversion
-B b4(1.0, 1);            // well-formed, but dangling reference
-B b5(1.0, std::move(n)); // OK
-
------------------ value initialization ------------------------
-
-   T()
-   new T()
-   Class::Class(...)
-      : member(){...}
    T object{};
 (since C++ 11) - BE CAREFULL FOR AGGREGATES IT WOULD CALL AGGREGATE
         INITIALIZATION which has these rules so explicit defult constructors may
@@ -854,164 +781,462 @@ B b5(1.0, std::move(n)); // OK
     and conversion operators wont work in aggregate initialization
     Also note that arrays are aggregates!
 
-    ""
-    ""
-    "   Otherwise, if the element is not a reference, the element is "
-    "copy-initialized from an empty initializer list.  "
-    ""
-    ""
 
-    T{}
-    new T{}(6)(since C++ 11)Class::Class(...)
-    : member{} {...}(7)(since C++ 11)
+- An object whose initialization has completed is deemed to be constructed, even if the object is of non-class type or no constructor of the object's class is invoked for the initialization. [Note 9: Such an object might have been value-initialized or initialized by aggregate initialization ([dcl.init.aggr]) or by an inherited constructor ([class.inhctor.init]). — end note]
 
-if the empty pair of braces {} is used and T is an aggregate type, aggregate-initialization is performed instead of value-initialization.
-Turns into list initialization: If T is a class type that has no default constructor but has a constructor taking std::initializer_list, list-initialization is performed.
+IMPORTANT !!! **If the initializer is a parenthesized expression-list, the expressions are evaluated in the order specified for function calls ([expr.call])**
 
-Zero- and value-initialization also initialize pointers to their null values
-
-(since C++11)
-The effects of value initialization are:
-
-1) if T is a class type with no default constructor  or with user-provided or deleted (since C++11) default constructor, the object is default-initialized;
-2) if T is a class type with a default constructor (it can be non-trivial) that is neither user-provided nor deleted (since C++11) (that is, it may be a class with an implicitly-defined or defaulted default constructor), the object is zero-initialized and the semantic constraints for default-initialization are checked, and if T has a non-trivial default constructor, the object is default-initialized;
-3) if T is an array type, each element of the array is value-initialized;
-4) otherwise, the object is zero-initialized.
+IMPORTANT !!!  **Within the initializer-list of a braced-init-list, the initializer-clauses, including any that result from pack expansions ([temp.variadic]), are evaluated in the order in which they appear.**
 
 
-The standard specifies that zero-initialization is not performed when the class has a user-provided or deleted default constructor, which implies that whether said default constructor is selected by overload resolution is not considered. All known compilers performs additional zero-initialization if a non-deleted defaulted default constructor is selected
+- Destroying an object of class type invokes the destructor of the class. Destroying a scalar type has no effect other than ending the lifetime of the object ([basic.life]). Destroying an array destroys each element in reverse subscript order.
 
 
-All standard containers (std::vector, std::list, etc.) value-initialize their elements when constructed with a single size_type argument or when grown by a call to resize(), unless their allocator customizes the behavior of constructs
+## zero-initialize 
+
+To zero-initialize an object or reference of type T means:
+(6.1) if T is a scalar type ([basic.types.general]), the object is initialized to the value obtained by converting the integer literal 0 (zero) to T;82
+(6.2) if T is a (possibly cv-qualified) non-union class type, its padding bits ([basic.types.general]) are initialized to zero bits and each non-static data member, each non-virtual base class subobject, and, if the object is not a base class subobject, each virtual base class subobject is zero-initialized;
+(6.3) if T is a (possibly cv-qualified) union type, its padding bits ([basic.types.general]) are initialized to zero bits and the object's first non-static named data member is zero-initialized;
+(6.4) if T is an array type, each element is zero-initialized;
+(6.5) if T is a reference type, no initialization is performed.
 
 
-++++++++++++++++++
-aggregate initialization
-++++++++++++++++
+## default-initialize 
 
-T object = { arg1, arg2, ... };
-(1) T object{arg1, arg2, ...};
-(2)(since C++ 11) T object = {.des1 = arg1, .des2{arg2}...};
-(3)(since C++ 20) T object{.des1 = arg1, .des2{arg2}...};	(4)	(since C++20)
-(6) T array[N] = {other - sequence}; IMPORTANT -> array just just aggregate class!
+To default-initialize an object of type T means:
+(7.1) If T is a (possibly cv-qualified) class type ([class]), constructors are considered. The applicable constructors are enumerated ([over.match.ctor]), and the best one for the initializer () is chosen through overload resolution ([over.match]). The constructor thus selected is called, with an empty argument list, to initialize the object.
+(7.2) If T is an array type, the semantic constraints of default-initializing a hypothetical element shall be met and each element is default-initialized.
+(7.3) Otherwise, no initialization is performed.
 
-IMPORTANT :
-**- if no value for a given memeber is given then it is copy-initializate with {}**
-
-all value computations and side effects associated with a given element are sequenced before those of any element that follows it in order of declaration
-
-the way c++ works is that if object is aggregate , aggregate initialization is always been tried on for ither value initialization / list initialization
+A class type T is const-default-constructible if default-initialization of T would invoke a user-provided constructor of T (not inherited from a base class) or if
+(8.1) each direct non-variant non-static data member M of T has a default member initializer or, if M is of class type X (or array thereof), X is const-default-constructible,
+(8.2) if T is a union with at least one non-static data member, exactly one variant member has a default member initializer,
+(8.3) if T is not a union, for each anonymous union member with at least one non-static data member (if any), exactly one non-static data member has a default member initializer, and
+(8.4) each potentially constructed base class of T is const-default-constructible.
+If a program calls for the default-initialization of an object of a const-qualified type T, T shall be a const-default-constructible class type or array thereof.
 
 
-element is copy-initialized from the corresponding initializer clause of the initializer list:
-- If the initializer clause is an expression, implicit conversions are allowed as per copy-initialization, except that narrowing conversions are prohibited (since C++11).
-- If the initializer clause is a nested braced-init-list (which is not an expression), list-initialize the corresponding element from that clause, which will (since C++11) recursively apply the rule if the corresponding element is a subaggregate.
-**- if no value for a given memeber is given then it is copy-initializate with {}**
+## value-initialize
 
-If the aggregate is a union and the initializer list is empty, then If any variant member has a default member initializer, that member is initialized from its default member initializer.(since C++ 11)Otherwise, the first member of the union(if any) is copy  initialized from an empty initializer list.
+To value-initialize an object of type T means:
+(9.1) If T is a (possibly cv-qualified) class type ([class]), then
+(9.1.1) if T has either no default constructor (which pretty much means default-initialization would fail) ([class.default.ctor]) or a default constructor that is user-provided or deleted, then the object is default-initialized;
+(9.1.2) otherwise, the object is zero-initialized and the semantic constraints for default-initialization are checked, and if T has a non-trivial default constructor, the object is default-initialized.
+(9.2) If T is an array type, the semantic constraints of value-initializing a hypothetical element shall be met and each element is value-initialized.
+(9.3) Otherwise, the object is zero-initialized.
 
+
+## other
+
+- A program that calls for default-initialization or value-initialization of an entity of reference type is ill-formed.
+- [Note 4: For every object of static storage duration, static initialization ([basic.start.static]) is performed at program startup before any other initialization takes place. In some cases, additional initialization is done later. — end note]
+- if no initializer is specified for an object, the object is default-initialized.
+- If the entity being initialized does not have class or array type, the expression-list in a parenthesized initializer shall be a single expression.
+
+## copy-initialization
+
+ The initialization that occurs in the = form of a brace-or-equal-initializer or condition ([stmt.select]), as well as in argument passing, function return, throwing an exception ([except.throw]), handling an exception ([except.handle]), and aggregate member initialization other than by a designated-initializer-clause ([dcl.init.aggr]), is called copy-initialization.
+[Note 5: Copy-initialization can invoke a move ([class.copy.ctor]). — end note]
+
+## direct-initialization
+
+ The initialization that occurs
+(15.1) for an initializer that is a parenthesized expression-list or a braced-init-list (aka {1,2, 3, 4}),
+(15.2) for a new-initializer ([expr.new]),
+(15.3) in a static_cast expression ([expr.static.cast]),
+(15.4) in a functional notation type conversion ([expr.type.conv]), and
+(15.5) in the braced-init-list form of a condition
+is called **direct-initialization**.
+
+## list-initialization
+
+List-initialization is initialization of an object or reference from a braced-init-list. Such an initializer is called an initializer list, and the comma-separated initializer-clauses of the initializer-list or designated-initializer-clauses of the designated-initializer-list are called the elements of the initializer list. An initializer list may be empty. List-initialization can occur in direct-initialization or copy-initialization contexts; list-initialization in a direct-initialization context is called direct-list-initialization and list-initialization in a copy-initialization context is called copy-list-initialization. Direct-initialization that is not list-initialization is called direct-non-list-initialization.
+[Note 1: List-initialization can be used
+(1.1) as the initializer in a variable definition ([dcl.init])
+(1.2) as the initializer in a new-expression ([expr.new])
+(1.3) in a return statement ([stmt.return])
+(1.4) as a for-range-initializer ([stmt.iter])
+(1.5) as a function argument ([expr.call])
+(1.6) as a template argument ([temp.arg.nontype])
+(1.7) as a subscript ([expr.sub])
+(1.8) as an argument to a constructor invocation ([dcl.init], [expr.type.conv])
+(1.9) as an initializer for a non-static data member ([class.mem])
+(1.10) in a mem-initializer ([class.base.init])
+(1.11) on the right-hand side of an assignment ([expr.ass])
+[Example 1: 
+```
+int a = {1};
+std::complex<double> z{1,2};
+new std::vector<std::string>{"once", "upon", "a", "time"};  // 4 string elements
+f( {"Nicholas","Annemarie"} );  // pass list of two elements
+return { "Norah" };             // return list of one element
+int* e {};                      // initialization to zero / null pointer
+x = double{1};                  // explicitly construct a double
+std::map<std::string,int> anim = { {"bear",4}, {"cassowary",2}, {"tiger",7} };
+— end example]
+— end note]
+```
+
+A constructor is an initializer-list constructor if its first parameter is of type std​::​initializer_list<E> or reference to cv std​::​initializer_list<E> for some type E, and either there are no other parameters or else all other parameters have default arguments ([dcl.fct.default]).
+[Note 2: Initializer-list constructors are favored over other constructors in list-initialization ([over.match.list]). Passing an initializer list as the argument to the constructor template template<class T> C(T) of a class C does not create an initializer-list constructor, because an initializer list argument causes the corresponding parameter to be a non-deduced context ([temp.deduct.call]). — end note]
+The template std​::​initializer_list is not predefined; if a standard library declaration ([initializer.list.syn], [std.modules]) of std​::​initializer_list is not reachable from ([module.reach]) a use of std​::​initializer_list — even an implicit use in which the type is not named ([dcl.spec.auto]) — the program is ill-formed.
+
+List-initialization of an object or reference of type T is defined as follows:
+(3.1) If the braced-init-list contains a designated-initializer-list and T is not a reference type, T shall be an aggregate class. The ordered identifiers in the designators of the designated-initializer-list shall form a subsequence of the ordered identifiers in the direct non-static data members of T. Aggregate initialization is performed ([dcl.init.aggr]).
+[Example 2: 
+```
+struct A { int x; int y; int z; };
+A a{.y = 2, .x = 1};                // error: designator order does not match declaration order
+A b{.x = 1, .z = 2};                // OK, b.y initialized to 0
+```
+— end example]
+(3.2) If T is an aggregate class and the initializer list has a single element of type cv U, where U is T or a class derived from T, the object is initialized from that element (by copy-initialization for copy-list-initialization, or by direct-initialization for direct-list-initialization).
+(3.3) Otherwise, if T is a character array and the initializer list has a single element that is an appropriately-typed string-literal ([dcl.init.string]), initialization is performed as described in that subclause.
+(3.4) Otherwise, if T is an aggregate, aggregate initialization is performed ([dcl.init.aggr]).
+[Example 3: 
+double ad[] = { 1, 2.0 };           // OK
+int ai[] = { 1, 2.0 };              // error: narrowing
+
+struct S2 {
+  int m1;
+  double m2, m3;
+};
+S2 s21 = { 1, 2, 3.0 };             // OK
+S2 s22 { 1.0, 2, 3 };               // error: narrowing
+S2 s23 { };                         // OK, default to 0,0,0
+— end example]
+(3.5) Otherwise, if the initializer list has no elements and T is a class type with a default constructor, the object is value-initialized.
+(3.6) Otherwise, if T is a specialization of std​::​initializer_list<E>, the object is constructed as described below.
+(3.7) Otherwise, if T is a class type, constructors are considered. The applicable constructors are enumerated and the best one is chosen through overload resolution ([over.match], [over.match.list]). If a narrowing conversion (see below) is required to convert any of the arguments, the program is ill-formed.
+[Example 4: 
+```
+struct S {
+  S(std::initializer_list<double>); // #1
+  S(std::initializer_list<int>);    // #2
+  S();                              // #3
+  // ...
+};
+S s1 = { 1.0, 2.0, 3.0 };           // invoke #1
+S s2 = { 1, 2, 3 };                 // invoke #2
+S s3 = { };                         // invoke #3
+— end example]
+[Example 5: 
+struct Map {
+  Map(std::initializer_list<std::pair<std::string,int>>);
+};
+Map ship = {{"Sophie",14}, {"Surprise",28}};
+— end example]
+[Example 6: 
+struct S {
+  // no initializer-list constructors
+  S(int, double, double);           // #1
+  S();                              // #2
+  // ...
+};
+S s1 = { 1, 2, 3.0 };               // OK, invoke #1
+S s2 { 1.0, 2, 3 };                 // error: narrowing
+S s3 { };                           // OK, invoke #2
+```
+— end example]
+(3.8) Otherwise, if T is an enumeration with a fixed underlying type ([dcl.enum]) U, the initializer-list has a single element v of scalar type, v can be implicitly converted to U, and the initialization is direct-list-initialization, the object is initialized with the value T(v) ([expr.type.conv]); if a narrowing conversion is required to convert v to U, the program is ill-formed.
+[Example 7: 
+
+```
+enum byte : unsigned char { };
+byte b { 42 };                      // OK
+byte c = { 42 };                    // error
+byte d = byte{ 42 };                // OK; same value as b
+byte e { -1 };                      // error
+
+struct A { byte b; };
+A a1 = { { 42 } };                  // error
+A a2 = { byte{ 42 } };              // OK
+
+void f(byte);
+f({ 42 });                          // error
+
+enum class Handle : uint32_t { Invalid = 0 };
+Handle h { 42 };                    // OK
+```
+
+— end example]
+(3.9) Otherwise, if the initializer list is not a designated-initializer-list and has a single element of type E and either T is not a reference type or its referenced type is reference-related to E, the object or reference is initialized from that element (by copy-initialization for copy-list-initialization, or by direct-initialization for direct-list-initialization); if a narrowing conversion (see below) is required to convert the element to T, the program is ill-formed.
+[Example 8: 
+int x1 {2};                         // OK
+int x2 {2.0};                       // error: narrowing
+— end example]
+(3.10) Otherwise, if T is a reference type, a prvalue is generated. The prvalue initializes its result object by copy-list-initialization from the initializer list. The prvalue is then used to direct-initialize the reference. The type of the prvalue is the type referenced by T, unless T is “reference to array of unknown bound of U”, in which case the type of the prvalue is the type of x in the declaration U x[] H, where H is the initializer list.
+[Note 3: As usual, the binding will fail and the program is ill-formed if the reference type is an lvalue reference to a non-const type. — end note]
+[Example 9: 
+```
+struct S {
+  S(std::initializer_list<double>); // #1
+  S(const std::string&);            // #2
+  // ...
+};
+const S& r1 = { 1, 2, 3.0 };        // OK, invoke #1
+const S& r2 { "Spinach" };          // OK, invoke #2
+S& r3 = { 1, 2, 3 };                // error: initializer is not an lvalue
+const int& i1 = { 1 };              // OK
+const int& i2 = { 1.1 };            // error: narrowing
+const int (&iar)[2] = { 1, 2 };     // OK, iar is bound to temporary array
+
+struct A { } a;
+struct B { explicit B(const A&); };
+const B& b2{a};                     // error: cannot copy-list-initialize B temporary from A
+
+struct C { int x; };
+C&& c = { .x = 1 };                 // OK
+```
+
+— end example]
+(3.11) Otherwise, if the initializer list has no elements, the object is value-initialized.
+[Example 10: 
+int** pp {};                        // initialized to null pointer
+— end example]
+(3.12) Otherwise, the program is ill-formed.
+```
+[Example 11: 
+struct A { int i; int j; };
+A a1 { 1, 2 };                      // aggregate initialization
+A a2 { 1.2 };                       // error: narrowing
+struct B {
+  B(std::initializer_list<int>);
+};
+B b1 { 1, 2 };                      // creates initializer_list<int> and calls constructor
+B b2 { 1, 2.0 };                    // error: narrowing
+struct C {
+  C(int i, double j);
+};
+C c1 = { 1, 2.2 };                  // calls constructor with arguments (1, 2.2)
+C c2 = { 1.1, 2 };                  // error: narrowing
+
+int j { 1 };                        // initialize to 1
+int k { };                          // initialize to 0
+```
+— end example]
+
+Within the initializer-list of a braced-init-list, the initializer-clauses, including any that result from pack expansions ([temp.variadic]), are evaluated in the order in which they appear. That is, every value computation and side effect associated with a given initializer-clause is sequenced before every value computation and side effect associated with any initializer-clause that follows it in the comma-separated list of the initializer-list.
+[Note 4: This evaluation ordering holds regardless of the semantics of the initialization; for example, it applies when the elements of the initializer-list are interpreted as arguments of a constructor call, even though ordinarily there are no sequencing constraints on the arguments of a call. — end note]
+
+An object of type std​::​initializer_list<E> is constructed from an initializer list as if the implementation generated and materialized ([conv.rval]) a prvalue of type “array of N const E”, where N is the number of elements in the initializer list; this is called the initializer list's backing array. Each element of the backing array is copy-initialized with the corresponding element of the initializer list, and the std​::​initializer_list<E> object is constructed to refer to that array.
+[Note 5: A constructor or conversion function selected for the copy is required to be accessible ([class.access]) in the context of the initializer list. — end note]
+If a narrowing conversion is required to initialize any of the elements, the program is ill-formed.
+[Note 6: Backing arrays are potentially non-unique objects ([intro.object]). — end note]
+
+The backing array has the same lifetime as any other temporary object ([class.temporary]), except that initializing an initializer_list object from the array extends the lifetime of the array exactly like binding a reference to a temporary
+
+# aggregate initialization
+
+An **aggregate** is an array or a class ([class]) with
+(1.1) no user-declared or inherited constructors ([class.ctor]),
+(1.2) no private or protected direct non-static data members ([class.access]),
+(1.3) no private or protected direct base classes ([class.access.base]), and
+(1.4) no virtual functions ([class.virtual]) or virtual base classes ([class.mi]).
+[Note 1: Aggregate initialization does not allow accessing protected and private base class' members or constructors. — end note]
+
+The elements of an aggregate are:
+(2.1) for an array, the array elements in increasing subscript order, or
+(2.2) for a class, the direct base classes in declaration order, followed by the direct non-static data members ([class.mem]) that are not members of an anonymous union, in declaration order.
+
+When an aggregate is initialized by an initializer list as specified in [dcl.init.list], the elements of the initializer list are taken as initializers for the elements of the aggregate. The explicitly initialized elements of the aggregate are determined as follows:
+(3.1) If the initializer list is a brace-enclosed designated-initializer-list, the aggregate shall be of class type, the identifier in each designator shall name a direct non-static data member of the class, and the explicitly initialized elements of the aggregate are the elements that are, or contain, those members.
+(3.2) If the initializer list is a brace-enclosed initializer-list, the explicitly initialized elements of the aggregate are the first n elements of the aggregate, where n is the number of elements in the initializer list.
+(3.3) Otherwise, the initializer list must be {}, and there are no explicitly initialized elements.
+
+For each explicitly initialized element:
+(4.1) If the element is an anonymous union member and the initializer list is a brace-enclosed designated-initializer-list, the element is initialized by the braced-init-list { D }, where D is the designated-initializer-clause naming a member of the anonymous union member. There shall be only one such designated-initializer-clause.
+[Example 1: 
+```
+struct C {
+  union {
+    int a;
+    const char* p;
+  };
+  int x;
+} c = { .a = 1, .x = 3 };
+```
+initializes c.a with 1 and c.x with 3. — end example]
+(4.2) Otherwise, the element is copy-initialized from the corresponding initializer-clause or is initialized with the brace-or-equal-initializer of the corresponding designated-initializer-clause. If that initializer is of the form assignment-expression or = assignment-expression and a narrowing conversion ([dcl.init.list]) is required to convert the expression, the program is ill-formed.
+[Note 2: If the initialization is by designated-initializer-clause, its form determines whether copy-initialization or direct-initialization is performed. — end note]
+[Note 3: If an initializer is itself an initializer list, the element is list-initialized, which will result in a recursive application of the rules in this subclause if the element is an aggregate. — end note]
+[Example 2: 
+```
+struct A {
+  int x;
+  struct B {
+    int i;
+    int j;
+  } b;
+} a = { 1, { 2, 3 } };
+initializes a.x with 1, a.b.i with 2, a.b.j with 3.
+struct base1 { int b1, b2 = 42; };
+struct base2 {
+  base2() {
+    b3 = 42;
+  }
+  int b3;
+};
+struct derived : base1, base2 {
+  int d;
+};
+
+derived d1{{1, 2}, {}, 4};
+derived d2{{}, {}, 4};
+```
+initializes d1.b1 with 1, d1.b2 with 2, d1.b3 with 42, d1.d with 4, and d2.b1 with 0, d2.b2 with 42, d2.b3 with 42, d2.d with 4. — end example]
 
 
 For a non-union aggregate, each element that is not an explicitly initialized element is initialized as follows:
+(5.1) If the element has a default member initializer ([class.mem]), the element is initialized from that initializer.
+(5.2) Otherwise, if the element is not a reference, the element is copy-initialized from an empty initializer list ([dcl.init.list]).
+(5.3) Otherwise, the program is ill-formed.
+If the aggregate is a union and the initializer list is empty, then
+(5.4) if any variant member has a default member initializer, that member is initialized from its default member initializer;
+(5.5) otherwise, the first member of the union (if any) is copy-initialized from an empty initializer list.
 
-If the element has a default member initializer, the element is initialized from that initializer.
-(since C++11)
-Otherwise, if the element is not a reference, the element is copy-initialized from an empty initializer list.
-Otherwise, the program is ill-formed.
-struct S
-{
-    int a;
-    const char* b;
-    int c;
-    int d = b[a];
+[Example 3: 
+```
+struct S { int a; const char* b; int c; int d = b[a]; };
+S ss = { 1, "asdf" };
+initializes ss.a with 1, ss.b with "asdf", ss.c with the value of an expression of the form int{} (that is, 0), and ss.d with the value of ss.b[ss.a] (that is, 's'), and in
+struct X { int i, j, k = 42; };
+X a[] = { 1, 2, 3, 4, 5, 6 };
+X b[2] = { { 1, 2, 3 }, { 4, 5, 6 } };
+a and b have the same value
+struct A {
+  string a;
+  int b = 42;
+  int c = -1;
 };
- 
-// initializes ss.a with 1,
-//             ss.b with "asdf",
-//             ss.c with the value of an expression of the form int{} (that is, 0), <---------------------
-//         and ss.d with the value of ss.b[ss.a] (that is, 's')
-S ss = {1, "asdf"};
+```
+A{.c=21} has the following steps:
+(6.1) Initialize a with {}
+(6.2) Initialize b with = 42
+(6.3) Initialize c with = 21
+— end example]
 
+The initializations of the elements of the aggregate are evaluated in the element order. That is, all value computations and side effects associated with a given element are sequenced before those of any element that follows it in order.
 
-********************* copy initialization *****************************************
+An aggregate that is a class can also be initialized with a single expression not enclosed in braces, as described in [dcl.init].
 
-Syntax 
-(1) T object = other;
-(2) f(other)
-(3) return other;
-(4) throw object;
-(5)catch (T object)
+The destructor for each element of class type other than an anonymous union member is potentially invoked ([class.dtor]) from the context where the aggregate initialization occurs.
+[Note 4: This provision ensures that destructors can be called for fully-constructed subobjects in case an exception is thrown ([except.ctor]). — end note]
 
----
-NARROWING CONVERSIONS ARE allowed
--------
-
-The effects of copy initialization are:
-
-- First, if T is a class type and the initializer is a prvalue expression whose cv-unqualified type is the same class as T, the initializer expression itself, rather than a temporary materialized from it, is used to initialize the destination object: see copy elision
-(since C++17)
-
-- If T is a class type and the cv-unqualified version of the type of other is T or a class derived from T, the non-explicit constructors of T are examined and the best match is selected by overload resolution. The constructor is then called to initialize the object.
-
-- If T is a class type, and the cv-unqualified version of the type of other is not T or derived from T, or if T is non-class type, but the type of other is a class type, user-defined conversion sequences that can convert from the type of other to T (or to a type derived from T if T is a class type and a conversion function is available) are examined and the best one is selected through overload resolution. The result of the conversion, which is prvalue expression (since C++17) of the cv-unqualified version of T if a converting constructor was used, is then used to direct-initialize the object. The last step is usually optimized out and the result of the conversion is constructed directly in the memory allocated for the target object, but the appropriate constructor (move or copy) is required to be accessible even though its not used.
-
-- Otherwise (if neither T nor the type of other are class types), standard conversions are used, if necessary, to convert the value of other to the cv-unqualified version of T.
-
-In addition, the implicit conversion in copy-initialization must produce T directly from the initializer, while, e.g. direct-initialization expects an implicit conversion from the initializer to an argument of T's constructor.
-
-struct S { S(std::string) {} }; // implicitly convertible from std::string
-S s("abc");   // OK: conversion from const char[4] to std::string
-S s = "abc";  // Error: no conversion from const char[4] to S
-S s = "abc"s; // OK: conversion from std::string to S
-If other is an rvalue expression, a move constructor will be selected by overload resolution and called during copy-initialization. This is still considered copy-initialization; there is no special term (e.g., move-initialization) for this case.
-
-Implicit conversion is defined in terms of copy-initialization: if an object of type T can be copy-initialized with expression E, then E is implicitly convertible to T.
-
-If other is an rvalue expression, a move constructor will be selected by overload resolution and called during copy-initialization. This is still considered copy-initialization; there is no special term (e.g., move-initialization) for this case.
-
-
-----------------
-list initialization
--------------
-
-Direct-list-initialization
-
-T object { arg1, arg2, ... };
-(1) T{arg1, arg2, ...}
-(2) new T{arg1, arg2, ...}
-(3)Class {
-  T member{arg1, arg2, ...};
+An array of unknown bound initialized with a brace-enclosed initializer-list containing n initializer-clauses is defined as having n elements ([dcl.array]).
+[Example 4: 
+int x[] = { 1, 3, 5 };
+declares and initializes x as a one-dimensional array that has three elements since no size was specified and there are three initializers. — end example]
+An array of unknown bound shall not be initialized with an empty braced-init-list {}.83
+[Note 5: A default member initializer does not determine the bound for a member array of unknown bound. Since the default member initializer is ignored if a suitable mem-initializer is present ([class.base.init]), the default member initializer is not considered to initialize the array of unknown bound.
+[Example 5: 
+struct S {
+  int y[] = { 0 };          // error: non-static data member of incomplete type
 };
-(4) Class::Class() : member{arg1, arg2, ...} {
-  ...
-  (5) Copy - list - initialization
+— end example]
+— end note]
 
-          T object = {arg1, arg2, ...};
-  (6) function({arg1, arg2, ...})
-  (7) return {arg1, arg2, ...};
-  (8) object[{arg1, arg2, ...}]
-  (9) object = {arg1, arg2, ...}
-  (10)U({arg1, arg2, ...})
-  (11) Class {
-    T member = {arg1, arg2, ...};
-  };	
+[Note 6: Static data members, non-static data members of anonymous union members, and unnamed bit-fields are not considered elements of the aggregate.
+[Example 6: 
+```
+struct A {
+  int i;
+  static int s;
+  int j;
+  int :17;
+  int k;
+} a = { 1, 2, 3 };
+```
+Here, the second initializer 2 initializes a.j and not the static data member A​::​s, and the third initializer 3 initializes a.k and not the unnamed bit-field before it. — end example]
+— end note]
 
 
+When initializing a multidimensional array, the initializer-clauses initialize the elements with the last (rightmost) index of the array varying the fastest ([dcl.array]).
+[Example 10: 
+int x[2][2] = { 3, 1, 4, 2 };
+initializes x[0][0] to 3, x[0][1] to 1, x[1][0] to 4, and x[1][1] to 2. On the other hand,
+float y[4][3] = {
+  { 1 }, { 2 }, { 3 }, { 4 }
+};
+initializes the first column of y (regarded as a two-dimensional array) and leaves the rest zero. — end example]
 
-The effects of list-initialization of an object of type T are:
+All implicit type conversions ([conv]) are considered when initializing the element with an assignment-expression. If the assignment-expression can initialize an element, the element is initialized. Otherwise, if the element is itself a subaggregate, brace elision is assumed and the assignment-expression is considered for the initialization of the first element of the subaggregate.
+[Note 7: As specified above, brace elision cannot apply to subaggregates with no elements; an initializer-clause for the entire subobject is required. — end note]
+[Example 12: 
+```
+struct A {
+  int i;
+  operator int();
+};
+struct B {
+  A a1, a2;
+  int z;
+};
+A a;
+B b = { 4, a, a };
+```
+Braces are elided around the initializer-clause for b.a1.i. b.a1.i is initialized with 4, b.a2 is initialized with a, b.z is initialized with whatever a.operator int() returns. — end example]
 
-- If T is an aggregate class and the braced-init-list has a single element of the same or derived type (possibly cv-qualified), the object is initialized from that element (by copy-initialization for copy-list-initialization, or by direct-initialization for direct-list-initialization).
+[Note 8: An aggregate array or an aggregate class can contain elements of a class type with a user-declared constructor ([class.ctor]). Initialization of these aggregate objects is described in [class.expl.init]. — end note]
 
-- Otherwise, if T is an aggregate type, aggregate initialization is performed.
+[Note 9: Whether the initialization of aggregates with static storage duration is static or dynamic is specified in [basic.start.static], [basic.start.dynamic], and [stmt.dcl]. — end note]
 
-- Otherise, if the braced-init-list is empty and T is a class type with a default constructor, value-initialization is performedw.
+When a union is initialized with an initializer list, there shall not be more than one explicitly initialized element.
+[Example 13: 
+```
+union u { int a; const char* b; };
+u a = { 1 };
+u b = a;
+u c = 1;                        // error
+u d = { 0, "asdf" };            // error
+u e = { "asdf" };               // error
+u f = { .b = "asdf" };
+u g = { .a = 1, .b = "asdf" };  // error
+```
+[Note 10: As described above, the braces around the initializer-clause for a union member can be omitted if the union is a member of another aggregate. — end note]
 
-- Otherwise, the constructors of T are considered, in two phases:
-If the previous stage does not produce a match, all constructors of T participate in overload resolution against the set of arguments that consists of the elements of the braced-init-list, with the restriction that only non-narrowing conversions are allowed. If this stage produces an explicit constructor as the best match for a copy-list-initialization, compilation fails (note, in simple copy-initialization, explicit constructors are not considered at all).
+# initializer algorithm
 
-- Otherwise (if T is not a class type), if the braced-init-list has only one element and either T is not a reference type or is a reference type whose referenced type is same as or is a base class of the type of the element, T is direct-initialized (in direct-list-initialization) or copy-initialized (in copy-list-initialization), except that narrowing conversions are not allowed.
+The semantics of initializers are as follows. The destination type is the type of the object or reference being initialized and the source type is the type of the initializer expression. If the initializer is not a single (possibly parenthesized) expression, the source type is not defined.
+(16.1) If the initializer is a (non-parenthesized) braced-init-list or is = braced-init-list, the object or reference is **list-initialized** ([dcl.init.list]).
+(16.2) If the destination type is a reference type, see [dcl.init.ref].
+(16.3) If the destination type is an array of characters, an array of char8_t, an array of char16_t, an array of char32_t, or an array of wchar_t, and the initializer is a string-literal, see [dcl.init.string].
+(16.4) If the initializer is (), the object is value-initialized.
+[Note 6: Since () is not permitted by the syntax for initializer,
+X a();
+is not the declaration of an object of class X, but the declaration of a function taking no arguments and returning an X. The form () is permitted in certain other initialization contexts ([expr.new], [expr.type.conv], [class.base.init]). — end note]
+(16.5) Otherwise, if the destination type is an array, the object is initialized as follows. Let 
+ be the elements of the expression-list. If the destination type is an array of unknown bound, it is defined as having k elements. Let n denote the array size after this potential adjustment. If k is greater than n, the program is ill-formed. Otherwise, the ith array element is copy-initialized with xi for each 1  ≤ i  ≤ k, and value-initialized for each k<i≤n. For each 1≤i<j≤n, every value computation and side effect associated with the initialization of the ith element of the array is sequenced before those associated with the initialization of the jth element.
+(16.6) Otherwise, if the destination type is a (possibly cv-qualified) class type:
+(16.6.1) If the initializer expression is a prvalue and the cv-unqualified version of the source type is the same class as the class of the destination, the initializer expression is used to initialize the destination object.
+[Example 2: T x = T(T(T())); value-initializes x. — end example]
+(16.6.2) Otherwise, if the initialization is direct-initialization, or if it is copy-initialization where the cv-unqualified version of the source type is the same class as, or a derived class of, the class of the destination, constructors are considered. The applicable constructors are enumerated ([over.match.ctor]), and the best one is chosen through overload resolution ([over.match]). Then:
+(16.6.2.1) If overload resolution is successful, the selected constructor is called to initialize the object, with the initializer expression or expression-list as its argument(s).
+(16.6.2.2) Otherwise, if no constructor is viable, the destination type is an aggregate class, and the initializer is a parenthesized expression-list, the object is initialized as follows. Let e1, …, en be the elements of the aggregate ([dcl.init.aggr]). Let x1, …, xk be the elements of the xpression-list. If k is greater than n, the program is ill-formed. The element ei is copy-initialized with xi for 1  ≤ i  ≤ k. The remaining elements are initialized with their default member initializers, if any, and otherwise are value-initialized. For each 1≤i<j≤n, every value computation and side effect associated with the initialization of ei is sequenced before those associated with the initialization of ej.
+[Note 7: By contrast with direct-list-initialization, narrowing conversions ([dcl.init.list]) are permitted, designators are not permitted, a temporary object bound to a reference does not have its lifetime extended ([class.temporary]), and there is no brace elision.
+[Example 3: 
 
-a prvalue is generated. The prvalue initializes its result object by copy-list-initialization. The prvalue is then used to direct-initialize the reference (this fails if the reference is a non-const lvalue reference). The type of the temporary is the type referenced by T, unless T is “reference to array of unknown bound of U”, in which case the type of the temporary is the type of x in the declaration U x[] H, where H is the initializer list (since C++20).
-(since C++17)
+```
+struct A {
+  int a;
+  int&& r;
+};
 
--
+int f();
+int n = 10;
+
+A a1{1, f()};                   // OK, lifetime is extended
+A a2(1, f());                   // well-formed, but dangling reference
+A a3{1.0, 1};                   // error: narrowing conversion
+A a4(1.0, 1);                   // well-formed, but dangling reference
+A a5(1.0, std::move(n));        // OK
+```
+
+(16.6.2.3) Otherwise, the initialization is ill-formed.
+(16.6.3) Otherwise (i.e., for the remaining copy-initialization cases), user-defined conversions that can convert from the source type to the destination type or (when a conversion function is used) to a derived class thereof are enumerated as described in [over.match.copy], and the best one is chosen through overload resolution ([over.match]). If the conversion cannot be done or is ambiguous, the initialization is ill-formed. The function selected is called with the initializer expression as its argument; if the function is a constructor, the call is a prvalue of the cv-unqualified version of the destination type whose result object is initialized by the constructor. The call is used to direct-initialize, according to the rules above, the object that is the destination of the copy-initialization.
+(16.7) Otherwise, if the source type is a (possibly cv-qualified) class type, conversion functions are considered. The applicable conversion functions are enumerated ([over.match.conv]), and the best one is chosen through overload resolution ([over.match]). The user-defined conversion so selected is called to convert the initializer expression into the object being initialized. If the conversion cannot be done or is ambiguous, the initialization is ill-formed.
+(16.8) Otherwise, if the initialization is direct-initialization, the source type is std​::​nullptr_t, and the destination type is bool, the initial value of the object being initialized is false.
+(16.9) Otherwise, the initial value of the object being initialized is the (possibly converted) value of the initializer expression. A standard conversion sequence ([conv]) is used to convert the initializer expression to a prvalue of the cv-unqualified version of the destination type; no user-defined conversions are considered. If the conversion cannot be done, the initialization is ill-formed. When initializing a bit-field with a value that it cannot represent, the resulting value of the bit-field is implementation-defined.
+[Note 8: An expression of type “cv1 T” can initialize an object of type “cv2 T” independently of the cv-qualifiers cv1 and cv2.
+

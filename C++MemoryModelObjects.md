@@ -564,6 +564,10 @@ Permitting aliasing via unions would wreck performance, as you would never know 
 
 # implicit objects creation
 
+# construction
+
+An object whose initialization has completed is deemed to be constructed, even if the object is of non-class type or no constructor of the object's class is invoked for the initialization. [Note 9: Such an object might have been value-initialized or initialized by aggregate initialization ([dcl.init.aggr]) or by an inherited constructor ([class.inhctor.init]). — end note]
+
 # non trival types
 
 The std::memcpy itself is perfectly well-defined (all it does is copy the

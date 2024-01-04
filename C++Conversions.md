@@ -82,6 +82,15 @@ The result of the expression reinterpret_cast<T>(v) is the result of converting 
 MAJOR:
  - allows explicit constructors to be called! 
 
+struct D : B {};
+
+struct M {
+  explicit M(B &d) { std::cout << "explicit constructor M()\n"; }
+};
+
+
+    M m1 = static_cast<M>(d); // explicit constructor is fine for static cast
+
 - Conversion of any pointer to pointer to void and back to pointer to the original(or more cv - qualified) type preserves its original value.
 
   this is totally fine Test t;
@@ -169,6 +178,8 @@ const volatile T* __p = ...
  ::new ((void *)__p) _Up(std::forward<_Args>(__args)...); //this works!, but static_cast / reinterpret_cast won't be able to work!
 
  ```
+
+ 
 
 
 

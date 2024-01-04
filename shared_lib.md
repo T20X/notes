@@ -16,3 +16,5 @@ So:
 
 __cxa_atexit() is not limited to 32 functions.
 __cxa_atexit() will call the destructor of the static of a dynamic library when this dynamic library is unloaded before the program exits.
+
+however linux seems to support a lot of slots for atexit and able to call it for shared libaries as well

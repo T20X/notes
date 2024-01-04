@@ -1,3 +1,9 @@
+
+# global allocation function
+
+- it is cannot allocate data for static objects, exceptions, thread-local objects
+- courutine state on the other hand gets allocted by global allocation function
+
 # dynamic memory
 
 Objects can be created dynamically during program execution, using new-expressions ([expr.new]), and destroyed using delete-expressions ([expr.delete]). A C++ implementation provides access to, and management of, dynamic storage via the global allocation functions operator new and operator new[] and the global deallocation functions operator delete and operator delete[].
