@@ -210,9 +210,9 @@ A value-initialized ForwardIterator behaves like the past-the-end iterator of so
 The elements of an unordered associative container are organized into buckets. Keys with the same hash code appear in the same bucket. The number of buckets is automatically increased as elements are added to an unordered associative container, so that the average number of elements per bucket is kept below a bound. Rehashing invalidates iterators, changes ordering between elements, and changes which buckets elements appear in, but does not invalidate pointers or references to elements. For unordered_multiset and unordered_multimap, rehashing preserves the relative ordering of equivalent elements
 
 
-(37)
+# std::unique
 
-unique (1)
+```
 template<class ForwardIt>
 ForwardIt unique(ForwardIt first, ForwardIt last)
 {
@@ -228,7 +228,10 @@ ForwardIt unique(ForwardIt first, ForwardIt last)
  
     return ++result;
 }
+```
+# iterators
 
+since a default-constructed container iterator is not associated with any particular container, there is no good value it could take. Therefore it is just an uninitialized variable and the only legal operation to do with it is to assign a valid iterator to it.
 
 
 # Don’t blindly prefer emplace_back to push_back
@@ -236,7 +239,7 @@ ForwardIt unique(ForwardIt first, ForwardIt last)
 In one of my recent training courses, a student informed me that both clang-tidy and PVS-Studio were complaining about some code of the form
 
 std::vector<Widget> widgets;
-~~~
+
 widgets.push_back(Widget(foo, bar, baz));
 Both tools flagged this line as “bad style.” clang-tidy even offered a (SARCASM ALERT) helpful fixit:
 
@@ -301,6 +304,7 @@ One reason is that emplace_back is more work for the compiler. push_back is an o
 ## std::less<>::operator()
 
 member type is_transparent indicates to the caller that this function object is a transparent function object: it accepts arguments of arbitrary types and uses perfect forwarding, which avoids unnecessary copying and conversion when the function object is used in heterogeneous context, or with rvalue arguments. In particular, template functions such as std::set::find and std::set::lower_bound make use of this member type on their Compare types
+
 ```
 std::less<>::operator()
 template< class T, class U >

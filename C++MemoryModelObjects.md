@@ -514,7 +514,7 @@ T* addressof( T& arg ) noexcept;
 ```
 
 Obtains the actual address of the object or function arg, even in presence of overloaded operator&
-
+The expression std::addressof(e) is a constant subexpression, if e is an lvalue constant subexpression
 
 ## std::pointer_traits
 
@@ -552,7 +552,7 @@ void* memcpy( void* dest, const void* src, std::size_t count );
 
      WARNING !!!! *If the objects are potentially-overlapping or not TriviallyCopyable, the behavior of memcpy is not specified and may be undefined.*
 
-
+IMPORTANT **note that it may not copy padding bits! as that is is unspecified!**
 
 
 int32_t x_representation;

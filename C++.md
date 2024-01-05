@@ -1494,12 +1494,17 @@ evaluation ends in throwing an exception
 (8) TEMPLATE CANNOT BE COPY CONSTRUCTOR! That is why when declaring template copy and assinge operators,
  also need to declare default ones as well!
 
-(9) std::shared_ptr<int> sp( new int[10], std::default_delete<int[]>() );
+
+# shared_ptr
+
+std::shared_ptr<int> sp( new int[10], std::default_delete<int[]>() );
 std::shared_ptr<std::array<int, 6>> ptr(
     std::make_shared<std::array<int, 6>>(std::array<int, 6>()));
 make_shared cannot be used with a custom deleter(10) std::string get_string() {
   return std::string();
 }
+
+IMPORTANT! **note that if during shared_ptr construction if an exception is thrown, the incoming pointer is deleted!**
 
 BOTH ARE NOT EQUAL std::string get_string() {
   return {}; // an empty string is returned

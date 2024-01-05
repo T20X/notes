@@ -195,3 +195,72 @@ constexpr containers downside
   bad design requires additional knowledge that cannot be deduced from the context
   ---------------------
   There is another, more fundamental reason, to avoid public virtual functions. A public method is a part of the class interface. Virtual function override is a customization of the implementation. A public virtual function inherently does both of these, at once. The same entity performs two very different functions that should not be coupled—declaring the public interface and providing an alternative implementation. Each of these functions have different constraints—the implementation can be altered in any way, as long as the hierarchy invariants hold. But the interface cannot be actually changed by the virtual function (except for returning covariant types, but even that does not really change the interface). All the public virtual function does is restate that yes, indeed, the public interface still looks like what the base class has declared. Such mixing of two very distinct roles calls for a better separation of concerns. The Template Method pattern is an answer to that design problem, and in C++, it takes the form of the Non-Virtual Interface (NVI).
+
+#How to develop generic component
+
+##  How to design it
+
+Generic components should be aware of move-only types.
+We are thread-compatible [res.on.data.races].
+Exceptions are used for error conditions (there are some exceptions).
+Do not gratuitously overload operators.
+Classes allocating memory get an allocator (inconsistently applied).
+Containers get allocators unless they don't allocate.
+Containers use allocator through allocator traits.
+Allocators are part of type unless there is already type-erasure for other reasons.
+const-correctness is observed and is used as a proxy for thread-safety in the standard library.
+Class signatures want to be near minimal (the obvious counter-example is std::basic_string).
+Destructors shall not throw.
+Things should be constexpr where reasonable.
+Avoid inheritance and virtual functions where possible.
+Prefer function objects (i.e., deduced templates) to function pointers.
+Types should be allowed to be different rather than assuming they are same.
+Generic components should take advantage of parameters with stronger concepts.
+When designing a class type, where possible it should be a "regular type" (to be defined), e.g., different objects are independent.
+Use std::addressof() to obtain addresses based on generic parameters.
+Prefer to specify nested types as a typedef for an unspecified or implementation-defined type, rather than as a class or enumeration type. This avoids over-constraining implementations.
+Do not use requires clauses or define new language-level concepts until the introduction (section 6) and fundamental concepts (section 7) from the Ranges TS have merged into the IS.
+
+
+## How We Code It
+Some very specific guidelines on coding conventions and use of language features in library component interfaces.
+
+Model-type for move-only type: std::unique_ptr.
+model-type for value type: std::vector.
+Bad example: std::vector<bool>.
+Names are all lower case separating words by underscores (except Init).
+Avoid abbreviations except for common words: _ptr, std, etc. (apply common sense).
+Everything is nested into std.
+Official names don't start with an underscore (only hidden names); exception: _1, _2, etc.
+No trailing underscores on names.
+Operators are overloaded where it is close to their original meaning.
+Do not overload unary address-of operator, nor the comma operator.
+Do not overload logical and operator, nor the logical or operator.
+Generic code should only assume == and < out of their respective group.
+Operators are preferred as non-member functions where there is a choice; inconsistently applied.
+Single argument callable constructors are explicit unless there is a good reason.
+Non-fundamental types are passed by const reference.
+Types passed by value: iterators, function objects (including predicates), built-in types.
+Complex objects are returned by value.
+Where there are output parameters the parameters are passed by reference, not by pointer.
+Exception specification: we try to use noexcept for wide contracts (Madrid paper), not dynamic-exception-specifications otherwise.
+The library will leave any rvalue argument in a valid but possibly unspecified state.
+When defining a type stronger guarantees for moved from objects can be given.
+Standard library headers don't use file suffixes.
+Provide a no-throw ADL swap() where possible.
+Have a member-swap().
+Containers can emplace() objects.
+Avoid macros as part of the interface (use, e.g., inline functions).
+Predicate type-traits derive from integral_constant.
+Identifiers come from the basic source character set.
+Don't use virtual destructors in non-polymorphic classes.
+Virtual functions are normally non-public.
+If there is a virtual function, the destructor is virtual.
+Exception types must inherit from std::exception or, preferably, from one of its existing derived types.
+You shouldn't have multiple inheritance for exception classes.
+If arguments can be deduced, use perfect forwarding;
+if arguments
+are part of the enclosing type provide the right set of
+    overloads(see std::vector<...>::emplace_back() vs.push_back())
+        .When possible build on existing low
+    - level library facilities rather than building new ones.

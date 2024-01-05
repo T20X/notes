@@ -181,7 +181,7 @@ Standard-layout types have the following special properties:
  Otherwise, if the braced-init-list has no elements, T is value-initialized.
 
 
-The implicitly-defined copy/move constructor for a non-union class X performs a memberwise copy/move of its bases and member, hence padding bits may not be coppied actually with =! However still not clear if memcpy preservers padding bits
+The implicitly-defined copy/move constructor for a non-union class X performs a memberwise copy/move of its bases and member, hence padding bits may not be coppied actually with =! However still not clear if memcpy preservers padding bits - normally GCC / clang do it, but there are bug reports when it does not happen!
 
 
 standart-layout types are not always trivally copybale and care needs to be taken when doing memcopy on them. The main point is that they can be used by C code as they got single access. If there are multi-access sections in a class than the compiler can re-order *sections* which won't work with C.
