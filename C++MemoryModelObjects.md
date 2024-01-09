@@ -666,6 +666,10 @@ X *make_x() {
   p->b = 2;
   return p;
 
+# std::initializer_list
+
+internally it storts const T objects and when it is passed to a function the variables are first copied to the stack before been copied to the called function!
+
 # objects partial re-use
 
 partial reuse of the object kills the host object, but not all of its subojects! only those re-used!

@@ -2,9 +2,24 @@
 
 the whole point is to track mid
 
+# heap
+
+binary heap 
+
+0 1 2----3----
+- P Left Right
+P = Pos / 2;
+Left = 2 * P;
+Right = 2 * P + 1
+
 # dynamic programming
 
 the whole point about dynamic programming is about assuming that for optimal solution , sub-problems are not optimal. If you come to he contradiction that the whole solutino is not optimal than it proves that sub-problem are indeed optimal! It is called cut-and-pate argument.
+
+## DP and recursive problem solving
+
+ For all people wondering how you'd solve this in an interview in 30 mins - this is a fairly easy DP problem. If you're confused its because the explanation jumps into the bottom-up DP solution without explaining how it got there. You can never figure out a bottom-up DP solution without first figuring out a top down recursive approach. If during the recursion you find you're solving the same sub-problem repeatedly ("overlapping sub-problems") - that's the first hint that its DP. Next, if you find that the optimal answer for the current sub-problem is formed from the optimal answer for the overlapping sub-problems, you now have found the optimal sub-structure. Its DP for sure. Typically problems involving finding the "longest/shortest/largest/smallest/maximal" of something have the optimal-substructure. For example if the shortest distance from A to D is A->B->C->D, then it follows that the shortest distance from B to D is B->C->D
+ 
 
 ## Max subarray problem - Kancande algorithms
 
@@ -82,10 +97,7 @@ template <class K> void union_set(DynamicSet<K> &S, const K &l, const K &r) {
  open hashing - probing
  closed hashing - chaining
 
-# DP and recursive problem solving
 
- For all people wondering how you'd solve this in an interview in 30 mins - this is a fairly easy DP problem. If you're confused its because the explanation jumps into the bottom-up DP solution without explaining how it got there. You can never figure out a bottom-up DP solution without first figuring out a top down recursive approach. If during the recursion you find you're solving the same sub-problem repeatedly ("overlapping sub-problems") - that's the first hint that its DP. Next, if you find that the optimal answer for the current sub-problem is formed from the optimal answer for the overlapping sub-problems, you now have found the optimal sub-structure. Its DP for sure. Typically problems involving finding the "longest/shortest/largest/smallest/maximal" of something have the optimal-substructure. For example if the shortest distance from A to D is A->B->C->D, then it follows that the shortest distance from B to D is B->C->D
- 
  # Dutch National Flag problem solution.
   
   void sortColors(vector<int>& nums) {
@@ -133,6 +145,10 @@ Bucket sort, or bin sort, is a sorting algorithm that works by distributing the 
 
 # Graphs
 
+Eulerian Path - is path through the graph where each edge can be visited exactly once (in-degree vertice count also must be even and be the number of out-degree vertice count, but starting and destination nodes may have odd and not equal in-andj-out degree vertice count)
+Eulerian Cycle - is a path through the grapth where each edge can be visited exactly once and the destination node would be the same as strting node! (in-degree vertice is equal to out-degree vertice count and the count is even)
+
+
 # DFS 
 
 DFS has parenthesees structure
@@ -148,11 +164,28 @@ if grapth is undricted then edges (u,v) and (v,u) are the same and their clasifi
 forward edge (u,v) connects u with its descendent v!
 cross edge (u,v) is not forward,back and tree edge and neither u neither v are ancestors of each other
 
-(1) DFS marks node as visited before considering other nodes.
+DFS marks node as visited before considering other nodes.
 
-# BFS
+there are no forward and cross edges in undirected graph run by DFS.
+
+rks node as visited before considering other nodes. BFS marks the node as visited only after considering other nodes
+
+## Other Algos
+
+Hopcroft�Karp algorithm -  is an algorithm that takes as input a bipartite graph and produces as output a maximum cardinality matching
+Edmonds�Karp algorithm
+Dinic's algorithm
+
+
+## Multigraph
+
+In mathematics, and more specifically in graph theory, a multigraph (in contrast to a simple graph) is a graph which is permitted to have multiple edges (also called parallel edges[1]), that is, edges that have the same end nodes. Thus two vertices may be connected by more than one edge.
+
+
+## BFS
 !!!!!!!!!!!!!!!!!IMPORTANT !!!!!!! BFS marks the node as visited right after it enques them!
 
+BFS is normally used with only one source vertex and runs once but DFS may be run many times from diffrent sources and is usually part of another algorithm.
 
 ## Dejkstra
 
@@ -221,23 +254,17 @@ function Dijkstra(Graph, source):
       return dist[]
   end function
 
-## BFS
-BFS is normally used with only one source vertex and runs once but DFS may be run many times from diffrent sources and is usually part of another algorithm.
 
-## Multigraph
 
-In mathematics, and more specifically in graph theory, a multigraph (in contrast to a simple graph) is a graph which is permitted to have multiple edges (also called parallel edges[1]), that is, edges that have the same end nodes. Thus two vertices may be connected by more than one edge.
 
 --------------------------------
-there are no forward and cross edges in undirected graph run by DFS.
+
 ----------------------
 lemma o rukopogatiyah - sum of all degrees for each node is 2 * E (edges)
 -----
 
-Eulerian Path - is path through the graph where each edge can be visited exactly once (in-degree vertice count also must be even and be the number of out-degree vertice count, but starting and destination nodes may have odd and not equal in-andj-out degree vertice count)
-Eulerian Cycle - is a path through the grapth where each edge can be visited exactly once and the destination node would be the same as strting node! (in-degree vertice is equal to out-degree vertice count and the count is even)
 
-------------------
+ # NP
 A major charactersictic of a search problem is that its solution can be easily verifyble
 
 NP - is problem for which a possible solution could be generated (gueesed from a number of possible polynominal solutions) in O(1) time (assuming non-deterministic machines exists)| and then verified in polynominal time. NP is biased towards YES in decision problems (YES/NO). For example 3SAT problem! Imagine if we had to go through all possible solutions, then we'd have N! possible solition candidates!
@@ -256,29 +283,21 @@ One of the most fundamental and important questions in computer science right no
 P         NP      (| NP-complete)  NP-hard
 nondetermentstic machine may guess the solution!
 
-----------------------
+
 A problem is intractable is you cannot gauarntee solving it in polynominal time
---------------
+
 To find shorted path in undirected graph, just make the edges directed both ways and run normal algo to fin one! works only on positive weight edges
-------------------------
+
+
 These changes to the position of the operator with respect to the operands create two new expression formats, prefix and postfix. Prefix expression notation requires that all operators precede the two operands that they work on. Postfix, on the other hand, requires that its operators come after the corresponding operands. A few more examples should help to make this a bit clearer (see Table 2).
 
 A + B * C would be written as + A * B C in prefix. The multiplication operator comes immediately before the operands B and C, denoting that * has precedence over +. The addition operator then appears before the A and the result of the multiplication.
 
 In postfix, the expression would be A B C * +. Again, the order of operations is preserved since the * appears immediately after the B and the C, denoting that * has precedence, with + coming after. Although the operators moved and now appear either before or after their respective operands, the order of the operands stayed exactly the same relative to one anothe
 --------------------------
-binary heap 
 
-0 1 2----3----
-- P Left Right
-P = Pos / 2;
-Left = 2 * P;
-Right = 2 * P + 1
 ----------------------------------
-Hopcroft�Karp algorithm -  is an algorithm that takes as input a bipartite graph and produces as output a maximum cardinality matching
-Edmonds�Karp algorithm
-Dinic's algorithm
-------------------
+
 
 To transpose a graph, use Breadth Width Search! DFS not going to work!
 -------------
@@ -287,9 +306,8 @@ bool operator<(const Solution::Position& left, const Solution::Position& right)
     return left.x < right.x || ((left.x == right.x) && left.y < right.y);
 }
 
----------------------
-Inplace merge of two sorted subarrays
----------
+# Inplace merge of two sorted subarrays
+
 void merge(int arr[], int start, int mid, int end) 
 { 
     int start2 = mid + 1; 
@@ -329,9 +347,10 @@ void merge(int arr[], int start, int mid, int end)
 --------------
 Greedy algorthim requrore local solution to be also globally optimal. It is always hard to prove that is the case.
 
---------------
-Sliding Window
---------------
+
+# Sliding Window
+
+
 (1)Fast/Slow - fast pointers greedly is trying to get the window by moving the front pointer. once condition is satified then the back pointer is catching up with the fast pointer one step a type to remove potentially not required items!
 Minimum Window Substring problem for example.
 (2) Fast/Catchup pointer  - keep moving the fast pointer as window condition keeps filling up and then once it is not longer valid jump the slow pointer right to it to catch up - Max consecutive Sum problem
@@ -343,9 +362,9 @@ Problem: Rainwater Problem
 
 
 
----------------------
-Selection algorithm
--------------------
+
+# Selection algorithm
+
   function select(list, left, right, k)
      if left = right        // If the list contains only one element,
          return list[left]  // return that element
@@ -359,14 +378,14 @@ Selection algorithm
          return select(list, left, pivotIndex - 1, k)
      else
          return select(list, pivotIndex + 1, right, k)
-----
-Graphs
----
-(1) DFS marks node as visited before considering other nodes. BFS marks the node as visited only after considering other nodes
 
--------
-Backtracking
--------
+# Graphs
+
+
+
+
+# Backtracking
+
 
     template <typename F>
     void backtrack_(int k, int n, std::vector<int>& input, const F& f)

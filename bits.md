@@ -1,3 +1,16 @@
+# integers
+
+2-complemantry format is been used officially
+
+note that max vals for signed numbers normally smaller that for min values as absolute
+
+for eample it is 127 for int8 and -128 for int8 min
+
+unsgiend numbers do wrap nicely, but note that max + 1 would be equal to 0, so you always use one on each wrap. For example max + max would be max - 1
+
+int sum = -total - that is a nifty trick to make the number negative instead of doing -1 * total
+
+
 # binary multiplication
 
 ![](images/asm/binary_multiplications.JPG)
