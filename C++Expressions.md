@@ -420,6 +420,11 @@ void f(const T v) {  //better mental mode is const (T) v
 
 f<int&>(a) // T = int&, v type = int& const is dropped as refrences are const by definition! 
 
+  int const &i10 = 3;
+  const int *const ptr = &i10; // ptr itself is const, that is what refrences are actually!
+  const int &const i11 = i10;// wont even compile because ref is const by definition
+
+
 ```
 
 - IMPORTANT: There is one way to make const T& refrence like though!
