@@ -1149,7 +1149,7 @@ Specifies that a type is a literal type. Literal types are the types of constexp
 
 # memset
 
-memset  will set padding bits to 0
+memset  will most likely set padding bits to 0, however that is unsepcified!
 
 # similar types
 

@@ -349,6 +349,12 @@ In C++14 you can also use auto sum(T a, Args... args) in order to get sum of mix
 
 # Concepts
 
+## requires expression expects "expression refrence"
+
+requires (T a) {
+  { a} -> int (not correct, shall be int&)
+}
+
 ## you can requries constraint even for type templated paramters like this!
 
 ```
@@ -600,50 +606,6 @@ std::identity is a function object type whose operator() returns its argument un
 Function template std::mem_fn generates wrapper objects for pointers to members, which can store, copy, and invoke a pointer to member. Both references and pointers (including smart pointers) to an object can be used when invoking a std::mem_fn.
 
 
-## decltype
-
-- Value category is just synonymous with the reference qualification on expression decltype-
-
-- no deduction inside decltype!
-  template<typename T> void f(decltype(*std::declval<T>()) arg);
-  not GONNA WORK!
-
-### variable decltype
-
-If E is an unparenthesized id-expression (e.g., x, s.field, S::field), then decltype(E) returns the exact type with which the variable, field, or non-type template parameter was declared, including an lvalue or rvalue reference if and only if the variable or field was declared as one. This is a bit like the lstat(2) system call, which is one of the few ways to differentiate between files and symbolic links in the file system.
-
-Let’s call this first calculation variable decltype, since it gives us the type with which a variable (or field) was declared.
-
-
-### expression decltype
-
-If E is anything else, including a parenthesized id-expression (e.g., (x), (s.field)), then C++ makes any reference in E’s type completely transparent and undetectable (think stat(2), not lstat). So decltype(E) takes the underlying, non-reference type T of E and decides whether to make it a reference as follows: If E is a prvalue, then decltype(E) is just T; if E is an lvalue, then decltype(E) is T&; and if E is an xvalue, then decltype(E) is T&&.
-
-Let’s call this second calculation expression decltype, or, to coin a clunky abbreviation, exprtype. Later on, I’ll provide an equivalent formulation that does not depend on value categories, in which case we can run the above rule backwards and say an expression E is a prvalue if decltype((E)) is a non-reference type T, an lvalue if decltype((E)) is T&, and an xvalue if decltype((E)) is T&&.
-
-Expression decltype -> decltype((E))
-E  expression of type T, and
-a) if the value category of expression is xvalue, then decltype yields T&&;
-b) if the value category of expression is lvalue, then decltype yields T&;
-c) if the value category of expression is prvalue, then decltype yields T.
-
-- Function calls, including overloaded operators, have exprtype identical to the function’s return type
-
-- Unlike other types, string literals, functions, and references to function always have an exprtype of lvalue reference.
-
-  E ->	decltype((E))
-  "hello" ->	const char(&)[6]
-  getpid ->	int(&)()
-  static_cast<int(&)()>(getpid)	-> int(&)()
-  std::move(getpid)	-> int(&)()
-
-### decltype(auto)
-
-decltype(auto) - is good for forwarding functions as if we want to deduce the return type for free and at the same time pass EXACT values.
-
-becuase forwarding refrences have the name they must be used with std::forward otherwise theyll be always treated like lvalues!
-To put it another way, the compiler can figure out which forward to call based on whether the input is an lvalue or rvalue, but that is unrelated to whether you want the desired output to be an lvalue or rvalue. The compiler knows the type of the input, but you need to explicitly tell it the type of the output, because they are not the same! Like complier could figure it out, BUT what if you want first to use that forwarding reference as lvalue first and then move from it in the end!
-like
 
 ## void_t
 

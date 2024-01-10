@@ -39,7 +39,9 @@ Only start coding after you and your interviewer have agreed on an approach and 
 - make sure problem is understood and some examples are presented
 - make sure constraints are clear, that may give some intel on what aglo / data structure to use to solve that problem
 - if they give an array, think if you can sort that array!
-- for recursive / dp solution you must optimize one kind of value!
+- for recursive / dp solution you must optimize one kind of value, so it is important to think what kind of value to choose
+    486. Predict the Winner
+
 
 ## Edge cases
 

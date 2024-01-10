@@ -27,7 +27,7 @@ expression evaluation -> ( side-effects & value)
 
  
 
-An expression is a sequence of operators and operands that specifies a computation.An expression can result in a value and can cause side effects The implementation can regroup operators according to the usual mathematical rules only where the operators really are associative or commutative
+An expression is a sequence of operators and operands that specifies a computation. An expression can result in a value and can cause side effects The implementation can regroup operators according to the usual mathematical rules only where the operators really are associative or commutative
 
 
 ## value computations
@@ -85,7 +85,7 @@ Once an rvalue has been bound to a name, it's an lvalue again, whether it's a wr
 
 references are not objects
 
-a refenrece is a basically a const pointer that gets dereferenced every time it refered to. a reference yields lvalue expression
+a refenrece is a basically a const pointer that gets dereferenced every time it refered to. a reference yields **lvalue expression**
 
 refenreces were made to make overloaded operators to work with class types . basically there is a need for something like a pointer but without explicitly taking its address
 
@@ -96,6 +96,7 @@ a reference to const T can bind to an expression x that's not an lvalue of type 
 rvalue refenreces bind only to rvalues or to plain values types
 rvalue refrences (type) bind only to rvalues
 
+```
 struct A { int& i; };
 struct A2 { int&& i; };
 inline int f2(int i) {return 2 * i;}
@@ -128,9 +129,9 @@ int main() {
         //temp which points to a02.i get its lifetime ended
     }
 
+```
+
 ## refrence coallasing
-
-
 
 typedef int&  lref;
 typedef int&& rref;
@@ -171,15 +172,18 @@ A reference to type “cv1 T1” is initialized by an expression of type “cv2 
   then the reference binds to the initializer expression lvalue in the first case and to the lvalue result of the conversion in the second case (or, in either case, to the appropriate base class subobject of the object).
   [Note 2: The usual lvalue-to-rvalue, array-to-pointer, and function-to-pointer standard conversions are not needed, and therefore are suppressed, when such direct bindings to lvalues are done. — end note]
   [Example 3:
+  ```
   double d = 2.0;
   double& rd = d;                 // rd refers to d
   const double& rcd = d;          // rcd refers to d
 
   struct A { };
   struct B : A { operator int&(); } b;
-  A& ra = b;                      // ra refers to A subobject in b
+  A& ra = b;                      // ra refers to A subobject in b, A& and B& are refrence-related
   const A& rca = b;               // rca refers to A subobject in b
   int& ir = B();                  // ir refers to the result of B​::​operator int&
+  ```
+
   — end example]
 (5.2)
 Otherwise, if the reference is an lvalue reference to a type that is not const-qualified or is volatile-qualified, the program is ill-formed.
@@ -196,6 +200,7 @@ is an rvalue (but not a bit-field) or function lvalue and “cv1 T1” is refere
 has a class type (i.e., T2 is a class type), where T1 is not reference-related to T2, and can be converted to an rvalue or function lvalue of type “cv3 T3”, where “cv1 T1” is reference-compatible with “cv3 T3” (see [over.match.ref]),
 then the initializer expression in the first case and the converted expression in the second case is called the converted initializer. If the converted initializer is a prvalue, its type T4 is adjusted to type “cv1 T4” ([conv.qual]) and the temporary materialization conversion ([conv.rval]) is applied. In any case, the reference binds to the resulting glvalue (or to an appropriate base class subobject).
 [Example 5:
+```
 struct A { };
 struct B : A { } b;
 extern B f();
@@ -208,7 +213,9 @@ struct X {
 const A& r = x;                     // binds to the A subobject of the result of the conversion
 int i2 = 42;
 int&& rri = static_cast<int&&>(i2); // binds directly to i2
-B&& rrb = x;                        // binds directly to the result of operator B
+B&& rrb = x;                        // binds directly to 
+```
+the result of operator B
 — end example]
 (5.4)
 Otherwise:
@@ -216,11 +223,11 @@ Otherwise:
 If T1 or T2 is a class type and T1 is not reference-related to T2, user-defined conversions are considered using the rules for copy-initialization of an object of type “cv1 T1” by user-defined conversion ([dcl.init], [over.match.copy], [over.match.conv]); the program is ill-formed if the corresponding non-reference copy-initialization would be ill-formed. The result of the call to the conversion function, as described for the non-reference copy-initialization, is then used to direct-initialize the reference. For this direct-initialization, user-defined conversions are not considered.
 (5.4.2)
 Otherwise, the initializer expression is implicitly converted to a prvalue of type “T1”. The temporary materialization conversion is applied, considering the type of the prvalue to be “cv1 T1”, and the reference is bound to the result.
-If T1 is reference-related to T2:
+**If T1 is reference-related to T2:
 (5.4.3)
-cv1 shall be the same cv-qualification as, or greater cv-qualification than, cv2; and
+cv1 shall be the same cv-qualification as, or greater cv-qualification than, cv2; and**
 (5.4.4)
-if the reference is an rvalue reference, the initializer expression shall not be an lvalue.
+**if the reference is an rvalue reference, the initializer expression shall not be an lvalue.**
 [Note 3: This can be affected by whether the initializer expression is move-eligible ([expr.prim.id.unqual]). — end note]
 [Example 6:
 struct Banana { };
@@ -270,6 +277,9 @@ value category is just synonymous with the reference qualification on expression
 Each C++ expression(an operator with its operands, a literal, a variable name, etc.) is characterized by two independent properties : a type and a value category.Each expression has some non-reference type, and each expression belongs to exactly one of the three primary value categories : prvalue, xvalue, and lvalue.
 
 
+const T& can be initialized from any value category, but overload resolution will prefer T&& over const T& for rvalues if there are functions accepting both. (This is why copy constructors can fill the role of a missing move constructor.)
+
+
 ## glvalue
 
 Formal Definition: A glvalue is an expression whose evaluation determines the identity of an object or function.
@@ -287,6 +297,10 @@ When you write “auto s = std::string("hello world");”, the cast expression s
 
 Compilers try to defer “materializing” prvalues as long as possible to avoid unnecessary moves and copies, particularly when handling function return values. A prvalue must eventually be materialized even if its value is discarded, however, so deferring materialization can elide only copy and move constructors, not other constructors.
 
+Also non-class rvalues are not meant to occupy the stroage and hence have address
+const int MAX = 100 //complier will avoid generating storage even for const objects, unless its address is erquired somehwere!
+&MAX//oh now itis address is required so now MAX needs storage
+
 
 ## xvalue
 
@@ -296,7 +310,7 @@ An xvalue (“expiring glvalue”) is a glvalue whose value will soon not matter
 
 ## lvalue
 
- An lvalue is a glvalue that is not an xvalue.
+ An lvalue is a glvalue that is not an xvalue. derefrencing pointer or taking address generates lvalue!
 
 ## rvalue
  An rvalue is a prvalue or an xvalue.
@@ -389,7 +403,7 @@ Guideline: Do not assume that “rvalues are short-lived,” nor that “everyth
 
 Value category is not lifetime.
 
-## const
+## const can be dropped
 
 
 A const T is a object of type T whose value cannot be modified. However, when T is a reference type, the const modifier is superfluous since references cannot be changed once initialized - they always refer to the same object. Thus, a const T when T=int& (it is kind of to say const (int&) - you see it looks as int& is const now , not int...)is just a T(which in this case is int&). 
@@ -404,7 +418,7 @@ template <class T>
 void f(const T v) {  //better mental mode is const (T) v
 }
 
-f<int&>(a) // T = int&, const is dropped as refrences are const by definition! 
+f<int&>(a) // T = int&, v type = int& const is dropped as refrences are const by definition! 
 
 ```
 
@@ -1242,4 +1256,106 @@ A a5(1.0, std::move(n));        // OK
 (16.8) Otherwise, if the initialization is direct-initialization, the source type is std​::​nullptr_t, and the destination type is bool, the initial value of the object being initialized is false.
 (16.9) Otherwise, the initial value of the object being initialized is the (possibly converted) value of the initializer expression. A standard conversion sequence ([conv]) is used to convert the initializer expression to a prvalue of the cv-unqualified version of the destination type; no user-defined conversions are considered. If the conversion cannot be done, the initialization is ill-formed. When initializing a bit-field with a value that it cannot represent, the resulting value of the bit-field is implementation-defined.
 [Note 8: An expression of type “cv1 T” can initialize an object of type “cv2 T” independently of the cv-qualifiers cv1 and cv2.
+
+# conditional operator
+
+ Conditional operator[expr.cond]
+conditional-expression:
+	logical-or-expression
+	logical-or-expression ? expression : assignment-expression
+
+ The first expression is contextually converted to bool. It is evaluated and if it is true, the result of the conditional expression is the value of the second expression, otherwise that of the third expression. Only one of the second and third expressions is evaluated. The first expression is sequenced before the second or third expression
+
+ 
+## decltype
+
+- Value category is just synonymous with the reference qualification on expression decltype-
+
+- no deduction inside decltype!
+  template<typename T> void f(decltype(*std::declval<T>()) arg);
+  not GONNA WORK!
+
+IMPORTANT: **Not working on s.method, s.*method_ptr, p->method, p->*method_ptr)
+
+decltype-specifier:
+	decltype ( expression )
+
+For an expression E, the type denoted by decltype(E) is defined as follows:
+(1.1) if E is an unparenthesized id-expression naming a structured binding ([dcl.struct.bind]), decltype(E) is the referenced type as given in the specification of the structured binding declaration;
+(1.2) otherwise, if E is an unparenthesized id-expression naming a non-type template-parameter, decltype(E) is the type of the template-parameter after performing any necessary type deduction ([dcl.spec.auto], [dcl.type.class.deduct]);
+(1.3) otherwise, if E is an unparenthesized id-expression or an unparenthesized class member access ([expr.ref]), decltype(E) is the type of the entity named by E. If there is no such entity, or if E names a set of overloaded functions, the program is ill-formed;
+(1.4) otherwise, if E is an xvalue, decltype(E) is T&&, where T is the type of E;
+(1.5) otherwise, if E is an lvalue, decltype(E) is T&, where T is the type of E;
+(1.6) otherwise, decltype(E) is the type of E.
+The operand of the decltype specifier is an unevaluated operand.
+[ Example:
+```
+const int&& foo();
+int i;
+struct A { double x; };
+const A* a = new A();
+decltype(foo()) x1 = 17;        // type is const int&&
+decltype(i) x2;                 // type is int
+decltype(a->x) x3;              // type is double
+decltype((a->x)) x4 = x3;       // type is const double&
+```
+— end example ] [ Note: The rules for determining types involving decltype(auto) are specified in [dcl.spec.auto]. — end note ]
+
+  
+
+### variable decltype
+
+If E is an unparenthesized id-expression (e.g., x, s.field, S::field), then decltype(E) returns the exact type with which the variable, field, or non-type template parameter was declared, including an lvalue or rvalue reference if and only if the variable or field was declared as one. This is a bit like the lstat(2) system call, which is one of the few ways to differentiate between files and symbolic links in the file system.
+
+Let’s call this first calculation variable decltype, since it gives us the type with which a variable (or field) was declared.
+
+
+### expression decltype
+
+expression decltypes of built-in operators are analogous to the return types of overloaded operators
+
+If E is anything else, including a parenthesized id-expression (e.g., (x), (s.field)), then C++ makes any reference in E’s type completely transparent and undetectable (think stat(2), not lstat). So decltype(E) takes the underlying, non-reference type T of E and decides whether to make it a reference as follows: If E is a prvalue, then decltype(E) is just T; if E is an lvalue, then decltype(E) is T&; and if E is an xvalue, then decltype(E) is T&&.
+
+Let’s call this second calculation expression decltype, or, to coin a clunky abbreviation, exprtype. Later on, I’ll provide an equivalent formulation that does not depend on value categories, in which case we can run the above rule backwards and say an expression E is a prvalue if decltype((E)) is a non-reference type T, an lvalue if decltype((E)) is T&, and an xvalue if decltype((E)) is T&&.
+
+Expression decltype -> decltype((E))
+E  expression of type T, and
+a) if the value category of expression is xvalue, then decltype yields T&&;
+b) if the value category of expression is lvalue, then decltype yields T&;
+c) if the value category of expression is prvalue, then decltype yields T.
+
+- Function calls, including overloaded operators, have exprtype identical to the function’s return type
+
+- Unlike other types, string literals, functions, and references to function always have an exprtype of lvalue reference.
+
+  E ->	decltype((E))
+  "hello" ->	const char(&)[6]
+  getpid ->	int(&)()
+  static_cast<int(&)()>(getpid)	-> int(&)()
+  std::move(getpid)	-> int(&)()
+
+### decltype(auto)
+
+decltype(auto) - is good for forwarding functions as if we want to deduce the return type for free and at the same time pass EXACT values.
+
+becuase forwarding refrences have the name they must be used with std::forward otherwise theyll be always treated like lvalues!
+To put it another way, the compiler can figure out which forward to call based on whether the input is an lvalue or rvalue, but that is unrelated to whether you want the desired output to be an lvalue or rvalue. The compiler knows the type of the input, but you need to explicitly tell it the type of the output, because they are not the same! Like complier could figure it out, BUT what if you want first to use that forwarding reference as lvalue first and then move from it in the end!
+like
+
+
+# built-int operators
+
+freiend is a way to extended the public interface without breaking encapsulation
+
+**if you make friend functions private they would be found through ADL and won't polute class inteface!**
+
+As described by Herb Sutter and Scott Meyers, prefer non-friend non-member functions to member functions, to help increase encapsulation
+
+## operator+()
+take paramters by lvalue / rvalue.  **always returns prvalue**!
+
+## >>, << >> operators
+
+better define as friend function inside class scope so that it is nicely composable. 
+
 

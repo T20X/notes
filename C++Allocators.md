@@ -97,6 +97,22 @@ the idea is to keep std::allocator as lean as possible and than add any other ex
 https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2022/p2652r0.html
 p2652r0
 
+## std::allocator_traits<Alloc>::select_on_container_copy_construction
+
+```
+static constexpr Alloc select_on_container_copy_construction( const Alloc& a );
+```
+
+If possible, obtains the copy-constructed version of the allocator a, by calling a.select_on_container_copy_construction(). If the above is not possible (e.g. Alloc does not have the member function select_on_container_copy_construction()), then returns a, unmodified.
+
+This function is called by the copy constructors of all standard library containers. It allows the allocator used by the constructor's argument to become aware that the container is being copied and modify state if necessary.
+
+vector calls this for example
+
+```
+_Alloc_traits::_S_select_on_copy(__x._M_get_Tp_allocator()))
+```
+
 # allocator
 
 An implementation is allowed to omit a call to a replaceable global allocation function ([new.delete.single], [new.delete.array]). When it does so, the storage is instead provided by the implementation or provided by extending the allocation of another new-expression.
