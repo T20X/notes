@@ -150,6 +150,7 @@ does not exist!
 
 ## you can have reference to functions as well
 
+```
 void Foo() {}
 
 int main()
@@ -157,6 +158,7 @@ int main()
     void(& func)() = Foo;
     func(); //::Foo();
 }
+```
 
 ## reference compatibility
 
@@ -230,6 +232,7 @@ cv1 shall be the same cv-qualification as, or greater cv-qualification than, cv2
 **if the reference is an rvalue reference, the initializer expression shall not be an lvalue.**
 [Note 3: This can be affected by whether the initializer expression is move-eligible ([expr.prim.id.unqual]). — end note]
 [Example 6:
+```
 struct Banana { };
 struct Enigma { operator const Banana(); };
 struct Alaska { operator Banana&(); };
@@ -253,6 +256,8 @@ struct X { operator int&(); };
 int&& rri2 = X();                   // error: result of conversion function is lvalue of related type
 int i3 = 2;
 double&& rrd3 = i3;                 // rrd3 refers to temporary with value 2.0
+```
+
 — end example]
 In all cases except the last (i.e., implicitly converting the initializer expression to the referenced type), the reference is said to bind directly to the initializer expression.
 
@@ -462,6 +467,7 @@ Note that when binding a prvalue to a reference, it must be materialized into a 
 
  - Return value optimization won't kick in and the value would be moved in the best case
 
+```
 auto f() {
   if (..) {
     return A();
@@ -469,6 +475,7 @@ auto f() {
     return A();
   }
 }
+```
 
 - no move from const
   const A v;

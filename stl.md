@@ -2,6 +2,19 @@
 
 ‘input_iterator‘ maynotbecopyable
 
+note that ideally if you create custom iterator, than you shall inherit from std::iterator like this
+
+```
+    class iterator : public std::iterator<
+                                std::input_iterator_tag, // iterator_category
+                                long,                    // value_type
+                                long,                    // difference_type
+                                const long*,             // pointer
+                                long                     // reference
+                            > 
+
+```
+
 # storing nont moveable / noncopyable types in containers
 
 std::vector<std::mutex> v; // WON'T WORK!

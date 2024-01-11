@@ -1200,9 +1200,20 @@ f(p); // P = const T*, A = int*:
       // deduced T = int, deduced A = const int*
       // qualification conversion applies (from int* to const int*)
 
+## function template deuduction
 
-      
-      
+```
+template <class T..., class V...>
+void f(T... t, V... v) 
+```   
+
+matching would be happen right ot left
+V... would be auto deducted, but T... must be manually specified
+
+f(1,2) //T - empty, V = {int,int}
+f<int>(1,2) //T = {int} , V = {int}
+
+
 # Substitution
 
 Function template parameters are substituted (replaced by template arguments) twice:

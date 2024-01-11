@@ -681,7 +681,9 @@ weak cas compare is the same as strong cas compare on x86! because on x86 strong
 
 gcc / clang on x86-64 Linux do use lock cmpxchg16b if available, but gcc7 and later still return false for is_lock_free even though technically it is; but pure-loads and pure-stores are slow and pure loads contend with each other
 
-However - a lot of professional implementations of lockfree algorithms (such as Boost.Lockfree) don't actually use double-word CAS - instead they rely on single-word CAS and opt to use non-portable pointer-stuffing shenanigans. Since x86_64 architectures only use the first 48 bits of a pointer, you can use the hi 16-bits to stuff in a counte
+However - a lot of professional implementations of lockfree algorithms (such as Boost.Lockfree) don't actually use double-word CAS - instead they rely on single-word CAS and opt to use non-portable pointer-stuffing shenanigans. Since x86_64 architectures only use the first 48 bits of a pointer, you can use the hi 16-bits to stuff in a counter. Note that new Intel processors now want 57 bits for addressing! also you can use some lower bits depending how pointer is alianged! If it is alinged by 2 bytes, LSB bit is all yours. YOU MUST BE AWARE THAT YOU MUST KEEP CANONICAL FORM of these pointers if you want to derefrence them as this what CPU requires! Also note that most OSs allocate first half of memory to user-space and the upperhalf to Kernel so taht 48th / 57th bit is yours as well.
+
+https://stackoverflow.com/questions/16198700/using-the-extra-16-bits-in-64-bit-pointers
 
 # ARM
 
