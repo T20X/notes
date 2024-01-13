@@ -1133,18 +1133,7 @@ no user-provided, inherited, or explicit constructors (explicitly defaulted or d
 no virtual, private, or protected (since C++17) base classes
 no virtual member functions
 
-# literal type
 
-A literal type is one whose layout can be determined at compile time. The following are the literal types:
-
-void
-scalar types
-references
-Arrays of void, scalar types or references
-A class that has a constexpr destructor, and one or more constexpr constructors that are not move or copy constructors. Additionally, all its non-static data members and base classes must be literal types and **not volatile**.
-
-
-Specifies that a type is a literal type. Literal types are the types of constexpr variables and they can be constructed, manipulated, and returned from constexmemset pr functions.
 
 
 # memset

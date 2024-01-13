@@ -39,6 +39,13 @@
       "kMaxCpus should be a power of two so modulo is fast")
 ```
 
+
+# performance pitfalls
+
+## stdring move consturcot
+
+std::string's move constructor is actually pretty expensive: it has several branches to handle SSO, and copies 24 or 32 bytes per stack frame depending on which stdlib implementation you're using
+
 # code tricks
 
 ## prefetch

@@ -21,14 +21,122 @@ These collectively are referred to as the observable behavior of the program.
 [Note 2: More stringent correspondences between abstract and actual semantics can be defined by each implementation. — end note]
 6) This provision is sometimes called the “as-if” rule, because an implementation is free to disregard any requirement of this document as long as the result is as if the requirement had been obeyed, as far as can be determined from the observable behavior of the program. For instance, an actual implementation need not evaluate part of an expression if it can deduce that its value is not used and that no side effects affecting the observable behavior of the program are produced.
 
+# declarations
+
+Declarations are how names are introduced (or re-introduced) into the C++ program. Not all declarations actually declare anything, and each kind of entity is declared differently. Definitions are declarations that are sufficient to use the entity identified by the name.
+
+https://en.cppreference.com/w/cpp/language/declarations
+
+
+When a block-declaration appears inside a block, and an identifier introduced by a declaration was previously declared in an outer block, the outer declaration is hidden for the remainder of the block
+
+simple declarations -> attr decl-specifier-seq (pretty much type with const /volatile/const/ constexpr etc) ) [decorator](#decorator) list
+
+An instance of each object with automatic storage duration is associated with each entry into its block. Such an object exists and retains its last-stored value during the execution of the block and while the block is suspended (by a call of a function, suspension of a coroutine ([expr.await]), or receipt of a signal).
+
+## decorator
+
+Each declarator introduces exactly **one** object, reference, function, or (for typedef declarations) type alias, whose type is provided by decl-specifier-seq and optionally modified by operators such as & (reference to) or [] (array of) or () (function returning) in the declarator. These operators can be applied recursively, as shown below. Note that apart from variable name it can contain refrences and pointers as well initiazlizator
+
+
 # Expression
 
-expression evaluation -> ( side-effects & value)
+expression evaluation -> ( side-effects & value) 
 
- 
+An expression is a sequence of operators and operands that specifies a computation. An expression can result in a value and can cause side effects The implementation can regroup operators according to the usual mathematical rules only where the operators really are associative or commutative.
+Expression evaluation may produce a result (e.g., evaluation of 2 + 2 produces the result 4) and may generate side-effects (e.g. evaluation of std::printf("%d", 4) prints the character '4' on the standard output).
 
-An expression is a sequence of operators and operands that specifies a computation. An expression can result in a value and can cause side effects The implementation can regroup operators according to the usual mathematical rules only where the operators really are associative or commutative
+Each C++ expression is characterized by two independent properties: A type and a value cat
 
+The operands of any operator may be other expressions or  [primary expression](#primary-expression)  (e.g. in 1 + 2 * 3, the operands of operator+ are the subexpression 2 * 3 and the primary expression 1).
+
+
+## expression statement
+
+An expression statement is an expression followed by a semicolon.
+
+attr ﻿(optional) expression ﻿(optional) ;		
+attr	-	(since C++11) optional sequence of any number of attributes
+expression	-	an expression
+Most statements in a typical C++ program are expression statements, such as assignments or function cal
+
+## primary expression
+
+A primary-expression is not necessarily atomic, evaluated first, top-level, more important than other expressions , or anything like that . And all expressions are "building blocks" because any expression can be added to to form a larger expression
+
+It refers to the way that operands are grouped with operators, not the order in which subexpressions are executed. In the case of f() + ([]{int n, t1 = 0, t2 = 1, nextTerm = 0; cout << "Enter the number of terms: ";.... etc. etc. , the f() may or may not be called before the lambda is called. The parentheses around the lambda do not cause it to be evaluated first
+
+
+Primary expressions are any of the following:
+
+this
+literals (e.g. 2 or "Hello, world")
+id-expressions, including
+suitably declared unqualified identifiers (e.g. n or cout),
+suitably declared qualified identifiers (e.g. std::string::npos), and
+identifiers to be declared in declarators
+lambda-expressions
+fold-expressions
+requires-expressions
+
+Any expression in parentheses is also classified as a primary expression: this guarantees that the parentheses have higher precedence than any operator. Parentheses preserve value, type, and value category
+
+## subexpression
+
+The immediate subexpressions of an expression E are
+(3.1) the constituent expressions of E's operands ([expr.prop]) (say function paramaters)
+(3.2) any function call that E implicitly invokes,
+(3.3) if E is a lambda-expression ([expr.prim.lambda]), the initialization of the entities captured by copy and the constituent expressions of the initializer of the init-captures,
+(3.4) if E is a function call or implicitly invokes a function, the constituent expressions of each default argument ([dcl.fct.default]) used in the call, or
+(3.5) if E creates an aggregate object ([dcl.init.aggr]), the constituent expressions of each default member initializer ([class.mem]) used in the initialization.
+
+**void func(){
+  Test t{} // implicitly invoke the defautl constructor of `Test`
+  // would implicitly  invoke the destructor of `Test`
+}
+the expression func() does not implicitly invoke anything. Functions that are invoked in the body of func() don't count. The point about implicit invocations includes such things as the destructors of temporaries at the end of a full-expression, constructors called to materialize temporary objects, constructors and conversion operators invoked by implicit conversions required by an expression, and so on**
+
+
+(3.5) if E creates an aggregate object ([dcl.init.aggr]), the constituent expressions of each default member initializer ([class.mem]) used in the initialization.
+
+
+A subexpression of an expression E is an immediate subexpression of E or a subexpression of an immediate subexpression of E. Note that expressions appearing in the 'function body' of lambda expressions are not subexpressions of the lambda expression
+
+
+
+## full expression
+
+A full-expression is
+(5.1) an unevaluated operand,
+(5.2) a constant-expression ([expr.const]),
+(5.3) an immediate invocation ([expr.const]),
+(5.4) **an init-declarator ([dcl.decl]) or a mem-initializer ([class.base.init]), including the constituent expressions of the initializer**
+(5.5) an invocation of a destructor generated at the end of the lifetime of an object other than a temporary object ([class.temporary]) **whose lifetime has not been extended**(***this means that if lifetime of temporary not extend, it is part of full epxression in which temporary was created***), or
+(5.6) an expression that is not a subexpression of another expression and that is not otherwise part of a full-expression.
+
+If a language construct is defined to produce an implicit call of a function, a use of the language construct is considered to be an expression for the purposes of this definition. Conversions applied to the result of an expression in order to satisfy the requirements of the language construct in which the expression appears are also considered to be part of the full-expression. For an initializer, performing the initialization of the entity (including evaluating default member initializers of an aggregate) is also considered part of the full-expression.
+[Example 2: 
+
+```
+struct S {
+  S(int i): I(i) { }            // full-expression is initialization of I
+  int& v() { return I; }
+  ~S() noexcept(false) { }
+private:
+  int I;
+};
+
+S s1(1);                        // full-expression comprises call of S​::​S(int)
+void f() {
+  S s2 = 2;                     // full-expression comprises call of S​::​S(int)
+  if (S(3).v())                 // full-expression includes lvalue-to-rvalue and int to bool conversions,
+                                // performed before temporary is deleted at end of full-expression
+  { }
+  bool b = noexcept(S(4));      // exception specification of destructor of S considered for noexcept
+
+  // full-expression is destruction of s2 at end of block
+}
+```
 
 ## value computations
 
@@ -80,6 +188,17 @@ The sequencing constraints on the execution of the called function (as described
 
 Once an rvalue has been bound to a name, it's an lvalue again, whether it's a wrapping type as std::tuple or rvalue references or a plain rvalue reference.
 
+
+# function call
+
+A function call is a postfix expression followed by parentheses containing a possibly empty, comma-separated list of initializer-clauses which constitute the arguments to the function
+
+Calling a function through an expression whose function type E is different from the function type F of the called function's definition results in undefined behavior unless the type “pointer to F” can be converted to the type “pointer to E” via a function pointer conversion
+
+A function call is an lvalue if the result type is an lvalue reference type or an rvalue reference to function type, an xvalue if the result type is an rvalue reference to object type, and a prvalue otherwise
+
+
+It is implementation-defined whether the lifetime of a parameter ends when the function in which it is defined returns or at the end of the enclosing full-expression. The initialization and destruction of each parameter occurs within the context of the calling function
 
 # Refenrece
 
@@ -763,9 +882,24 @@ int c        = bar(42);  // OK
 
 
 
-# Unevaluated expressions
 
-The operands of the operators typeid, sizeof, noexcept, and decltype (since C++11) are expressions that are not evaluated (unless they are polymorphic glvalues and are the operands of typeid), since these operators only query the compile-time properties of their operands. Thus, std::size_t n = sizeof(std::cout << 42); does not perform console output
+# consteval 
+
+specifies that a function is an immediate function, that is, every call to the function must produce a compile-time constant
+
+# literal type
+
+A literal type is one whose layout can be determined at compile time. The following are the literal types:
+Literals are the tokens of a C++ program that represent constant values embedded in the source code
+
+void
+scalar types
+references
+Arrays of void, scalar types or references
+A class that has a constexpr destructor, and one or more constexpr constructors that are not move or copy constructors. Additionally, all its non-static data members and base classes must be literal types and **not volatile**.
+
+
+Specifies that a type is a literal type. Literal types are the types of constexpr variables and they can be constructed, manipulated, and returned from constexmemset pr functions.
 
 
 # implicit conversions
