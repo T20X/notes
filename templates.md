@@ -702,6 +702,15 @@ using index_sequence_for = std::make_index_sequence<sizeof...(T)>;
 ```
 
 
+### unroll index sequence with lambda
+
+
+```
+ return []<std::size_t... I>(std::index_sequence<I...>) {
+        return (type_and_char_match<P>(S.sv()[I]) and ...);
+    }(std::make_index_sequence<sizeof...(P)>{});
+```
+
 ### array into tuple
 ```
 // convert array into a tuple

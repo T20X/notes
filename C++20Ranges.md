@@ -114,9 +114,9 @@ in the end **drop_view** is created which would contain the Range adapted with r
 
 ## now all range view algorthms support pipes!
 
-operator| is only provided for those algorithms for which the first argument is a range and the result is a range.
+operator| is only provided for those algorithms for which the first argument is a range and the result is a view.
 
-transform, filter, take, etc., are all algorithms that take a range and return a range. More specifically, they take a viewable_range and return a view.
+transform, filter, take, etc., are all algorithms that take a range and return a view. More specifically, they take a viewable_range and return a view.
 
 But for all the other algorithms - max, find_if, any_of, etc. - that don't return a range, there is no | alternative to them. So this:
 

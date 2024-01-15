@@ -2,18 +2,37 @@
 
 ‘input_iterator‘ maynotbecopyable
 
-note that ideally if you create custom iterator, than you shall inherit from std::iterator like this
+std::iterator used to define your own iterator has been deprecated now!
+
+A value-initialized LegacyForwardIterator behaves like the past-the-end iterator of some unspecified empty container. Value-initialised iterators can only be compared to other value-initialised iterators.
+
+
+The solution is to recognize the validity of null iterators by allowing value-initialized forward iterators to be compared, and ensuring that all value-initialized iterators for a particular container type compare equal. The result of comparing a value-initialized iterator to an iterator with a non-singular value is undefined
+
+this is undefined behaviour btw:
 
 ```
-    class iterator : public std::iterator<
-                                std::input_iterator_tag, // iterator_category
-                                long,                    // value_type
-                                long,                    // difference_type
-                                const long*,             // pointer
-                                long                     // reference
-                            > 
+std::vector<int> x{1,2,3};
+std::vector<int>::iterator it{};
+bool result = x.begin() != it;
+```
+
+this is fine!
 
 ```
+it == it //True!
+```
+
+C++20 changed iterators a bit by adding new iterator concepts.
+Changes:
+- Unlike the LegacyInputIterator requirements, the input_iterator concept does not require equality_comparable, since input iterators are typically compared with sentinels.
+- ForwardIterators are not comparable and neither default construcbale!
+- Unlike the LegacyForwardIterator requirements, the forward_iterator concept does not require dereference to return a reference.
+- Unlike the LegacyBidirectionalIterator requirements, the bidirectional_iterator concept does not require dereference to return an lvalue.
+
+Although currently stl containers use both iterator constainrs: legacy iterators and new C++20 iterator concepts
+For example here is iterator definitoin in vector: LegacyRandomAccessIterator, contiguous_iterator, and ConstexprIterator to value_type
+
 
 # storing nont moveable / noncopyable types in containers
 

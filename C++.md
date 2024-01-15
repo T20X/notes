@@ -1,4 +1,8 @@
 ﻿
+# tuple,pair,variant
+
+they are not trivialy copyable, variant is!
+
 # array
 
 arrays cannot be copied, this is not valid

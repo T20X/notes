@@ -212,6 +212,20 @@ extern "C" {
 
 # data structures
 
+## vector like
+
+### stable_vector
+
+Each element is stored in its own separate node. All the nodes are referenced from a contiguous array of pointers, but also every node contains an "up" pointer referring back to the associated array cell. This up pointer is the key element to implementing stability and random accessibility:
+
+Iterators point to the nodes rather than to the pointer array. This ensures stability, as it is only the pointer array that needs to be shifted or relocated upon insertion or deletion. Random access operations can be implemented by using the pointer array as a convenient intermediate zone
+
+### devector
+devector is a hybrid of the standard vector and deque containers originally written by Thaler Benedek. It offers cheap (amortized constant time) insertion at both the front and back ends, while also providing the regular features of vector, in particular the contiguous underlying memory.
+
+Unlike vector, devector can have free capacity both before and after the elements. This enables efficient implementation of methods that modify the devector at the front. In general, devector's available methods are a superset of those of vector with similar behaviour, barring a couple of iterator invalidation guarantees that differ.
+
+
 ## Linked lists
 
 ### Unrolled linked lists
@@ -231,4 +245,14 @@ When doing data filtering, first you are filling your linked list with data, and
 In this particular case ordering of values doesn’t change if we remove other values. If we use std::vector to store our data, we can get rid of the next pointer, saving some space but also increasing the data cache hit rate. We can store information about used and freed values in a bitset. Each bit in a bitset corresponds to a value: if the bit set the value is present, otherwise it is left out.
 
 Similarly, for a linked list backed by a vector, we can perform a compact operation to get rid of the gaps and make the memory access more data cache-friendly, after we have performed a sufficient number of element removal.
+
+# how things work
+
+## switch statements
+
+gcc employs when compiling switch statements, including:
+
+Compressing multiple case labels into a bitset.
+Transforming the switch statement into a jump table.
+Transforming the switch statement into a binary decision tree
 

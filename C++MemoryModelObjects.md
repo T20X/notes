@@ -58,19 +58,6 @@ object creation could be clarified in general.
 ## destroyed
 how is that defined?
 
-# std::byte
-
-A numeric value n can be converted to a byte value using std::byte{n}, due to C++17 relaxed enum class initialization rules.
-
-A byte can be converted to a numeric value (such as to produce an integer hash of an object) the usual way with an explicit conversion or alternatively with std::to_integer.
-
-std::byte is a distinct type that implements the concept of byte as specified in the C++ language definition.
-
-Like unsigned char, it can be used to access raw memory occupied by other objects (object representation), but unlike unsigned char, it is not a character type and is not an arithmetic type. std::byte models a mere collection of bits, supporting only bitwise and comparison operations
-
-uint8_t implies an interpretation of the bit pattern. But if the blob you're dealing with is actually structured data, that's the wrong interpretation.
-
-std::byte is a type that specifically says "I have no idea what this bag of bytes represents
 
 # type
 
@@ -651,7 +638,7 @@ In other words, multiple sets of implicitly-created-objects are possibly only wh
 
 Further, after implicitly creating objects within a specified region of storage, some operations are described as producing a pointer to a suitable created object. These operations select one of the implicitly-created objects whose address is the address of the start of the region of storage, and produce a pointer value that points to that object, if that value would result in the program having defined behavior. If no such pointer value would give the program defined behavior, the behavior of the program is undefined. If multiple such pointer values would give the program defined behavior, it is unspecified which such pointer value is produced.
 12
-#
+
 [Example 3: 
 #include <cstdlib>
 struct X { int a, b; };
@@ -749,7 +736,7 @@ struct A {
     }
 ```
 
-#
+
 If a complete object is created ([expr.new]) in storage associated with another object e of type “array of N unsigned char” or of type “array of N std​::​byte” ([cstddef.syn]), that array provides storage for the created object if:
 (3.1) the lifetime of e has begun and not ended, and
 (3.2) the storage for the new object fits entirely within e, and
@@ -809,7 +796,7 @@ int f() {
 
 # Lifetime
 
-# start of lifetime 
+## start of lifetime 
 
 The properties ascribed to objects and references throughout this document apply for a given object or reference only during its lifetime.
 [Note 2: In particular, before the lifetime of an object starts and after its lifetime ends there are significant restrictions on the use of the object, as described below, in [class.base.init], and in [class.cdtor]. Also, the behavior of an object under construction and destruction can differ from the behavior of an object whose lifetime has started and not ended. [class.base.init] and [class.cdtor] describe the behavior of an object during its periods of construction and destruction. — end note]
@@ -830,7 +817,7 @@ except that if the object is a union member or subobject thereof, its lifetime o
 (2) The lifetime of a reference begins when its initialization is complete. The lifetime of a reference ends as if it were a scalar object requiring storage.
 [Note 1: [class.base.init] describes the lifetime of base and member subobjects. 
 
-# end of lifetime
+## end of lifetime
 
 (3) The lifetime of an object o of type T ends when:
 The lifetime of an object o of type T ends when:
@@ -1033,9 +1020,9 @@ int *p = new (b->b + 4) int;            // b->b provides storage for *p
 
 (13)
 Block-scope variables not explicitly declared static, thread_­local, or extern have automatic storage duration. The storage for these entities lasts until the block in which they are created exits.
- # [ Note: These variables are initialized and destroyed as described in [stmt.dcl].  — end note ]
+ [ Note: These variables are initialized and destroyed as described in [stmt.dcl].  — end note ]
 
-#
+
 If a variable with automatic storage duration has initialization or a destructor with side effects, an implementation shall not destroy it before the end of its block nor eliminate it as an optimization, even if it appears to be unused, except that a class object or its copy/move may be eliminated as specified in [class.copy].
 
 
@@ -1140,16 +1127,6 @@ no virtual member functions
 
 memset  will most likely set padding bits to 0, however that is unsepcified!
 
-# similar types
-
-Two types are similar if (ignoring cv):
-    - they are the same type;
-or -they are both pointers, and the pointed - to types are similar;
-or -they are both pointers to member of the same class,
-    and the types of the pointed - to members are similar;
-or -they are both arrays of the same size or
-    at least one of them is array of unknown bound,
-    and the array element types are similar.
 
 
 # const 

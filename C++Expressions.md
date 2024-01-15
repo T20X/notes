@@ -39,7 +39,7 @@ An instance of each object with automatic storage duration is associated with ea
 Each declarator introduces exactly **one** object, reference, function, or (for typedef declarations) type alias, whose type is provided by decl-specifier-seq and optionally modified by operators such as & (reference to) or [] (array of) or () (function returning) in the declarator. These operators can be applied recursively, as shown below. Note that apart from variable name it can contain refrences and pointers as well initiazlizator
 
 
-# Expression
+# Expression theory
 
 expression evaluation -> ( side-effects & value) 
 
@@ -69,17 +69,16 @@ It refers to the way that operands are grouped with operators, not the order in 
 
 Primary expressions are any of the following:
 
-this
-literals (e.g. 2 or "Hello, world")
-id-expressions, including
-suitably declared unqualified identifiers (e.g. n or cout),
-suitably declared qualified identifiers (e.g. std::string::npos), and
-identifiers to be declared in declarators
-lambda-expressions
-fold-expressions
-requires-expressions
-
-Any expression in parentheses is also classified as a primary expression: this guarantees that the parentheses have higher precedence than any operator. Parentheses preserve value, type, and value category
+* this
+* literals (e.g. 2 or "Hello, world")
+* id-expressions, including
+* suitably declared unqualified identifiers (e.g. n or cout),
+* suitably declared qualified identifiers (e.g. std::string::npos), and
+* identifiers to be declared in declarators
+* lambda-expressions
+* fold-expressions
+* requires-expressions
+* Any expression in parentheses is also classified as a primary expression: this guarantees that the parentheses have higher precedence than any operator. Parentheses preserve value, type, and value category
 
 ## subexpression
 
@@ -199,6 +198,8 @@ A function call is an lvalue if the result type is an lvalue reference type or a
 
 
 It is implementation-defined whether the lifetime of a parameter ends when the function in which it is defined returns or at the end of the enclosing full-expression. The initialization and destruction of each parameter occurs within the context of the calling function
+
+function parameters are really expressions
 
 # Refenrece
 
@@ -795,15 +796,8 @@ binding rules occur in the following events:
 
 # Temporary 
 
-The materialization of a temporary object is generally delayed as long as possible in order to avoid creating unnecessary temporary objects. [ Note: Temporary objects are materialized
 
 Even when the creation of the temporary object is unevaluated ([expr.context]), all the semantic restrictions shall be respected as if the temporary object had been created and later destroyed ----> EXCEPT <---------- if it used in decltype in that case semantic restrictions dont apply ----> 
-
-
-Temporary objects are created
-- when a prvalue is converted to an xvalue ([conv.rval]),
-- when needed by the implementation to pass or return an object of trivially copyable type (see below), and
-- when throwing an exception ([except.throw]).
 
 
 A prvalue of type T can be converted to an xvalue of type T. This conversion initializes a temporary object ([class.temporary]) of type T from the prvalue by evaluating the prvalue with the temporary object as its result object, and produces an xvalue denoting the temporary object. T shall be a complete type.
@@ -816,7 +810,7 @@ int k = X().n;      // OK, X() prvalue is converted to xvalue
 
 When an implementation introduces a temporary object of a class that has a non-trivial constructor ([class.default.ctor], [class.copy.ctor]), it shall ensure that a constructor is called for the temporary object. Similarly, the destructor shall be called for a temporary with a non-trivial destructor ([class.dtor]). Temporary objects are destroyed as the last step in evaluating the full-expression ([intro.execution]) that (lexically) contains the point where they were created. This is true even if that evaluation ends in throwing an exception. The value computations and side effects of destroying a temporary object are associated only with the full-expression, not with any specific subexpression
 
-If a temporary object has a reference member initialized by another temporary object, lifetime extension applies recursively to such a member's initializer.
+If a temporary object has a reference member initialized by another temporary object, lifetime extension applies only **ONCE** to such a member's initializer.
 [Example 4:
 struct S {
   const int &m;
@@ -845,7 +839,7 @@ S* p = new S{ 1, {2,3} }; // dangling reference
 
 the reason why temporary does not extend its lifetime in new experssion is the fact 
 
-
+If the expression is a non-void prvalue (after any lvalue-to-rvalue conversion that might have taken place), temporary materialization DOES occurs.
 The materialization of a temporary object is generally delayed as long as possible in order to avoid creating unnecessary temporary objects.
 [Note 3: Temporary objects are materialized:
 - when binding a reference to a prvalue ([dcl.init.ref], [expr.type.conv], [ expr.dynamic.cast], [expr.static.cast], [expr.const.cast], [expr.cast]),
@@ -854,6 +848,8 @@ The materialization of a temporary object is generally delayed as long as possib
 - when initializing an object of type std​::​initializer_­list<T> from a braced-init-list ([dcl.init.list]),
 - for certain unevaluated operands ([expr.typeid], [expr.sizeof]), and
 - when a prvalue that has type other than cv void appears as a discarded-value expression
+
+
 
 
 ------------------------
@@ -886,20 +882,6 @@ int c        = bar(42);  // OK
 # consteval 
 
 specifies that a function is an immediate function, that is, every call to the function must produce a compile-time constant
-
-# literal type
-
-A literal type is one whose layout can be determined at compile time. The following are the literal types:
-Literals are the tokens of a C++ program that represent constant values embedded in the source code
-
-void
-scalar types
-references
-Arrays of void, scalar types or references
-A class that has a constexpr destructor, and one or more constexpr constructors that are not move or copy constructors. Additionally, all its non-static data members and base classes must be literal types and **not volatile**.
-
-
-Specifies that a type is a literal type. Literal types are the types of constexpr variables and they can be constructed, manipulated, and returned from constexmemset pr functions.
 
 
 # implicit conversions

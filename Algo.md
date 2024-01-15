@@ -25,7 +25,8 @@ the whole point about dynamic programming is about assuming that for optimal sol
  
  Typically, dynamic programming problems can be solved with three main components. If you're new to dynamic programming, this might be hard to understand but is extremely valuable to learn since most dynamic programming problems can be solved this way.
 
-First, we need some function or array that represents the answer to the problem from a given state. For many solutions on LeetCode, you will see this function/array named "dp". For this problem, let's say that we have an array dp. As just stated, this array needs to represent the answer to the problem for a given state, so let's say that dp[i] represents the length of the longest increasing subsequence that ends with the ithi^{th}ith  element. The "state" is one-dimensional since it can be represented with only one variable - the index i.
+First, we need some function or array 
+that represents the answer to the problem from a given state. For many solutions on LeetCode, you will see this function/array named "dp". For this problem, let's say that we have an array dp. As just stated, this array needs to represent the answer to the problem for a given state, so let's say that dp[i] represents the length of the longest increasing subsequence that ends with the ithi^{th}ith  element. The "state" is one-dimensional since it can be represented with only one variable - the index i.
 
 Second, we need a way to transition between states, such as dp[5] and dp[7]. This is called a recurrence relation and can sometimes be tricky to figure out. Let's say we know dp[0], dp[1], and dp[2]. How can we find dp[3] given this information? Well, since dp[2] represents the length of the longest increasing subsequence that ends with nums[2], if nums[3] > nums[2], then we can simply take the subsequence ending at i = 2 and append nums[3] to it, increasing the length by 1. The same can be said for nums[0] and nums[1] if nums[3] is larger. Of course, we should try to maximize dp[3], so we need to check all 3. Formally, the recurrence relation is: dp[i] = max(dp[j] + 1) for all j where nums[j] < nums[i] and j < i
 
@@ -354,6 +355,30 @@ void merge(int arr[], int start, int mid, int end)
 } 
 --------------
 Greedy algorthim requrore local solution to be also globally optimal. It is always hard to prove that is the case.
+
+# Merge intervals
+
+```
+std::vector<std::vector<int>> MergeIntervals(std::vector<std::vector<int>> &intervals)
+{
+    std::vector<std::vector<int>> r;
+    if (intervals.empty())
+      return r;
+
+    r.push_back(intervals.front());
+    for (const auto& i : intervals) {
+        if (i.at(0) <= r.back().at(1)) {
+            if (r.back().at(1) < i.at(1)) {
+                r.back().at(1) = i.at(1);
+            }
+        } else {
+            r.push_back(i);
+        }
+    }
+    return r;
+}
+
+```
 
 
 # Sliding Window
