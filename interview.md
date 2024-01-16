@@ -6,6 +6,7 @@
 - make him actually like you and be comfrtable with you
 - try to ask some questions to confirm your assumptions and see if the interviewer eats the bait
 - try to bait the interviewer into your area
+- Try to iterate through few solutions and see if you can bait the interviewer into to confirm if you are on the right track!
   
 # make sure you are rested, go to the gym before the interview
 
@@ -27,6 +28,7 @@ Are there duplicates within the input?
 What are some extreme cases of the input?
 Can I destroy the original array/graph/data structure?
 How is the input stored? If you are given a dictionary of words, is it a list of strings or a Trie?
+Try to iterate through few solutions and see if you can bait the interviewer into to confirm if you are on the right track!
 
 After you have sufficiently clarified the scope and intention of the problem, explain your high-level approach to the interviewer even if it is a naive solution. If you are stuck, consider various approaches, and explain out loud why it will/will not work. Sometimes your interviewer might drop hints and lead you towards the right path.
 

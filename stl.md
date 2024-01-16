@@ -40,7 +40,18 @@ std::vector<std::mutex> v; // WON'T WORK!
 
 std::deque / std::list - would work!
 
-# std::priority_queue
+# containers
+
+## unordered_map
+
+After container move construction (overload (4)), references, pointers, and iterators (other than the end iterator) to other remain valid, but refer to elements that are now in *this
+
+### erase
+
+References and iterators to the erased elements are invalidated. Other iterators and references are not invalidated.
+The iterator pos must be valid and dereferenceable. Thus the end() iterator (which is valid, but is not dereferenceable) cannot be used as a value for pos.
+
+## std::priority_queue
 
 if you use std::greater<>, note the the container type has to support operator>!
 
