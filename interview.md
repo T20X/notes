@@ -7,6 +7,7 @@
 - try to ask some questions to confirm your assumptions and see if the interviewer eats the bait
 - try to bait the interviewer into your area
 - Try to iterate through few solutions and see if you can bait the interviewer into to confirm if you are on the right track!
+
   
 # make sure you are rested, go to the gym before the interview
 
@@ -29,6 +30,7 @@ What are some extreme cases of the input?
 Can I destroy the original array/graph/data structure?
 How is the input stored? If you are given a dictionary of words, is it a list of strings or a Trie?
 Try to iterate through few solutions and see if you can bait the interviewer into to confirm if you are on the right track!
+Clarify 100% terminating condition!
 
 After you have sufficiently clarified the scope and intention of the problem, explain your high-level approach to the interviewer even if it is a naive solution. If you are stuck, consider various approaches, and explain out loud why it will/will not work. Sometimes your interviewer might drop hints and lead you towards the right path.
 
@@ -49,6 +51,7 @@ Only start coding after you and your interviewer have agreed on an approach and 
 
 - always be mindfull of 0, duplicates, int max, int min and overflow use cases!
 - always be carefull of the base case and the very first iteration initialization
+- clarify terminating condition 100%
 
 ## BFS
 
