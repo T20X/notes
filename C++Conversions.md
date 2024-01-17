@@ -179,6 +179,74 @@ const volatile T* __p = ...
 
  ```
 
+# boolean conversions
+
+Boolean conversions
+A prvalue of integral, floating-point, unscoped enumeration, pointer, and pointer-to-member types can be converted to a prvalue of type bool.
+
+The value zero (for integral, floating-point, and unscoped enumeration) and the null pointer and the null pointer-to-member values become false. All other values become true.
+
+In the context of a direct-initialization, a bool object may be initialized from a prvalue of type std::nullptr_t, including nullptr. The resulting value is 
+false. However, this is not considered to be an implicit conversion.
+
+A prvalue of type bool can be converted to a prvalue of type int, with false becoming ​0​ and true becoming 1
+
+# integral promotions
+
+C++ promotions are "value-preserving." That is, the value after the promotion is guaranteed to be the same as the value before the promotion. In value-preserving promotions, objects of shorter integral types (such as bit fields or objects of type char) are promoted to type int if int can represent the full range of the original type. If int cannot represent the full range of values, then the object is promoted to type unsigned int. Although this strategy is the same as that used by ANSI C, value-preserving conversions do not preserve the "signedness" of the object.
+
+Value-preserving promotions and promotions that preserve signedness normally produce the same results. However, they can produce different results if the promoted object is one of the following:
+
+ - An operand of /, %, /=, %=, <, <=, >, or >=
+
+    These operators rely on sign for determining the result. Therefore, value-preserving and sign-preserving promotions produce different results when applied to these operands.
+
+- The left operand of >> or >>=
+
+    These operators treat signed and unsigned quantities differently when performing a shift operation. For signed quantities, shifting a quantity right causes the sign bit to be propagated into the vacated bit positions. For unsigned quantities, the vacated bit positions are zero-filled.
+
+## signed to unsgined 
+
+Objects of signed integral types can be converted to corresponding unsigned types. When these conversions occur, the actual bit pattern does not change; however, the interpretation of the data changes
+
+
+## floating types
+
+An object of a floating type can be safely converted to a more precise floating type — that is, the conversion causes no loss of significance. For example, conversions from float to double or from double to long double are safe, and the value is unchanged.
+
+An object of a floating type can also be converted to a less precise type, if it is in a range representable by that type. (See Floating Limits for the ranges of floating types.) If the original value cannot be represented precisely, it can be converted to either the next higher or the next lower representable value. If no such value exists, the result is undefined
+
+## integer to float
+
+Certain expressions can cause objects of floating type to be converted to integral types, or vice versa. When an object of integral type is converted to a floating type and the original value cannot be represented exactly, the result is either the next higher or the next lower representable value.
+
+
+## float to integer
+
+
+When an object of floating type is converted to an integral type, the fractional part is **truncated**. No rounding takes place in the conversion process. Truncation means that a number like 1.3 is converted to 1, and –1.3 is converted to –1
+
+## ariphmetic converion rules
+
+int is the least type possible for arithmetic operations
+IMPORTANT: ***(uint8_t)3 + (uint8_t)3 -> still result type is int ***
+
+
+Conditions Met	                                        | Conversion
+Either operand is of type long double.	                | Other operand is converted to type long double.
+Preceding condition not met and either operand is of    | Other operand is converted to type double.
+type double.	                                         
+Preceding conditions not met and either                 | Other operand is converted to type float.     
+operand is of type float
+
+Preceding conditions not met                            | Integral promotions are performed on the operands as follows:
+(none of the operands are of floating types).	
+
+- If either operand is of type unsigned long, the other operand is converted to type unsigned long.
+- If preceding condition not met, and if either operand is of type long and the other of type unsigned int, both operands are converted to type unsigned long.
+- If the preceding two conditions are not met, and if either operand is of type long, the other operand is converted to type long.
+- If the preceding three conditions are not met, and if either operand is of type unsigned int, the other operand is converted to type unsigned int.
+- If none of the preceding conditions are met, both operands are converted to type int.
  
 
 
