@@ -113,6 +113,8 @@ Given a list of N coins with their values (V1, V2, … ,VN), and the total sum S
 
 Let N <= 1,000 and S <= 1,000.
 
+
+
 ### Problem hints
 
 Two main integer variables are given (N and S). These are neither too small, nor are they too big (i.e. a complexity of N*S fits in time).
@@ -123,6 +125,7 @@ A sum (state) i depends only on lower sums (states) j (j<i).
 
 By adding a coin to a certain sum – another greater sum is reached. This is the way to pass from one state to another.
 
+**you need to find max of something**
 
 ### Common method for solving it
 

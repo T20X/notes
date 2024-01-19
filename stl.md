@@ -46,6 +46,23 @@ std::deque / std::list - would work!
 
 After container move construction (overload (4)), references, pointers, and iterators (other than the end iterator) to other remain valid, but refer to elements that are now in *this
 
+### emplace / try_emplace
+
+template <class... Args>
+pair<iterator, bool> try_emplace(const key_type& k, Args&&... args);
+Unlike insert or emplace, these functions do not move from rvalue arguments
+ IF the insertion does not happen, which makes it easy to manipulate maps
+whose values are move-only types as emplace() before actual insertion or checking if element already exists does create a node first!
+like this 
+_Auto_node __z(*this, std::forward<_Args>(__args)...);
+this is fine for keys which are not moveable / copyable if they are created from implicit constructors and not created by copy/move!
+although for try_emplace to work it requires KEY object to already exist so that it would later copy / move it. emplace on the other hand does not require this , but it does first creates a full node without checking if the key exists!
+
+so in summary emplace is still good in two cases:
+ - keys are not copyable/moveable
+ - cost to move/copy key is high compared to creating key object by implicit constructor
+
+
 ### erase
 
 References and iterators to the erased elements are invalidated. Other iterators and references are not invalidated.
@@ -96,11 +113,7 @@ in the node handle are invalidated, and pointers and references obtained
 insert_or_assign returns more information than operator[] and does not require default-constructibility of the mapped type
 
 (5)
-template <class... Args>
-pair<iterator, bool> try_emplace(const key_type& k, Args&&... args);
-Unlike insert or emplace, these functions do not move from rvalue arguments
- IF the insertion does not happen, which makes it easy to manipulate maps
-whose values are move-only types
+
 
 (6)
 node_type extract( const_iterator position );

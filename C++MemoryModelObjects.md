@@ -549,6 +549,30 @@ Implementations now generally outlaw using reinterpret_cast to violate strict al
 
 Permitting aliasing via unions would wreck performance, as you would never know when two objects of completely different types might alias. The C union visibility rule is highly controversial even within the C community; see e.g. https://gcc.gnu.org/bugzilla/show_bug.cgi?id=65892
 
+
+static_cast<Base&>(d) obtains a potentially overlapping subobject, because every base subobject is a potentially overlapping subobject. It's then not permitted to use raw memory access to the underlying representation, as memcpy
+
+
+For any object (other than a potentially-overlapping subobject) of trivially copyable type T, whether or not the object holds a valid value of type T, the underlying bytes ([intro.memory]) making up the object can be copied into an array of char, unsigned char, or std​::​byte ([cstddef.syn]).36 If the content of that array is copied back into the object, the object shall subsequently hold its original value.
+
+the standard is very strict about as basically it renders the following code invalid even though you only copy potentialy overlapping suboject to NON overlalping subobject, but the complier probably wants to make sure Base& does not poin to the derived class....
+
+```
+   class Base { int i; };
+    class Derived : public Base { int d; };
+    
+   void copy_base(const Base &src, Base &dest) {
+      memcpy((void *)&dest, (const void *)&src, sizeof(Base));//UNDEFINED BEHAVIOUR, THE STANDARD FORBITS COPYING POTENTIALLY OVERLAPPONG SUBOBJECT
+   }
+    
+    int main() {
+       Derived d;
+       Base copy;
+       copy_base(static_cast<Base&>(d), copy);
+       return 0;
+    }
+  ```
+
 # implicit objects creation
 
 # construction

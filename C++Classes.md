@@ -165,6 +165,10 @@ B is not standart-layout because two classesin the hierarchy got memebers!
 No tail padding from the Base POD(Standard Layout and Trivial) classes can be re-used. 
 gcc layout is such that it can implement the copy constructor / assignment for A as copying 64bit in one instruction, which would overwrite B::b if it used the padding. Functions taking an A* might also memcpy() into it, again overwriting the padding. A common usage with POD types. But I think that is just a niceness of the ABI. Note: Windows ABI doesnt use tail padding at all giving
 
+An implementation already can't store to the tail padding of an object if that object might be a base subobject of some other object.
+
+
+
 
 Two standard-layout unions are called layout-compatible if they have the same number of non-static data members and corresponding non-static data members (in any order) have layout-compatible types.
 
@@ -227,6 +231,10 @@ If the implicitly-declared default constructor is not defined as deleted, it is 
 
 
 If no user-declared constructors of any kind are provided for a class type (struct, class, or union), the compiler will always declare a default constructor as an inline public member of its class
+
+# Memory
+
+The order in which the base class subobjects are allocated in the most derived object ([intro.object]) is unspecified.
 
 
 
