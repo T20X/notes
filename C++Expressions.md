@@ -1486,4 +1486,8 @@ take paramters by lvalue / rvalue.  **always returns prvalue**!
 
 better define as friend function inside class scope so that it is nicely composable. 
 
+## mod
+
+in C++ expression a % b returns remainder of division of a by b (if they are positive. For negative numbers sign of result is implementation defined
+
 

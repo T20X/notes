@@ -10,4 +10,4 @@
 - unique
 
 - unbounded lock-free queue
-- tripple locl-free buffer
+- tripple lock-free buffer

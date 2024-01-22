@@ -14,6 +14,30 @@ int lengthOfLongestSubstringTwoDistinct(string s) {
     }
 ```
 
+# DP
+
+## number of steps to visiit all nodes in connected undirected graph
+https://leetcode.com/problems/shortest-path-visiting-all-nodes
+
+### DFS
+
+Now that we have our recurrence relation, we can solve this problem using DFS. But first, we must decide what our base case will be. A base case is any state where we can calculate the result without making recursive calls. In this problem, the base case could be when we have visited all nodes, return 0 because we have visited all nodes and no more steps need to be made, or the base case could be when there is only 1 unvisited node, return 0 because we have visited all other nodes and we must be standing on the final node.
+
+Here, since we are thinking in the backward direction, we will choose the latter option. Thus, we will start our DFS at the "top", i.e. all nodes already being visited
+
+Because the optimal path may end at any of the nodes (we don't know for sure unless we check), we will need to perform a DFS for each node. Subsequent searches will not be too expensive as we will maintain our cache throughout
+
+You may notice that this recurrence will cause infinite cycles, because the graph is undirected. For example, if node A and node B share an edge, then (A, mask) and (B, mask) would bounce between each other infinitely. When we implement the algorithm, we can get around these cycles by caching a state's value as infinity (since the problem is asking for a minimum) the first time we visit it, and before we traverse to any other states. This ensures that if we go from (A, mask) to (B, mask) we cannot return to A until we have visited at least one new node (thus changing mask)
+
+
+### BFS
+
+However, instead of using top-down dynamic programming in the form of DFS + memoization, we will perform BFS by implementing a queue. Instead of starting at endingMask, we will start at the base case masks - only having one bit set to 1, and then work our way towards endingMask
+
+
+If we are at node A and move to node B, it doesn't matter if we go B -> A -> B or A -> B - in both cases, upon arriving at B, we want our mask to have the bit corresponding to node B set as 1. This is a nice improvement on the previous approach as for each neighbor, we only need to consider 1 possibility instead of 2. Since we always want the bit to be set to 1, we will use an OR operation with 1 << neighbor to make sure the bit is set to 1
+
+
 # sequences
 
 ## printing all sub-sequences

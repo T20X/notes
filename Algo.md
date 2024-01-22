@@ -1,3 +1,37 @@
+# math
+
+## gcd
+
+if any of the value is zero than gcd is another value
+if both values are zero than gcd is 0
+
+**if a >= b
+gcd(a,b) = gcd(a-b,b)
+gcd(a,b) = gcd(a % mod,b)**
+
+Algo
+
+```
+    while (a != b) {
+        if (a < b) {  
+
+
+
+            b = a;
+            a = c;
+        }
+
+        int d = a % b;
+        if (d == 0) {
+            return b;
+        } else {
+            a = d;
+        }
+    }
+
+    return a;
+```
+
 # binary search
 
 the whole point is to track mid
@@ -12,6 +46,8 @@ P = Pos / 2;
 Left = 2 * P;
 Right = 2 * P + 1
 
+
+
 # dynamic programming
 
 the whole point about dynamic programming is about assuming that for optimal solution , sub-problems are not optimal. If you come to he contradiction that the whole solutino is not optimal than it proves that sub-problem are indeed optimal! It is called cut-and-pate argument.
@@ -25,6 +61,8 @@ These attributes may seem familiar to you. Greedy problems have optimal substruc
 
  For all people wondering how you'd solve this in an interview in 30 mins - this is a fairly easy DP problem. If you're confused its because the explanation jumps into the bottom-up DP solution without explaining how it got there. You can never figure out a bottom-up DP solution without first figuring out a top down recursive approach. If during the recursion you find you're solving the same sub-problem repeatedly ("overlapping sub-problems") - that's the first hint that its DP. Next, if you find that the optimal answer for the current sub-problem is formed from the optimal answer for the overlapping sub-problems, you now have found the optimal sub-structure. Its DP for sure. Typically problems involving finding the "longest/shortest/largest/smallest/maximal" of something have the optimal-substructure. For example if the shortest distance from A to D is A->B->C->D, then it follows that the shortest distance from B to D is B->C->D
  
+
+A base case is any state where we can calculate the result without making recursive calls.
 
  ##  Common way to solve it
  
@@ -105,6 +143,9 @@ template <class K> void union_set(DynamicSet<K> &S, const K &l, const K &r) {
 
 ```
  
+ # NO hard
+ if N is very small either can use bitset or that means we have to do 2*N combinations and just check many combinations with some memoization
+
  
  # hashing
 

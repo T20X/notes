@@ -38,14 +38,28 @@ template <class T> std::string get_bits2(const T &v) {
 ```
 
 # clear least significant bit
-a & (a - 1)
+a&(a-1)
 
 # set K's bit to 1
-x | (1 << K)
+x|(1<<K)
 
 # set K's bit to 0
 
-x & ~(1 << k)
+x&~(1<<k)
+
+# flipping Nth bit in mask
+
+mask ^ (1 << N)
+
+# set first N bits to 1
+
+(1<<N)-1
+
+
+# checks if any bit set 1 - basically checks if N is power of 2
+
+N & (N - 1)
+
 
 # get number with all 1s bits set
 

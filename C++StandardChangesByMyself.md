@@ -1,4 +1,4 @@
-#  potentially overlapping suboject cannot be copied to non-overlapping one!
+#  The concept of "potentially overlapping subobject" is not with reference to another object. It's an absolute concept
 
 For any object (other than a potentially-overlapping subobject) of trivially copyable type T, whether or not the object holds a valid value of type T, the underlying bytes ([intro.memory]) making up the object can be copied into an array of char, unsigned char, or std​::​byte ([cstddef.syn]).28 If the content of that array is copied back into the object, the object shall subsequently hold its original value.
 [Example 1: 
@@ -29,3 +29,10 @@ This is very restrictive as the following code is basically UB from above
 ```
 
 # object creation point in time is not clear!
+
+# containers
+
+## map/multimap
+
+map/multimap should have a function to query the range!
+say from 2 to 30;
