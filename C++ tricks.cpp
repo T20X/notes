@@ -1,3 +1,5 @@
+
+
 # 1
 
 void foo() try { throw int(); } catch (...) {
@@ -51,3 +53,11 @@ template <typename T> struct array_struct { T data_[N]{}; };
 }
 
 (4)sstd::function<void(std::string &, char)> p2 = &std::string::push_back;
+
+#array
+
+array is tuple after
+
+    std::array<int, 3>
+        a;
+auto &[one, two, three] = a;
