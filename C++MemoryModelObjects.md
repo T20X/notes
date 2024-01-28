@@ -555,6 +555,8 @@ static_cast<Base&>(d) obtains a potentially overlapping subobject, because every
 Before the standard did allow copying of POD bases through memcpy , and to not break ABI right now compliers still don't re-use padding bits for PODs.
 
 
+The padding bytes aren't part of the value representation of the independent target object, so its value can't be affected. However, the padding bytes in the independent target object can not otherwise be modified by the user, so the compiler can, with this constraint on memcpy, make assumptions about them (e.g. that they are always zero if the object doesn't have an indeterminate value). If you drop this constraint then such assumptions won't hold anymore
+
 For any object (other than a potentially-overlapping subobject) of trivially copyable type T, whether or not the object holds a valid value of type T, the underlying bytes ([intro.memory]) making up the object can be copied into an array of char, unsigned char, or std​::​byte ([cstddef.syn]).36 If the content of that array is copied back into the object, the object shall subsequently hold its original value.
 
 the standard is very strict about as basically it renders the following code invalid even though you only copy potentialy overlapping suboject to NON overlalping subobject, but the complier probably wants to make sure Base& does not poin to the derived class....
