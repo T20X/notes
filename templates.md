@@ -43,11 +43,12 @@ unions can also be templated
 
 ## template template
 
-Remeber!
+Remember!
 
 ```
 template <template < class...> class A,   class B>
 struct test1;
+
 using test1_short = test1<std::tuple <- /*class tempalte*/, std::tuple<int,int,int> /*just class!*/>;
 ```
 
@@ -103,8 +104,6 @@ However, it turns out that when dealing with non-type template parameters then d
 template<class Msg, std::enable_if_t<AnyOfType<Msg, SupportedMessages>::value, int> = 0> bool handle(DepthUpdate<Msg> const& update);
 ```
 
-----------------------
-
 default template argument - typename = std::enable_if_t<std::is_integral<Integer>::value>
     default template arguments are not part of function template's signature
     default template arugments in partial specialization get copied from the primary tempalte if not set!
@@ -117,6 +116,7 @@ A non-type template-parameter shall have one of the following (optionally cv-qua
 (4.3) — lvalue reference to object or lvalue reference to function,
 (4.4) — pointer to member,
 (4.5) — std::nullptr_t.
+(4.6) - literal type
 
 ## auto template parameter
 
@@ -198,6 +198,12 @@ Unless explicitly prohibited, a program may add a template specialization for an
 
 in partial specialization, default arguments cannot appear in the argument list
 
+The behavior of a C++ program is undefined if it declares ... an explicit or partial specialization of any member class template of a standard library class or class template. **Basically member / free functions specializations are completely forbidden**
+
+std::swap is a function template, not a class template. Function templates cannot be partially specialised at all
+
+
+
 ## Specialization by function type so that its return type and signature can be taken out
 
 class specializations can have parameters function types Result(Args...)
@@ -208,10 +214,19 @@ template <class Result, class... Args, class F>
 class memoize_helper<Result(Args...), F>
 {}
 
-int f() {return 1;}
+
+
+int f(int i) {return 1;}
+
+//void f1(int i) {}
+//decltype(f1 ) == void (int)
+
+
   memoize_helper<decltype(f), factory> m;
 
 ```
+
+
 
 ## Specialization by function pointer
 
@@ -226,7 +241,7 @@ class memoize_helper<Result (*)(Args...)>
 template<class B, class MT>
     struct invoke_impl<MT B::*>
 
-struct A { int fun() const&; };
+struct A { int fun(int,int) const&; };
  
 template<typename>
 struct PM_traits {};
@@ -234,8 +249,16 @@ struct PM_traits {};
 template<class T, class U>
 struct PM_traits<U T::*> { using member_type = U; };
 
-using T = PM_traits<decltype(&A::fun)>::member_type; // T is int() const&
+using T = PM_traits<decltype(&A::fun)>::member_type; // T is int(int,int) const&
 ```
+
+struct my_string { bool empty() const {}
+static void empty2(){}};
+T = decltype(&my_string::empty), 
+T = bool (my_string::*)() const
+
+WARNING! T = decltype(my_string::empty) <--- that is not possible!
+WARNING! T = decltype(my_string::empty2) <--- that is possible!
 
 ## Fetching member function signature
 
@@ -259,6 +282,7 @@ public:
 };
 
  memoize_helper2<&Foo::p> m;
+ // memoize_helper2<decltype(&Foo::p)> m; THIS DOES NOT WORK, IT WANTS **NON-TYPE** PARAMETER PARAMATER
 ```
 
 ## Specialization by another template
@@ -291,6 +315,7 @@ auto wrap_closure(callable const &) -> void(*)(t..., void*)
     };
 }
 ```
+WARNING! note that +[] is required so that auto/decltype(auto) would convert lambda to a function pointer!
 
 ## Function overloading
 
@@ -848,13 +873,20 @@ All the expressions won't lead to a SFINAE. A broad rule would be to say that al
 
 Substitution proceeds in lexical order and stops when a failure is encountered.
 
+### enable_if
+
+the whole point about enable if is that if the first paramter would evaluate to false , than enable if would give you type which is not defined, and referring to that type can be SFINAE error if it is reffered to in the  [ink](#immediate-context).
+
 ### immediate context
 
 Only the failures in the types and expressions in the immediate context of the function type or its template parameter types or its explicit specifier (since C++20) are SFINAE errors.
 
 If the evaluation of a substituted type/expression causes a side-effect such as instantiation of some template specialization, generation of an implicitly-defined member function, etc, errors in those side-effects are treated as hard errors. For example subsitutung T in typename T::type to some class A<O> may trigger instantiation of class A<O>, but it may fail...Hence it would be a hard error!
 
-So the mental model I use is that substitution needs to do a "preparation" step first to generate types and members, which might cause hard errors, but once we have all the necessary generation done, any further invalid uses are not errors
+
+If you consider all the templates and implicitly-defined functions that are needed to determine the result of the template argument substitution, and imagine they are generated first, before substitution starts, then any errors occurring in that first step are not in the immediate context, and result in hard errors. If all those instantiations and implicitly-definitions (which might include defining functions as deleted) can be done without error, then any further "errors" that occur during substitution (i.e. while referring to the instantiated templates and implicitly-defined functions in the function template's signature) are not errors, but result in deduction failures
+
+So the mental model I use is that substitution needs to do a "preparation" step first to generate types and members, which might cause hard errors, but once we have all the necessary generation done, any further invalid uses are not errors. Of course all this does is move the problem from "what does immediate context mean?" to "Which types and members need to be generated before this substitution can be checked?"
 
 
 --------------------
@@ -886,9 +918,9 @@ struct OnlyInt {
 };
 
 
-template <class X1, class X2> struct Element {};
-template <class X1, class X2>
-std::enable_if_t<std::is_same_v<X1, int>> f(const Element<X1, X2> &v, X1 p,
+
+template <class X1>
+std::enable_if_t<std::is_same_v<X1, int>> f(
                                             typename OnlyInt<X1>::type d = {}) {
   std::cout << "\n f::int \n";
 }
@@ -902,6 +934,28 @@ template <class T, typename = std::enable_if_t<std::is_same_v<T, int>>,
 struct OnlyInt {
   using type = typename AnotherStructDouble<T>::type;
 };
+```
+
+
+this is not HARD error because before instantiating other templates which got_empty requires, first substitution for T is considered - &T::empty.
+
+```
+template <class T, class = std::void_t<>> struct got_empty : std::false_type {};
+template <class T>
+struct got_empty<T, std::enable_if_t<std::is_same_v<
+                        std::invoke_result_t<decltype(&T::empty), T>, bool>>>
+    : std::true_type {};
+```
+
+
+this would always cause SFINAE failure, because T::fail never exists!
+
+```
+template <class T>
+struct got_empty<
+    T, std::conditional_t<
+           std::is_same_v<std::invoke_result_t<decltype(&T::empty), T>, bool>,
+           std::true_type, decltype(&T::fail)>> : std::true_type {};
 ```
 
 
@@ -997,7 +1051,7 @@ Another example
 
 
 
-#### is_constuctible
+### is_constuctible
 
 ```
   template <typename T,typename,typename... Args> struct mine_is_constructible : std::false_type {};
@@ -1005,8 +1059,9 @@ Another example
      template <typename T, typename... Args> using mine_is_constructible_v = mine_is_constructible<T, void_t<T>, Args...>;
 ```
 
-#### expression template
+### expression template
 
+```
 template<typename T, typename Cont= std::vector<T> >
 class MyVector
 {
@@ -1034,7 +1089,9 @@ public:
     return op1.size(); 
   }
 };
+```
 
+```
 // function template for the + operator
 template<typename T, typename R1, typename R2>
 MyVector<T, MyVectorAdd<T, R1, R2> >
@@ -1043,7 +1100,9 @@ operator+ (const MyVector<T, R1>& a, const MyVector<T, R2>& b){
 }
 
 }
-#### make tuple
+```
+
+### make tuple
 
 ```
 template<class... _Types> inline
@@ -1055,7 +1114,7 @@ template<class... _Types> inline
 	}
 ```
 
-#### array rolling 
+### array rolling 
 
 template<typename T>
 class is_class 
@@ -1071,7 +1130,7 @@ class is_class
   ---ensure that the array has at least one element so that we don't try to make an
      illegal 0-length array when args is empty
 
-#### return void type from function
+### return void type from function
 
 ```
   template<class _FwdIt,
@@ -1086,7 +1145,7 @@ class is_class
 
 trick is that {} will force default construction! but not for void in which case SFINAE kicks in!
 
-#### 3 rolling the array!
+### 3 rolling the array!
 
 ```
 template<size_t... _Indices,
@@ -1100,7 +1159,7 @@ template<size_t... _Indices,
 	}
 ```
 
-#### is_iterable
+### is_iterable
 
 ```
     template <typename C, 
@@ -1113,6 +1172,27 @@ template<size_t... _Indices,
         C, void_t<decltype(*begin(std::declval<C>())), 
         decltype(end(std::declval<C>()))>> 
         : std::true_type{};
+```
+
+### detect function and its return type
+
+#### 1
+```
+template <class T, class = std::void_t<>> struct got_empty : std::false_type {};
+template <class T>
+struct got_empty<T>
+    : std::conditional_t<
+          std::is_same_v<std::invoke_result_t<decltype(&T::empty), T>, bool>,
+          std::true_type, std::false_type> {};
+```
+
+#### 2
+```
+template <class T, class = std::void_t<>> struct got_empty : std::false_type {};
+template <class T>
+struct got_empty<T, std::enable_if_t<std::is_same_v<
+                        std::invoke_result_t<decltype(&T::empty), T>, bool>>>
+    : std::true_type {};
 ```
 
 # Instantiation

@@ -547,7 +547,7 @@ std::memcpy(&x_representation, &x, sizeof(x));
  
 Implementations now generally outlaw using reinterpret_cast to violate strict aliasing, but allow representation casting to be done via unions.  But even that is an extension, and according to a strict reading of the standard it is UB.  I think that this is exactly the kind of thing that should have "implementation-defined" behavior rather than be UB.  The difference is that usually implementation-defined behavior has bounds to how wild implementations can go, for example: "the resulting value is implementation-defined" vs. "is UB".  It puts boundaries on how non-portable this code is.
 
-Permitting aliasing via unions would wreck performance, as you would never know when two objects of completely different types might alias. The C union visibility rule is highly controversial even within the C community; see e.g. https://gcc.gnu.org/bugzilla/show_bug.cgi?id=65892
+Permitting aliasing via unions would wreck performance, as you would never know when two objects of completely different types might alias. The C union visibilrwise be modified by the user, so the compiler can, with this constraint on memcpy, make assumptions about them (e.g. that thity rule is highly controversial even within the C community; see e.g. https://gcc.gnu.org/bugzilla/show_bug.cgi?id=65892
 
 
 static_cast<Base&>(d) obtains a potentially overlapping subobject, because every base subobject is a potentially overlapping subobject. It's then not permitted to use raw memory access to the underlying representation, as memcpy. The concept of "potentially overlapping subobject" is not with reference to another object. It's an absolute concept
@@ -555,7 +555,7 @@ static_cast<Base&>(d) obtains a potentially overlapping subobject, because every
 Before the standard did allow copying of POD bases through memcpy , and to not break ABI right now compliers still don't re-use padding bits for PODs.
 
 
-The padding bytes aren't part of the value representation of the independent target object, so its value can't be affected. However, the padding bytes in the independent target object can not otherwise be modified by the user, so the compiler can, with this constraint on memcpy, make assumptions about them (e.g. that they are always zero if the object doesn't have an indeterminate value). If you drop this constraint then such assumptions won't hold anymore
+The padding bytes aren't part of the value representation of the independent target object, so its value can't be affected. However, the padding bytes in the independent target object can not otheey are always zero if the object doesn't have an indeterminate value). If you drop this constraint then such assumptions won't hold anymore
 
 For any object (other than a potentially-overlapping subobject) of trivially copyable type T, whether or not the object holds a valid value of type T, the underlying bytes ([intro.memory]) making up the object can be copied into an array of char, unsigned char, or std​::​byte ([cstddef.syn]).36 If the content of that array is copied back into the object, the object shall subsequently hold its original value.
 

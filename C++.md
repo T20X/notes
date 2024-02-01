@@ -1,4 +1,10 @@
 ﻿
+# parsing
+
+Unlike other parsing functions in C++ and C libraries, std::from_chars is locale-independent, non-allocating, and non-throwing. Only a small subset of parsing policies used by other libraries (such as std::sscanf) is provided. This is intended to allow the fastest possible implementation that is useful in common high-throughput contexts such as text-based interchange (JSON or XML).
+
+The guarantee that std::from_chars can recover every floatin
+
 # tuple,pair,variant
 
 they are not trivialy copyable, variant is!
