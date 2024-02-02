@@ -1,4 +1,4 @@
-﻿Now suppose that the lowest exponent that can be represented is -100. So the smallest number that can be represented in normal form is 1\*10-100. However, if we relax the constraint that the leading bit be a one, then we can actually represent smaller numbers in the same space. Taking a decimal example we could represent 0.1\*10-100. This is called a subnormal number. The purpose of having subnormal numbers is to smooth the gap between the smallest normal number and zero.
+Now suppose that the lowest exponent that can be represented is -100. So the smallest number that can be represented in normal form is 1\*10-100. However, if we relax the constraint that the leading bit be a one, then we can actually represent smaller numbers in the same space. Taking a decimal example we could represent 0.1\*10-100. This is called a subnormal number. The purpose of having subnormal numbers is to smooth the gap between the smallest normal number and zero.
 ---------------------
 It is very important to realise that subnormal numbers are represented with less precision than normal numbers. In fact, they are trading reduced precision for their smaller size. Hence calculations that use subnormal numbers are not going to have the same precision as calculations on normal numbers. So an application which does significant computation on subnormal numbers is probably worth investigating to see if rescaling (i.e. multiplying the numbers by some scaling factor) would yield fewer subnormals, and more accurate result
 ------------------------------------
@@ -47,7 +47,8 @@ and can’t finitely represent 1/3:
 
 
 
-----------------------
+# format EIEE
+
 Negative exponents could pose a problem in comparisons.
 
 For example (with two's complement):
@@ -71,6 +72,13 @@ s = 0; e = 255; f = 0
 s = 1; e = 255; f = 0
 (all bits in f are zero)	-INF (negative infinity)
 s = u; e = 255; f  0 (at least one bit in f is nonzero)	NaN (Not-a-Number)
+
+
+For all of the above, an exponent of all zeros has the special meaning “exponent 0” (and this is where the denormals / subnormals come into play) and all ones has the special meaning “infinity”
+
+The exponent bits tell you which power of two numbers you are between – [2^{exponent}, 2^{exponent+1}) – and the mantissa tells you where you are in that range.
+
+
 
 ---------------------------------------------
 0/0 will give a nan for floating points which is not comparable!
