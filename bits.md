@@ -1,3 +1,7 @@
+# double /float
+
+**bitwise operators ( ~ , & , | , ^ , >> , << , and the assignment variants) do not accept double or float operand**
+
 # integers
 
 2-complemantry format is been used officially

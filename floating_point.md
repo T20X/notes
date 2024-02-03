@@ -37,7 +37,7 @@ https://docs.oracle.com/cd/E19957-01/806-3568/ncgTOC.html
 # std::round & std::rint
 
 std::round only suppports rounding halfway from zero
-std::rint on the other hand uses custom rounding mode set by fesetround! Note that by default it is FE_TONEAREST (with half EVEN).
+std::rint on the other hand uses custom rounding mode set by fesetround! Note that by default it is FE_TONEAREST (**with tie rounded to EVEN**).
 
 round()'s rounding is different from the IEEE754 default round to nearest mode with even as a tie-break. Nearest-even avoids statistical bias in the average magnitude of numbers, but does bias towards even numbers
 
@@ -45,17 +45,16 @@ For setting rounding mode through assembly, you may need to resort to assembly. 
 
 Prefer rint() for performance reasons: gcc and clang both inline it more easily, but gcc never inlines nearbyint() (even with -ffast-math)
 
-
-float       round ( float arg );
-float       roundf( float arg );
-(1)	(since C++11)
-double      round ( double arg );
-Computes the nearest integer value to arg (in floating-point format), rounding halfway cases away from zero, regardless of the current rounding mode.
+std::rint differs from std::round in that halfway cases are rounded to even rather than away from zero.
 
 
+# rounding modes
 
 HALF EVEN rounding - it rounds towards nearest value and if both are equidistant then it rounds towards an even number. Not present in C++ standart. 
 --->GNU<----: In this mode results are rounded to the nearest representable value. If the result is midway between two representable values, the even representable is chosen. Even here means the lowest-order bit is zero
+
+Round to nearest (default)
+This is the default mode. It should be used unless there is a specific need for one of the others. In this mode results are rounded to the nearest representable value. If the result is midway between two representable values, the even representable is chosen. Even here means the lowest-order bit is zero. This rounding mode prevents statistical bias and guarantees numeric stability: round-off errors in a lengthy calculation will remain smaller than half of FLT_EPSILON
 
 -------------------------
 The feenableexcept() function unmasks the floating-point exceptions represented by excepts. The future floating-point operations that produce excepts will trap, and a SIGFPE will be delivered to the process.
@@ -111,8 +110,7 @@ f the number is not normalized, then you can subtract 1 from the exponent while 
 -------------
 in the actual bits representing the floating point number, the exponent is biased by adding a constant to it, to make it always be represented as an unsigned quantit
 -------------
-Round to nearest.
-This is the default mode. It should be used unless there is a specific need for one of the others. In this mode results are rounded to the nearest representable value. If the result is midway between two representable values, the even representable is chosen. Even here means the lowest-order bit is zero. This rounding mode prevents statistical bias and guarantees numeric stability: round-off errors in a lengthy calculation will remain smaller than half of FLT_EPSILON
+
 --------------------------
 general idea to reduce rounding error is to keep calculations with similar exponents to each other! keep big number with big number, little numbers with little numbers!
 -----------------
