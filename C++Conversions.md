@@ -1,3 +1,138 @@
+# implicit conversions
+
+Implicit conversions are performed whenever an expression of some type T1 is used in context that does not accept that type, but accepts some other type T2; in particular:
+
+when the expression is used as the argument when calling a function that is declared with T2 as parameter;
+when the expression is used as an operand with an operator that expects T2;
+when initializing a new object of type T2, including return statement in a function returning T2;
+when the expression is used in a switch statement (T2 is integral type);
+when the expression is used in an if statement or a loop (T2 is bool).
+The program is well-formed (compiles) only if there exists one unambiguous implicit conversion sequence from T1 to T2.
+
+If there are multiple overloads of the function or operator being called, after the implicit conversion sequence is built from T1 to each available T2, overload resolution rules decide which overload is compiled.
+
+Note: in [ink](#ariphmetic-converions), the destination type for the implicit conversions on the operands to binary operators is determined by a separate set of rules: usual arithmetic conversions.
+
+## Order of the conversions
+
+Implicit conversion sequence consists of the following, in this order:
+
+1) zero or one standard conversion sequence;
+2) zero or one user-defined conversion;
+3) zero or one standard conversion sequence (only if a user-defined conversion is used).
+When considering the argument to a constructor or to a user-defined conversion function, only one standard conversion sequence is allowed (otherwise user-defined conversions could be effectively chained). When converting from one non-class type to another non-class type, only a standard conversion sequence is allowed.
+
+A standard conversion sequence consists of the following, in this order:
+
+1) zero or one conversion from the following set:
+lvalue-to-rvalue conversion,
+array-to-pointer conversion, and
+function-to-pointer conversion;
+2) zero or one numeric promotion or numeric conversion;
+3) zero or one function pointer conversion;
+(since C++17)
+4) zero or one qualification conversion.
+A user-defined conversion consists of zero or one non-explicit single-argument converting constructor or non-explicit conversion function call.
+
+An expression e is said to be implicitly convertible to T2 if and only if T2 can be copy-initialized from e, that is the declaration T2 t = e; is well-formed (can be compiled), for some invented temporary t. Note that this is different from direct initialization (T2 t(e)), where explicit constructors and conversion functions would additionally be consider
+
+
+## boolean conversions
+
+Boolean conversions
+A prvalue of integral, floating-point, unscoped enumeration, pointer, and pointer-to-member types can be converted to a prvalue of type bool.
+
+The value zero (for integral, floating-point, and unscoped enumeration) and the null pointer and the null pointer-to-member values become false. All other values become true.
+
+In the context of a direct-initialization, a bool object may be initialized from a prvalue of type std::nullptr_t, including nullptr. The resulting value is 
+false. However, this is not considered to be an implicit conversion.
+
+A prvalue of type bool can be converted to a prvalue of type int, with false becoming ​0​ and true becoming 1
+
+
+In the following contexts, the type bool is expected and the implicit conversion is performed if the declaration bool t(e); is well-formed (that is, an explicit conversion function such as explicit T::operator bool() const; is considered). Such expression e is said to be contextually converted to bool.
+
+- the controlling expression of if, while, for;
+- the operands of the built-in logical operators !, && and ||;
+- the first operand of the conditional operator ?:;
+- the predicate in a static_assert declaration;
+- the expression in a noexcept specifier;
+- the expression in an explicit specifier; (since C++20)
+
+
+## integral promotions
+
+C++ promotions are "value-preserving." That is, the value after the promotion is guaranteed to be the same as the value before the promotion. In value-preserving promotions, objects of shorter integral types (such as bit fields or objects of type char) are promoted to type int if int can represent the full range of the original type. If int cannot represent the full range of values, then the object is promoted to type unsigned int. Although this strategy is the same as that used by ANSI C, value-preserving conversions do not preserve the "signedness" of the object.
+
+Value-preserving promotions and promotions that preserve signedness normally produce the same results. However, they can produce different results if the promoted object is one of the following:
+
+ - An operand of /, %, /=, %=, <, <=, >, or >=
+
+    These operators rely on sign for determining the result. Therefore, value-preserving and sign-preserving promotions produce different results when applied to these operands.
+
+- The left operand of >> or >>=
+
+    These operators treat signed and unsigned quantities differently when performing a shift operation. For signed quantities, shifting a quantity right causes the sign bit to be propagated into the vacated bit positions. For unsigned quantities, the vacated bit positions are zero-filled.
+
+### signed to unsgined 
+
+Objects of signed integral types can be converted to corresponding unsigned types. When these conversions occur, the actual bit pattern does not change; however, the interpretation of the data changes
+
+
+### floating types
+
+An object of a floating type can be safely converted to a more precise floating type — that is, the conversion causes no loss of significance. For example, conversions from float to double or from double to long double are safe, and the value is unchanged.
+
+An object of a floating type can also be converted to a less precise type, if it is in a range representable by that type. (See Floating Limits for the ranges of floating types.) If the original value cannot be represented precisely, it can be converted to either the next higher or the next lower representable value. If no such value exists, the result is undefined
+
+### integer to float
+
+Certain expressions can cause objects of floating type to be converted to integral types, or vice versa. When an object of integral type is converted to a floating type and the original value cannot be represented exactly, the result is either the next higher or the next lower representable value.
+
+
+### float to integer
+
+
+When an object of floating type is converted to an integral type, the fractional part is **truncated**. No rounding takes place in the conversion process. Truncation means that a number like 1.3 is converted to 1, and –1.3 is converted to –1
+
+### ariphmetic converions
+
+int is the least type possible for arithmetic operations
+IMPORTANT: ***(uint8_t)3 + (uint8_t)3 -> still result type is int ***
+
+
+Conditions Met	                                        | Conversion
+Either operand is of type long double.	                | Other operand is converted to type long double.
+Preceding condition not met and either operand is of    | Other operand is converted to type double.
+type double.	                                         
+Preceding conditions not met and either                 | Other operand is converted to type float.     
+operand is of type float
+
+Preceding conditions not met                            | Integral promotions are performed on the operands as follows:
+(none of the operands are of floating types).	
+
+- If either operand is of type unsigned long, the other operand is converted to type unsigned long.
+- If preceding condition not met, and if either operand is of type long and the other of type unsigned int, both operands are converted to type unsigned long.
+- If the preceding two conditions are not met, and if either operand is of type long, the other operand is converted to type long.
+- If the preceding three conditions are not met, and if either operand is of type unsigned int, the other operand is converted to type unsigned int.
+- If none of the preceding conditions are met, both operands are converted to type int.
+ 
+
+
+
+
+
+
+# Numeric conversions
+
+Unlike the promotions, numeric conversions may change the values, with potential loss of precision
+
+# value transformations 
+
+Value transformations are conversions that change the value category of an expression. They take place whenever an expression appears as an operand of an operator that expects an expression of a different value category:
+
+Whenever a glvalue appears as an operand of an operator that requires a prvalue for that operand, the lvalue-to-rvalue, array-to-pointer, or function-to-pointer standard conversions are applied to convert the expression to a prvalue.
+Whenever a prvalue appears as an operand of an operator that expects a glvalue for that operand, the temporary materialization conversion is applied to convert the expression to an xvalue.
 
 # primitive types
 
@@ -178,80 +313,4 @@ const volatile T* __p = ...
  ::new ((void *)__p) _Up(std::forward<_Args>(__args)...); //this works!, but static_cast / reinterpret_cast won't be able to work!
 
  ```
-
-# boolean conversions
-
-Boolean conversions
-A prvalue of integral, floating-point, unscoped enumeration, pointer, and pointer-to-member types can be converted to a prvalue of type bool.
-
-The value zero (for integral, floating-point, and unscoped enumeration) and the null pointer and the null pointer-to-member values become false. All other values become true.
-
-In the context of a direct-initialization, a bool object may be initialized from a prvalue of type std::nullptr_t, including nullptr. The resulting value is 
-false. However, this is not considered to be an implicit conversion.
-
-A prvalue of type bool can be converted to a prvalue of type int, with false becoming ​0​ and true becoming 1
-
-# integral promotions
-
-C++ promotions are "value-preserving." That is, the value after the promotion is guaranteed to be the same as the value before the promotion. In value-preserving promotions, objects of shorter integral types (such as bit fields or objects of type char) are promoted to type int if int can represent the full range of the original type. If int cannot represent the full range of values, then the object is promoted to type unsigned int. Although this strategy is the same as that used by ANSI C, value-preserving conversions do not preserve the "signedness" of the object.
-
-Value-preserving promotions and promotions that preserve signedness normally produce the same results. However, they can produce different results if the promoted object is one of the following:
-
- - An operand of /, %, /=, %=, <, <=, >, or >=
-
-    These operators rely on sign for determining the result. Therefore, value-preserving and sign-preserving promotions produce different results when applied to these operands.
-
-- The left operand of >> or >>=
-
-    These operators treat signed and unsigned quantities differently when performing a shift operation. For signed quantities, shifting a quantity right causes the sign bit to be propagated into the vacated bit positions. For unsigned quantities, the vacated bit positions are zero-filled.
-
-## signed to unsgined 
-
-Objects of signed integral types can be converted to corresponding unsigned types. When these conversions occur, the actual bit pattern does not change; however, the interpretation of the data changes
-
-
-## floating types
-
-An object of a floating type can be safely converted to a more precise floating type — that is, the conversion causes no loss of significance. For example, conversions from float to double or from double to long double are safe, and the value is unchanged.
-
-An object of a floating type can also be converted to a less precise type, if it is in a range representable by that type. (See Floating Limits for the ranges of floating types.) If the original value cannot be represented precisely, it can be converted to either the next higher or the next lower representable value. If no such value exists, the result is undefined
-
-## integer to float
-
-Certain expressions can cause objects of floating type to be converted to integral types, or vice versa. When an object of integral type is converted to a floating type and the original value cannot be represented exactly, the result is either the next higher or the next lower representable value.
-
-
-## float to integer
-
-
-When an object of floating type is converted to an integral type, the fractional part is **truncated**. No rounding takes place in the conversion process. Truncation means that a number like 1.3 is converted to 1, and –1.3 is converted to –1
-
-## ariphmetic converion rules
-
-int is the least type possible for arithmetic operations
-IMPORTANT: ***(uint8_t)3 + (uint8_t)3 -> still result type is int ***
-
-
-Conditions Met	                                        | Conversion
-Either operand is of type long double.	                | Other operand is converted to type long double.
-Preceding condition not met and either operand is of    | Other operand is converted to type double.
-type double.	                                         
-Preceding conditions not met and either                 | Other operand is converted to type float.     
-operand is of type float
-
-Preceding conditions not met                            | Integral promotions are performed on the operands as follows:
-(none of the operands are of floating types).	
-
-- If either operand is of type unsigned long, the other operand is converted to type unsigned long.
-- If preceding condition not met, and if either operand is of type long and the other of type unsigned int, both operands are converted to type unsigned long.
-- If the preceding two conditions are not met, and if either operand is of type long, the other operand is converted to type long.
-- If the preceding three conditions are not met, and if either operand is of type unsigned int, the other operand is converted to type unsigned int.
-- If none of the preceding conditions are met, both operands are converted to type int.
- 
-
-
-
-
-
-
 
