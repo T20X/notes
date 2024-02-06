@@ -19,6 +19,23 @@ int lengthOfLongestSubstringTwoDistinct(string s) {
 ## number of steps to visiit all nodes in connected undirected graph
 https://leetcode.com/problems/shortest-path-visiting-all-nodes
 
+## house robber
+
+```
+class Solution {
+public:
+     int rob(const vector<int>& nums) {
+        vector<int> dp(nums.size()+1);
+        dp[0]=0;
+        dp[1]=nums[0];
+        for (size_t i = 1; i < nums.size(); ++i) {          
+          dp[i+1] = max(nums[i]+dp[i-1],dp[i]);
+        }
+        return dp.back();        
+    }
+};
+```
+
 ### DFS
 
 Now that we have our recurrence relation, we can solve this problem using DFS. But first, we must decide what our base case will be. A base case is any state where we can calculate the result without making recursive calls. In this problem, the base case could be when we have visited all nodes, return 0 because we have visited all nodes and no more steps need to be made, or the base case could be when there is only 1 unvisited node, return 0 because we have visited all other nodes and we must be standing on the final node.
