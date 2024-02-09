@@ -1,4 +1,34 @@
-﻿Now suppose that the lowest exponent that can be represented is -100. So the smallest number that can be represented in normal form is 1\*10-100. However, if we relax the constraint that the leading bit be a one, then we can actually represent smaller numbers in the same space. Taking a decimal example we could represent 0.1\*10-100. This is called a subnormal number. The purpose of having subnormal numbers is to smooth the gap between the smallest normal number and zero.
+﻿
+
+
+# format EIEE
+
+Negative exponents could pose a problem in comparisons.
+
+For example (with two's complement):
+
+ 	Sign	Exponent	Mantissa
+1.0 × 2-1	0	11111111	0000000 00000000 00000000
+1.0 × 2+1	0	00000001	0000000 00000000 00000000
+With this representation, the first exponent shows a "larger" binary number, making direct comparison more difficult.
+
+To avoid this, Biased Notation is used for exponents.
+
+If the real exponent of a number is X then it is represented as (X + bias)
+
+For all of the above, an exponent of all zeros has the special meaning “exponent 0” (and this is where the denormals / subnormals come into play) and all ones has the special meaning “infinity”
+
+The exponent bits tell you which power of two numbers you are between – [2^{exponent}, 2^{exponent+1}) – and the mantissa tells you where you are in that range.
+## double spec
+
+![](images/double_spec.JPG)
+
+## precision exlapained
+
+![](images/floating_precision.JPG)
+
+
+Now suppose that the lowest exponent that can be represented is -100. So the smallest number that can be represented in normal form is 1\*10-100. However, if we relax the constraint that the leading bit be a one, then we can actually represent smaller numbers in the same space. Taking a decimal example we could represent 0.1\*10-100. This is called a subnormal number. The purpose of having subnormal numbers is to smooth the gap between the smallest normal number and zero.
 ---------------------
 It is very important to realise that subnormal numbers are represented with less precision than normal numbers. In fact, they are trading reduced precision for their smaller size. Hence calculations that use subnormal numbers are not going to have the same precision as calculations on normal numbers. So an application which does significant computation on subnormal numbers is probably worth investigating to see if rescaling (i.e. multiplying the numbers by some scaling factor) would yield fewer subnormals, and more accurate result
 ------------------------------------
@@ -7,7 +37,7 @@ https://docs.oracle.com/cd/E19957-01/806-3568/ncgTOC.html
 # std::round & std::rint
 
 std::round only suppports rounding halfway from zero
-std::rint on the other hand uses custom rounding mode set by fesetround! Note that by default it is FE_TONEAREST (with half EVEN).
+std::rint on the other hand uses custom rounding mode set by fesetround! Note that by default it is FE_TONEAREST (**with tie rounded to EVEN**).
 
 round()'s rounding is different from the IEEE754 default round to nearest mode with even as a tie-break. Nearest-even avoids statistical bias in the average magnitude of numbers, but does bias towards even numbers
 
@@ -15,17 +45,16 @@ For setting rounding mode through assembly, you may need to resort to assembly. 
 
 Prefer rint() for performance reasons: gcc and clang both inline it more easily, but gcc never inlines nearbyint() (even with -ffast-math)
 
-
-float       round ( float arg );
-float       roundf( float arg );
-(1)	(since C++11)
-double      round ( double arg );
-Computes the nearest integer value to arg (in floating-point format), rounding halfway cases away from zero, regardless of the current rounding mode.
+std::rint differs from std::round in that halfway cases are rounded to even rather than away from zero.
 
 
+# rounding modes
 
 HALF EVEN rounding - it rounds towards nearest value and if both are equidistant then it rounds towards an even number. Not present in C++ standart. 
 --->GNU<----: In this mode results are rounded to the nearest representable value. If the result is midway between two representable values, the even representable is chosen. Even here means the lowest-order bit is zero
+
+Round to nearest (default)
+This is the default mode. It should be used unless there is a specific need for one of the others. In this mode results are rounded to the nearest representable value. If the result is midway between two representable values, the even representable is chosen. Even here means the lowest-order bit is zero. This rounding mode prevents statistical bias and guarantees numeric stability: round-off errors in a lengthy calculation will remain smaller than half of FLT_EPSILON
 
 -------------------------
 The feenableexcept() function unmasks the floating-point exceptions represented by excepts. The future floating-point operations that produce excepts will trap, and a SIGFPE will be delivered to the process.
@@ -44,41 +73,6 @@ Well, for a number to be finitely represented the denominator in a fraction shou
 
 
 and can’t finitely represent 1/3:
-
-
-
-# format EIEE
-
-Negative exponents could pose a problem in comparisons.
-
-For example (with two's complement):
-
- 	Sign	Exponent	Mantissa
-1.0 × 2-1	0	11111111	0000000 00000000 00000000
-1.0 × 2+1	0	00000001	0000000 00000000 00000000
-With this representation, the first exponent shows a "larger" binary number, making direct comparison more difficult.
-
-To avoid this, Biased Notation is used for exponents.
-
-If the real exponent of a number is X then it is represented as (X + bias)
-
-IEEE single-precision uses a bias of 127. Therefore, an exponent of
-
-0 < e < 255	(-1)s × 2e-127 × 1.f (normal numbers)
-e = 0; f  0 (at least one bit in f is nonzero)	(-1)s × 2-126 × 0.f (subnormal numbers)
-e = 0; f = 0 (all bits in f are zero)	(-1)s × 0.0 (signed zero)
-s = 0; e = 255; f = 0
-(all bits in f are zero)	+INF (positive infinity)
-s = 1; e = 255; f = 0
-(all bits in f are zero)	-INF (negative infinity)
-s = u; e = 255; f  0 (at least one bit in f is nonzero)	NaN (Not-a-Number)
-
-
-For all of the above, an exponent of all zeros has the special meaning “exponent 0” (and this is where the denormals / subnormals come into play) and all ones has the special meaning “infinity”
-
-The exponent bits tell you which power of two numbers you are between – [2^{exponent}, 2^{exponent+1}) – and the mantissa tells you where you are in that range.
-
-## precision exlapained
 
 
 
@@ -116,8 +110,7 @@ f the number is not normalized, then you can subtract 1 from the exponent while 
 -------------
 in the actual bits representing the floating point number, the exponent is biased by adding a constant to it, to make it always be represented as an unsigned quantit
 -------------
-Round to nearest.
-This is the default mode. It should be used unless there is a specific need for one of the others. In this mode results are rounded to the nearest representable value. If the result is midway between two representable values, the even representable is chosen. Even here means the lowest-order bit is zero. This rounding mode prevents statistical bias and guarantees numeric stability: round-off errors in a lengthy calculation will remain smaller than half of FLT_EPSILON
+
 --------------------------
 general idea to reduce rounding error is to keep calculations with similar exponents to each other! keep big number with big number, little numbers with little numbers!
 -----------------

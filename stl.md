@@ -62,6 +62,10 @@ so in summary emplace is still good in two cases:
  - keys are not copyable/moveable
  - cost to move/copy key is high compared to creating key object by implicit constructor
 
+using structured binding
+```
+ const  auto& [my_level_it,new_level_added ] = my_ladder.levels.try_emplace(price,  typename MyLadder::OrderList{Order{id, quantity}});
+```
 
 ### erase
 
