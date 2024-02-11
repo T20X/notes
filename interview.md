@@ -8,7 +8,49 @@
 - try to bait the interviewer into your area
 - Try to iterate through few solutions and see if you can bait the interviewer into to confirm if you are on the right track!
 
+# pre-interview warup
+
+basic coding
+- gcd, string split
   
+basic C++
+- any, shared_ptr, optional, unique_ptr, function
+
+# coding tips
+
+- you keep missing the following:
+    explicit
+    returning from assignment operator
+    checking for *this assignment in assignment operator
+
+- disable all plugins in Firefox
+- variables need to have meaning rather than some technical terms, this would help with coding and eleminate bugs as than ifyou start using some meaning in the context it does not belong, you'll find a bug
+- **ALWAYS REVISE YOUR CODE BEFORE START EXECUTING IT IN DEBUGGER**
+- handy compare util  
+```
+template <class L, class R>
+bool compare(const L& l, const R& r, int i) {  
+ if (l != r) {
+  cout << "\n[" << i << "] -> left [" << l << "] not equal right [" << r << "]\n";
+  return false;
+ }
+
+ return true;
+}
+```
+
+# C++ coding specifics
+
+## vector
+
+- just do empty vector constructor and than emplace_back / push_back!
+- remember that vector uses move if move constructor is noexcept than copy and move anyway if copy is not available
+- increment back_ ptr only after constructing an element to be thread safe!
+
+## shared_ptr
+
+- constructor must be explicit!
+
 # make sure you are rested, go to the gym before the interview
 
 # problem solving tricks
@@ -93,6 +135,9 @@ The “best” configuration (subset) that respects some given rules.
 There are at most 6 people.
 
 IMPORTANT! **Note that Recursive solutions got normally space complexity of O(n) as it takes recursion N steps to reach the base case normally!**
+
+
+We are given that n <= 6. Typically, problems that ask you to find all of something with low bounds can be solved with backtracking
 
 ### Problem hints
 

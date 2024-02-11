@@ -64,6 +64,16 @@ mask ^ (1 << N)
 
 N & (N - 1)
 
+# MSB bit pos calc
+
+   int calcMaxBit(int num) {
+        int bits = 0;
+        while (num > 0) {
+            num /= 2;
+            bits++;
+        }
+        return bits;
+    }
 
 # get number with all 1s bits set
 

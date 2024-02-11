@@ -106,8 +106,16 @@ A **subsequence** must maintain the relative order of the original sequence. It 
 A **subset** MAY NOT maintain relative ordering of elements and can or cannot be a contiguous part of an array
 A **substring** is a contiguous sequence of characters in a string
 
+## problem solving techniques
+
+### Negative marking
+
+![](images/algo/negative_marking.JPG)
 
 
+### Cyclic sort
+
+![](images/algo/negative_marking.JPG)
 
 # dynamic sets
 
@@ -515,5 +523,36 @@ procedure bt(c)
     bt(s)
     s ? next(P,s)
 
+    We are given that n <= 6. Typically, problems that ask you to find all of something with low bounds can be solved with backtracking
 
 
+## all permutations
+
+```
+class Solution {
+public:
+    vector<vector<int>> permute(vector<int>& nums) {
+        vector<vector<int>> r;
+        vector<int> current_nums;
+        do_permute(r, nums, current_nums);
+        return r;
+        
+    }
+    
+    void do_permute(vector<vector<int>>& r, vector<int>& nums,  vector<int>& current_nums) {
+       if(nums.empty()) {
+           r.emplace_back(current_nums);
+           return;            
+       }
+            
+        for (int i= 0; i < nums.size(); ++i) {
+           int v = nums[i];
+           current_nums.push_back(v);
+           nums.erase(begin(nums)+i);
+           do_permute(r, nums, current_nums);
+           current_nums.pop_back();
+           nums.insert(begin(nums)+i,v);
+        }           
+    }
+};
+```
