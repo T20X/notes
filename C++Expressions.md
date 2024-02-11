@@ -521,12 +521,32 @@ S {int x} a;
 int i = S().a; //S() is used as rvalue expression, we don't say that S() is rvalue
 for S().a to work, S() would need to have a base offset and that means it has to be stored somewhere
 
+## lvalue-to-rvalue conversion
+- value indicated by lvalue is really rvalue result!
+- in the context where rvalue is expected and lvalue given, than lvalue to rvalue conversion takes place
+- on the left hand side, assignment expects rvalue 
+    int i = 5; //i expects to be initialized by ralue, otherwise the code on this line will not make any sense
+- expression e can be implicitly converted to type P. result is lvalue is e is lvalue and rvalue otherwise
 
 ## value category does not bind to lifetime
 
 Guideline: Do not assume that “rvalues are short-lived,” nor that “everything sufficiently long-lived must be an lvalue.” Vice versa, do not assume that “lvalues are long-lived,” nor that “everything sufficiently short-lived must appear as an rvalue.”
 
 Value category is not lifetime.
+
+## forwarding reference
+
+```
+    const vector<string> verticies;    
+    for (auto&& v : verticies)        
+      static_assert(std::is_same_v<decltype(v), const string&>);
+```    
+   
+```
+    vector<string> verticies;    
+    for (auto&& v : verticies)        
+      static_assert(std::is_same_v<decltype(v), string&>);
+```
 
 ## const can be dropped
 

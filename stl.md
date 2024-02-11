@@ -67,6 +67,10 @@ using structured binding
  const  auto& [my_level_it,new_level_added ] = my_ladder.levels.try_emplace(price,  typename MyLadder::OrderList{Order{id, quantity}});
 ```
 
+### operator[]
+
+**only works for non const objects!**
+
 ### erase
 
 References and iterators to the erased elements are invalidated. Other iterators and references are not invalidated.
