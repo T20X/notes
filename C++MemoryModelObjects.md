@@ -577,6 +577,10 @@ the standard is very strict about as basically it renders the following code inv
     }
   ```
 
+
+  he padding bytes aren't part of the value representation of the independent target object, so its value can't be affected. However, the padding bytes in the independent target object can not otherwise be modified by the user, so the compiler can, with this constraint on memcpy, make assumptions about them (e.g. that they are always zero if the object doesn't have an indeterminate value). If you drop this constraint then such assumptions won't hold anymore
+  
+
 # implicit objects creation
 
 # construction

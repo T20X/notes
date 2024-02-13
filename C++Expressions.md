@@ -521,6 +521,9 @@ S {int x} a;
 int i = S().a; //S() is used as rvalue expression, we don't say that S() is rvalue
 for S().a to work, S() would need to have a base offset and that means it has to be stored somewhere
 
+
+**If a function argument binds to an rvalue reference parameter, the implementation may assume that this parameter is a unique reference to this argument**
+
 ## lvalue-to-rvalue conversion
 - value indicated by lvalue is really rvalue result!
 - in the context where rvalue is expected and lvalue given, than lvalue to rvalue conversion takes place

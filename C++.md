@@ -1,4 +1,18 @@
-﻿
+﻿# unique_ptr
+
+## self-assignment
+
+ reset(u.release()) will survive self move assignment and that is how it is meant to be implemented!
+
+
+## exception safety and make_unique vs new T in unique_ptr
+```
+foo(make_unique<T>(), make_unique<U>()); // exception safe 
+foo(unique_ptr<T>(new T()), unique_ptr<U>(new U())); // unsafe*
+```
+
+C++17 addresses the issue shown in the first case. Now, the evaluation order of function arguments is “practical” and predictable. In our example, the compiler won’t be allowed to call otherFunction() before the expression unique_ptr<T>(new T) is fully evaluated.
+
 # parsing
 
 Unlike other parsing functions in C++ and C libraries, std::from_chars is locale-independent, non-allocating, and non-throwing. Only a small subset of parsing policies used by other libraries (such as std::sscanf) is provided. This is intended to allow the fastest possible implementation that is useful in common high-throughput contexts such as text-based interchange (JSON or XML).
