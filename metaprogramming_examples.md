@@ -35,3 +35,22 @@ static_assert(unique_id() == 2);
 static_assert(unique_id() == 3);
 
 ```
+
+## fixed_string
+
+template<size_t N>
+struct fixe_string {
+    constexpr fixe_string(const char (&str)[N]) {
+        std::copy_n(str, N, value);
+    }
+    
+    char value[N];
+};
+
+# mem_fun
+
+    inline _Mem_fn<_Tp _Class::*>
+    mem_fn(_Tp _Class::* __pm) noexcept
+    {
+      return _Mem_fn<_Tp _Class::*>(__pm);
+    }

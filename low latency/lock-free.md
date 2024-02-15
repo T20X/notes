@@ -880,4 +880,13 @@ is known as release sequence headed by
 Pause prevents speculative execution, eliminating the branch misprediction penalty
 -------------
 
+# condition_variable
+
+The notification state isn't "sticky" - notify_all will not wake threads that aren't currently waiting on the condition variable!
+the state, even atomic must be protected by the mutex!
+
+# std::counting_semaphore
+
+
+
 

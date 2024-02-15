@@ -431,7 +431,29 @@ otherwise,  the compiler will let us know that we have a pure virtual function w
 
 # Named variable
 
-``` struct argument {
+```
+
+template< /* the template args of NamedType */ >
+class FirstName
+{
+public:
+    // ...
+
+    struct argument
+    {
+        template<typename UnderlyingType>
+        NamedType operator=(UnderlyingType&& value) const
+        {
+            return NamedType(std::forward<UnderlyingType>(value));
+        }
+    };
+};
+
+static const FirstName::argument firstName;
+static const LastName::argument lastName;
+
+
+ struct argument {
   template <typename UnderlyingType>
   NamedType operator=(UnderlyingType &&value) const {
     return NamedType(std::forward<UnderlyingType>(value));

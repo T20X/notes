@@ -46,7 +46,7 @@ expression evaluation -> ( side-effects & value)
 An expression is a sequence of operators and operands that specifies a computation. An expression can result in a value and can cause side effects The implementation can regroup operators according to the usual mathematical rules only where the operators really are associative or commutative.
 Expression evaluation may produce a result (e.g., evaluation of 2 + 2 produces the result 4) and may generate side-effects (e.g. evaluation of std::printf("%d", 4) prints the character '4' on the standard output).
 
-Each C++ expression is characterized by two independent properties: A type and a value cat
+Each C++ expression is characterized by two independent properties: A type and a value category
 
 The operands of any operator may be other expressions or  [primary expression](#primary-expression)  (e.g. in 1 + 2 * 3, the operands of operator+ are the subexpression 2 * 3 and the primary expression 1).
 
@@ -523,6 +523,14 @@ for S().a to work, S() would need to have a base offset and that means it has to
 
 
 **If a function argument binds to an rvalue reference parameter, the implementation may assume that this parameter is a unique reference to this argument**
+
+
+int&& xref = 5;
+... creates a temporary, initialized with 5, whose lifetime is extended to the end of the block.
+The assignment
+xref = 10;
+changes the value of the still living temporary.
+
 
 ## lvalue-to-rvalue conversion
 - value indicated by lvalue is really rvalue result!

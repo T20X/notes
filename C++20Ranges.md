@@ -217,6 +217,12 @@ There are the STL containers, for which begin() and end() both return iterators 
     const std::ranges::take_view tv{s, 3};
     const std::ranges::ref_view rv{tv};p
 
+## member functions
+
+```
+auto results = inputs | ranges::view::transform(&X::getValue); // compiles OK
+```
+
 ## convert range to standard container
 
 * you can make container out of them!
