@@ -1,22 +1,29 @@
 # math
 
+## co-prime numbers
+
+Two numbers are called relatively prime, or coprime, if their greatest common divisor equals 1.[14] For example, 9 and 28 are coprime.
+
 ## gcd
 
 if any of the value is zero than gcd is another value
 if both values are zero than gcd is 0
 
+The greatest common divisor (GCD) of integers a and b, at least one of which is nonzero, is the greatest positive integer d such that d is a divisor of both a and b; that is, there are integers e and f such that a = de and b = df, and d is the largest such integer. The GCD of a and b is generally denoted gcd(a, b).[8]
+
+When one of a and b is zero, the GCD is the absolute value of the nonzero integer: gcd(a, 0) = gcd(0, a) = |a|. This case is important as the terminating step of the Euclidean algorithm.
+
+
 **if a >= b
 gcd(a,b) = gcd(a-b,b)
-gcd(a,b) = gcd(a % mod,b)**
+gcd(a,b) = gcd(a % mod b,b)**
 
 Algo
 
 ```
     while (a != b) {
-        if (a < b) {  
-
-
-
+        if (a < b) { 
+            auto c = b;
             b = a;
             a = c;
         }
@@ -32,9 +39,24 @@ Algo
     return a;
 ```
 
+# lcm
+
+lcm(a,b)=a*b/gcd(a,b)
+
 # binary search
 
 the whole point is to track mid
+
+
+``` 
+left + (right - left) / 2
+```
+
+ is better than just because it does not overflow
+
+```
+ (right + left) / 2
+```
 
 # heap
 
