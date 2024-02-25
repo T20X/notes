@@ -11,10 +11,23 @@
 # pre-interview warup
 
 basic coding
-- gcd, string split
+- gcd,lcm
+- string split
+- dfs
+- bfs
+- topologic sorting
+- counting sorting
+- selection
+- heap
+- segment tree
+- binary sort, lower bound, upper bound
+- tree walks
+- lru/lfu
+- longest  maximum subsequence
+- dynamic sets
   
 basic C++
-- any, shared_ptr, optional, unique_ptr, function
+- any, shared_ptr, optional, unique_ptr, function, double buffer, triple buffer, list
 
 # coding tips
 

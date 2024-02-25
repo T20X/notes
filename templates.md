@@ -626,6 +626,31 @@ std::remove_reference<decltype(declval<DeclvalStruct>())>::type
 
 std::identity is a function object type whose operator() returns its argument unchanged
 
+## std::tuple_element
+
+Provides compile-time indexed access to the types of the elements of a tuple-like type.
+
+template<typename T1, typename T2, typename T3>
+struct Triple
+{
+    T1 t1;
+    T2 t2;
+    T3 t3;
+};
+ 
+// A specialization of std::tuple_element for program-defined type Triple:
+template<std::size_t I, typename T1, typename T2, typename T3>
+    struct std::tuple_element<I, Triple<T1, T2, T3>>
+    { static_assert(false, "Invalid index"); }; 
+template<typename T1, typename T2, typename T3>
+    struct std::tuple_element<0, Triple<T1, T2, T3>> { using type = T1; };
+template<typename T1, typename T2, typename T3>
+    struct std::tuple_element<1, Triple<T1, T2, T3>> { using type = T2; };
+template<typename T1, typename T2, typename T3>
+    struct std::tuple_element<2, Triple<T1, T2, T3>> { using type = T3; };
+
+    ```
+
 ##  std::mem_fun
 
 Function template std::mem_fn generates wrapper objects for pointers to members, which can store, copy, and invoke a pointer to member. Both references and pointers (including smart pointers) to an object can be used when invoking a std::mem_fn.

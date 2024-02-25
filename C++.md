@@ -1,4 +1,122 @@
-﻿# unique_ptr
+﻿# enums
+
+And C++11's enum class doesn't guarantee contiguous values, the same as you describe for C++03's enum.
+
+# streams
+
+# input streams (files,cin...)
+
+separates data points based on "SPACES" OR "NEW LINE"
+
+## eof
+
+// EOF after std::getline() is not the criterion to stop processing
+// data: In case there is data between the last delimiter and EOF,
+// getline() extracts it and sets the eofbit.
+
+## std::getline
+
+In almost all test cases, the eofbit has been set at the same time as the failbit (verifying “Notice that some eofbit cases will also set failbit.” as stated above). A closer look reveals that the failbit is only set by getline() if it did not manage to extract any data at all. Note that this is a regular scenario, when the last character in a file is a line delimiter. The eofbit on the other hand means that getline() reached EOF while searching for the next line delimiter: If there is data between the last delimiter and EOF, getline() extracts this data and sets eofbit.
+The badbit is only set in case of trying to get a line from a directory.
+getline() does only change errno in case of trying to get a line from a directory. In all other error cases it does not change errno.
+
+
+This is a gotcha that bit me and I think is worth mentioning in your article. Many times you see code like
+while(getline(f, line).good()) process(&line);
+This fails when there is no newline at the end of the file whereas
+while(getline(f, line)) process(&line);
+works fine.
+The reason why is subtle. The .good() method checks for (eofbit, failbit and badbit). So this will bail out and not process the last line because eofbit is set. In contrast, the built in operator checks only (failbit, badbit) so it will process the last line
+
+
+
+## hanlding error
+
+```
+    std::cin.clear();
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+```
+
+## std::cin
+
+
+There's a lot of muddled terminology in the comments and the answers. std::cin is an object; it doesn't do anything on its own.
+
+Functions that read from input streams fit into one of two categories: they do formatted input or unformatted input. Formatted input functions translate the text that they get from the input stream (here, std::cin) into the data type that they're trying to read:
+
+int i;
+std::cin >> i; // operator>> reads text and translates it into an integer value
+Formatted input functions begin by skipping whitespace, then they read characters and translate them; when the function encounters a character that isn't valid for the type that they're reading, or when they see whitespace, they stop. So in the example above, if you typed " 32 ", the stream extractor would skip the leading space, read the 3 and the 2, see the following space, and stop reading. The value stored into i would be 32.
+
+std::string data;
+std::cin >> data;
+Here, if you type "Hello, world", the stream extractor (operator>>) will read up to the space, and store "Hello," in data.
+
+If you want to read whitespace as well as non-whitespace you need an unformatted input function:
+
+std::string data;
+std::getline(std::cin, data);
+Here, the call to getline reads text from std::cin up to the first newline character or to the end of the input stream. So if you typed " 32 " for this code, data would hold the text " 32 ". If you typed "Hello, world", data would hold the text "Hello, world".
+
+And note that if you mix formatted input functions with unformatted input functions you have to be careful about leftover whitespace:
+
+```
+int i;
+std::string data;
+std::cin >> i;
+std::getline(std::cin, data);
+```
+
+If you typed "32 Hello, world" on a single line, i would get the 32, and data would get " Hello, world".
+
+On the other hand, if you type two lines of input, the first with "32" and the second with "Hello, world", you'll get 32 in i, but data will be empty. That's because the stream extractor read the 3 and the 2, then saw a newline character, and stopped, leaving the newline in the input buffer. std::getline then read that newline character and it, too, stopped. But it read the entire line: it swallowed the newline character.
+
+So when your code switches from formatted input to unformatted you have to deal with whitespace characters remaining in the input buffer. If you want to read them, fine; but if you don't, you need to remove them:
+
+int i;
+std::string data;
+std::cin >> i;
+std::getline(std::cin, data); // read the rest of the line
+std::getline(std::cin, data); // read the next line of text
+A better approach is to do that cleanup with something like std::cin.ignore(42, '\n');. std::ignore is an unformatted input function; in this call it reads up to 42 characters, looking for a newline character. It stops reading when it has read 42 characters, sees a newline character, or hits the end of the input. That's better than using std::getline(std::cin, data) because it doesn't store the text into data, which could require a bunch of resizing if there's a lot of text in the remainder of the line. The more usual form for that call is to pass std::numeric_limits<int>::max() as the size argument; that's a special case, and it puts no limit on the number of characters to be read. So std::cin.ignore(std::numeric_limits<int>::max(), '\n'); will read characters until it finds a newline or hits the end of the input.
+
+int i;
+std::string data;
+std::cin >> i;
+std::cin.ignore(std::numeric_limits<int>::max(), '\n'); // flush the rest of the line
+std::getline(std::cin, data); // read the next line of text
+std::cin >> s2; // this would ask for input again!
+
+
+
+
+### bad character 
+```
+  int i = 0;
+  while (i != -1) {
+    std::cin >> i;        // BAD FORM — See comments below
+    std::cout << "You entered " << i << '\n';
+  }
+```
+
+The problem with this code is that it lacks any checking to see if someone entered an invalid input character. In particular, if someone enters something that doesn’t look like an integer (such as an ‘x’), the stream std::cin goes into a “failed state,” and all subsequent input attempts return immediately without doing anything
+
+### how to make progress after the bad character
+
+basically need to call clear() to reset the state of stream to good and also to ignore all characters currently on the input stream
+
+```
+ while ((std::cout << "How old are you? ")
+         && !(std::cin >> age)) {
+    std::cout << "That's not a number; ";
+    std::cin.clear();
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+  }
+
+```
+
+
+# unique_ptr
 
 ## self-assignment
 

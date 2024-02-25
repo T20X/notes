@@ -58,6 +58,53 @@ left + (right - left) / 2
  (right + left) / 2
 ```
 
+## lower_bound
+
+``` 
+    int search(vector<int>& nums, int target) {
+        // Set the left and right boundaries
+        int left = 0, right = int(nums.size());//WARNING! this can benums.size()-1 as well, but than in case target is not there it would point at nums.size()-1, rather than at nums.size()
+        
+        while (left < right) {
+            int mid = (left + right) / 2;
+            if (nums[mid] >= target) {
+                right = mid;                
+            } else  {               
+                left = mid + 1;
+            }
+        }
+        
+        if (left < nums.size() && nums[left] == target) {
+            return left;
+        } else {
+            return -1;
+        }
+    }
+``` 
+
+## upper_bound
+``` 
+    int search(vector<int>& nums, int target) {
+        // Set the left and right boundaries
+        int left = 0, right = int(nums.size());
+        
+        while (left < right) { //supper important so that left does not becomes original right!
+            int mid = (left + right) / 2;
+            if (nums[mid] <= target) {
+                left = mid + 1;                
+            } else  {               
+                right = mid;
+            }
+        }
+        
+        if (left > 0 && nums[left-1] == target) {
+            return left-1;
+        } else {
+            return -1;
+        }
+    }
+``` 
+
 # heap
 
 binary heap 

@@ -24,6 +24,10 @@ atomic on floating types is not atomic inc/dec, but store and load are!
 
 In addition, there are relaxed atomic operations, which are not synchronization operations, and atomic read-modify-write operations, which have special characteristics
 
+## std::atomic_ref
+
+Introducing concurrency within legacy code might require replacing operations on existing non-atomic objects with atomic operations such that the non-atomic object cannot be replaced with an atomic object. An object could be heavily used non-atomically in well-defined phases of an application. Forcing such objects to be exclusively atomic would incur an unnecessary performance penalty
+
 # Ordering 
 
 if you mix aqc-release oprations with seq_const operations then seq_const operations behave like ack-release operations!

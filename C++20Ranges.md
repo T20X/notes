@@ -187,20 +187,6 @@ unreachable_sentinel_t is used for optimization to ensure that any comparions wo
 std::ranges::find(s, std::unreachable_sentinel, CharT{})
 
 
-## std::ranges::views::iota
-
- A range factory that generates a sequence of elements by repeatedly incrementing an initial value. Can be either bounded or unbounded (infinite)
-
-```
-  for (int i : std::ranges::iota_view{1, 10})
-        std::cout << i << ' ';
-    std::cout << '\n';
- 
-    for (int i : std::views::iota(1, 10))
-        std::cout << i << ' ';
-    std::cout << '\n';
-```
-
 
 ## common ranges
 
@@ -211,11 +197,7 @@ std::vector v(std::ranges::begin(r), std::ranges::end(r));
 ```
 There are the STL containers, for which begin() and end() both return iterators of the same type. We call such a range a “common range”. If r is a common range, the above code will work.
 
-## std::ranges::ref_view
 
-    const std::string s{"cosmos"}; 
-    const std::ranges::take_view tv{s, 3};
-    const std::ranges::ref_view rv{tv};p
 
 ## member functions
 
@@ -291,7 +273,95 @@ While views were originally described as cheaply copyable and non-owning ranges,
 
 By default, a type modeling movable and range is considered a view if it is publicly and unambiguously derived from view_base, or exactly one specialization of std::ranges::view_interface.
 
-### std::views::all
+
+## range adaptors
+
+they create views from ranges or combine mutliple views into one
+
+
+## running vies IN-PLACE - SUPPER IMPORTANT & EFFICIENT!
+
+```
+    std::vector<int> v{1, 1, 2, 4};
+    std::vector<int> v2;
+    auto square = [](auto i) { return i * i; };
+    auto is_even = [](auto i) { return i % 2 == 0; };
+    auto view = v | std::views::filter(is_even) | std::views::transform(square);
+    auto r = std::ranges::transform(view, v.begin(), std::identity{}, {});
+    std::ranges::copy(std::ranges::subrange(v.begin(), r.out),
+                      std::ostream_iterator<int>(std::cout, " "));
+```
+
+# range examples
+
+## for_each
+
+```
+  std::ranges::for_each(v, [](auto v) {}, &Employe::id);
+```
+
+## sort/equal_to
+
+```
+std::ranges::sort(employes, {}/*ranges_less by default*/, &Empliyed::id)
+std::ranges::sort(paycheck, {}/*ranges_less by default*/, &Paycheck::id)
+std::ranges::equalt_to(emplolyes, paycheck, {}/*ranges_equal by default*/, &Empliyed::id, &Paycheck::id)
+```
+
+
+## elements
+
+```
+    const std::vector<std::tuple<int, char, std::string>> vt
+    {
+        {1, 'A', "α"},
+        {2, 'B', "β"},
+        {3, 'C', "γ"},
+        {4, 'D', "δ"},
+        {5, 'E', "ε"},
+    };
+    for (char const e : vt | std::views::elements<1>)
+        std::cout << e << ' ';
+
+    "A B C D E"
+```
+
+## keys/values
+```
+    const std::vector<std::tuple<std::string, double, bool>> quark_mass_charge
+    {
+        // name, MeV/c², has positive electric-charge:
+        {"up", 2.3, true}, {"down", 4.8, false},
+        {"charm", 1275, true}, {"strange", 95, false},
+        {"top", 173'210, true}, {"bottom", 4'180, false},
+    };
+
+    for (std::string const& name : std::views::keys(quark_mass_charge))
+        std::cout << std::setw(9) << name << " │ ";
+ 
+    std::cout << "\n" "Mass MeV/c²: │ ";
+    for (const double mass : std::views::values(quark_mass_charge))
+        std::cout << std::setw(9) << mass << " │ ";
+        
+ ```
+
+ ## transform range in-place with view
+
+```
+     std::vector<int> v{1, 1, 2, 4};
+    auto square = [](auto i) { return i * i; };
+    auto is_even = [](auto i) { return i % 2 == 0; };
+    auto view = v | std::views::filter(is_even) | std::views::transform(square);
+    auto r = std::ranges::transform(view, v.begin(), std::identity{}, {});
+    v.erase(r.out, end(v));
+```    
+
+
+
+
+# view examples
+
+## std::views::all
 
 A RangeAdaptorObject (also a RangeAdaptorClosureObject) that returns a view that includes all elements of its range argument.
  - Given an expression e of type R, the expression views::all(e) is expression-equivalent to:
@@ -299,7 +369,13 @@ A RangeAdaptorObject (also a RangeAdaptorClosureObject) that returns a view that
 - Otherwise, std::ranges::ref_view{e} if that expression is well-formed.
 - Otherwise, std::ranges::owning_view{e}.
 
-### iconic example
+## std::ranges::ref_view
+
+    const std::string s{"cosmos"}; 
+    const std::ranges::take_view tv{s, 3};
+    const std::ranges::ref_view rv{tv};p
+
+## iconic example
 
 ```
 auto square = [](auto i) { return i* i;};
@@ -312,7 +388,7 @@ reanges::copy(view, ostream_iterator<int>{cout});
 ```
 
 
-### filter_view DETAILS
+## filter_view DETAILS
 
 Modification of the element a filter_­view​::​iterator denotes is permitted, but results in undefined behavior if the resulting value does not satisfy the filter predicate!
 
@@ -320,31 +396,16 @@ Also it caches the first begin() so that you must be carefull to re-run the view
 
 drop_view, drop_while_view, split_view, reverse_view, and C++23's chunk_by_view.
 
-## range adaptors
+## std::ranges::views::iota
 
-they create views from ranges or combine mutliple views into one
-
-
-## running vies IN-PLACE - SUPPER IMPORTANT & EFFICIENT!
+ A range factory that generates a sequence of elements by repeatedly incrementing an initial value. Can be either bounded or unbounded (infinite)
 
 ```
-   std::vector<int> v{1, 1, 2, 4};
-   std::vector<int> v2;
-   auto square = [](auto i) { return i * i; };
-   auto is_even = [](auto i) { return i % 2 == 0; };
-   auto view = v | std::views::filter(is_even) | std::views::transform(square);
-   auto r = std::ranges::transform(view, v.begin(), std::identity{}, {});
-```
-
-## examples
-
-```
-  std::ranges::for_each(v, [](auto v) {}, &Employe::id);
-```
-
-
-```
-std::ranges::sort(employes, {}/*ranges_less by default*/, &Empliyed::id)
-std::ranges::sort(paycheck, {}/*ranges_less by default*/, &Paycheck::id)
-std::ranges::equalt_to(emplolyes, paycheck, {}/*ranges_equal by default*/, &Empliyed::id, &Paycheck::id)
+  for (int i : std::ranges::iota_view{1, 10})
+        std::cout << i << ' ';
+    std::cout << '\n';
+ 
+    for (int i : std::views::iota(1, 10))
+        std::cout << i << ' ';
+    std::cout << '\n';
 ```

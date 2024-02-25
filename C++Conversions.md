@@ -59,6 +59,10 @@ In the following contexts, the type bool is expected and the implicit conversion
 - the expression in a noexcept specifier;
 - the expression in an explicit specifier; (since C++20)
 
+One early solution for this can be seen in std::basic_ios, which initially defines operator void*, so that the code such as if (std::cin) {...} compiles because void* is convertible to bool, but int n = std::cout; does not compile because void* is not convertible to int. This still allows nonsense code such as delete std::cout; to compile.
+
+Many pre-C++11 third party libraries were designed with a more elaborate solution, known as the Safe Bool idiom. std::basic_ios also allowed this idiom via LWG issue 468, and operator void* was replaced (see notes).
+
 
 ## integral promotions
 
