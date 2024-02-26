@@ -12,3 +12,10 @@
 - confirm with the other person exact requirnemtn or if something is not clear. Also make sure that outcome of the converstation is attached when you submit a task
 
 # questions about the task
+
+# potentiall improvements
+
+# how to compile manually
+
+ g++ -std=c++20  -Wall -Werror -Wextra -Og -std=c++20 -fsanitize=address   ./app.cpp
+
