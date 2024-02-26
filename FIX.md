@@ -38,6 +38,14 @@ An immediate response to this message is required. It is recommended that an Exe
 Execution Report (8)
 Order Cancel Reject (9)
 
+# OrderCancelReplaceRequest <G> message
+
+The order cancel/replace request is used to change the parameters of an existing order.
+Do not use this message to cancel the remaining quantity of an outstanding order, use the Order Cancel Request message for this purpose.
+Cancel/Replace will be used to change any valid attribute of an open order (i.e. reduce/increase quantity, change limit price, change instructions, etc.), Subject <147> to agreement between counterparties, it can be used to re-open a filled order by increasing OrderQty <38>.
+An immediate response to this message is required. It is recommended that an ExecutionRpt with ExecType <150>=Pending Replace be sent unless the Order Cancel/Replace Request can be immediately accepted (ExecutionRpt with ExecType <150>=Replace) or rejected (Order Cancel Reject <3> message).
+The Cancel/Replace request will only be accepted if the order can successfully be pulled back from the exchange floor without executing
+
 
 4.0 FIX Connections and Sessions Establishing a FIX Connection
 FIX connections and sessions between the Participant and server are maintained as specified in the FIX protocol.
