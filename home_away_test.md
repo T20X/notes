@@ -12,6 +12,8 @@
 - confirm with the other person exact requirnemtn or if something is not clear. Also make sure that outcome of the converstation is attached when you submit a task
 
 # questions about the task
+- can book be crossed?
+- handle bad input?
 
 # potentiall improvements
 
