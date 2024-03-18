@@ -4,7 +4,7 @@
 
 std::iterator used to define your own iterator has been deprecated now!
 
-A value-initialized LegacyForwardIterator behaves like the past-the-end iterator of some unspecified empty container. Value-initialised iterators can only be compared to other value-initialised iterators.
+**A value-initialized LegacyForwardIterator behaves like the past-the-end iterator of some unspecified empty container. Value-initialised iterators can only be compared to other value-initialised iterators.**
 
 
 The solution is to recognize the validity of null iterators by allowing value-initialized forward iterators to be compared, and ensuring that all value-initialized iterators for a particular container type compare equal. The result of comparing a value-initialized iterator to an iterator with a non-singular value is undefined
@@ -36,7 +36,8 @@ For example here is iterator definitoin in vector: LegacyRandomAccessIterator, c
 
 # storing nont moveable / noncopyable types in containers
 
-std::vector<std::mutex> v; // WON'T WORK!
+std::vector<std::mutex> v; // WON'T WORK! 
+it cannot contain const objects either
 
 std::deque / std::list - would work!
 
@@ -375,3 +376,37 @@ template< class T, class U >
 constexpr auto operator()( T&& lhs, U&& rhs ) const
     -> decltype(std::forward<T>(lhs) < std::forward<U>(rhs));
 ```
+
+
+# vector
+
+
+To see why that's the case, consider a large vector of capacity C. When there's a request to grow the vector, the vector (assuming no in-place resizing, see the appropriate section in this document) will allocate a chunk of memory next to its current chunk, copy its existing data to the new chunk, and then deallocate the old chunk. So now we have a chunk of size C followed by a chunk of size k * C. Continuing this process we'll then have a chunk of size k * k * C to the right and so on. That leads to a series of the form (using ^^ for power):
+
+C, C*k,  C*k^^2, C*k^^3, ...
+If we choose k = 2 we know that every element in the series will be strictly larger than the sum of all previous ones because of the remarkable equality:
+
+1 + 2^^1 + 2^^2 + 2^^3... + 2^^n = 2^^(n+1) - 1
+This means that any new chunk requested will be larger than all previously used chunks combined, so the vector must crawl forward in memory; it can't move back to its deallocated chunks. But any number smaller than 2 guarantees that you'll at some point be able to reuse the previous chunks. For instance, choosing 1.5 as the factor allows memory reuse after 4 reallocations; 1.45 allows memory reuse after 3 reallocations; and 1.3 allows reuse after only 2 reallocations.
+
+## reloc
+
+it is trying to use relocate( calls std::__relocate_a). That relocated though is NOT C style realloc, but rather either trying to mempcy data
+or just to doing move/copy into the new location and destroying the original
+
+## move assign
+
+neat trick to move vector. note that tmp is used to destroy original elements while calling the function and alloc_on_move would move the allocator!
+
+```
+      _M_move_assign(vector&& __x, true_type) noexcept
+      {
+	vector __tmp(get_allocator());
+	this->_M_impl._M_swap_data(__x._M_impl);
+	__tmp._M_impl._M_swap_data(__x._M_impl);
+	std::__alloc_on_move(_M_get_Tp_allocator(), __x._M_get_Tp_allocator());
+      }
+```
+      
+## Links
+https://github.com/facebook/folly/blob/main/folly/docs/FBVector.md#object-relocation

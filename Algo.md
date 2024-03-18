@@ -58,6 +58,28 @@ left + (right - left) / 2
  (right + left) / 2
 ```
 
+```
+    int search(vector<int>& nums, int target) {
+        // Set the left and right boundaries
+        int left = 0, right = int(nums.size())-1;        
+        while (left < right) {
+            int mid = (left + right) / 2;
+            if (nums[mid] >= target) {
+                right = mid;                
+            } else  {               
+                left = mid + 1;
+            }
+        }
+        
+        if (nums[right] == target) {
+            return right;
+        } else {
+            return -1;
+        }
+    }
+```    
+
+
 ## lower_bound
 
 ``` 
@@ -285,7 +307,7 @@ Eulerian Path - is path through the graph where each edge can be visited exactly
 Eulerian Cycle - is a path through the grapth where each edge can be visited exactly once and the destination node would be the same as strting node! (in-degree vertice is equal to out-degree vertice count and the count is even)
 
 
-# DFS 
+## DFS 
 
 DFS has parenthesees structure
 
@@ -300,11 +322,38 @@ if grapth is undricted then edges (u,v) and (v,u) are the same and their clasifi
 forward edge (u,v) connects u with its descendent v!
 cross edge (u,v) is not forward,back and tree edge and neither u neither v are ancestors of each other
 
-DFS marks node as visited before considering other nodes.
+****DFS marks node as visited the same way as BFS DOES -> BEFORE PUSHING ANOTHER CANDIDATE ON THE STACK TO AVOID VISITING THE SAME NODE TWICE. bUT NOTE THAT IN RECURSIVE IMPLEMNATION THAT IS NOT NECESSARY AS YOU MARK NODE AS VISITED THE MOMENT YOU ENTER IN DFS ROUTINE****
 
 there are no forward and cross edges in undirected graph run by DFS.
 
 rks node as visited before considering other nodes. BFS marks the node as visited only after considering other nodes
+
+### Code
+
+```
+  static void visit(const std::string& source, const GraphUndirected& g)
+  {
+    std::stack<std::string>  s;
+    std::unordered_set<std::string> visited;
+    s.emplace(source);
+    while (!s.empty())
+    {
+      std::string current = s.top();
+      s.pop();
+      std::cout << "visited [" << current << "]\n";
+      auto it = g.find(current);
+      assert(it != end(g));
+      for (const auto& adj : it->second)
+      {        
+        if (end(visited) == visited.find(adj))            
+        {
+          s.emplace(adj);   
+          visited.emplace(adj);    
+        }
+      }      
+    }
+  }
+```
 
 ## Other Algos
 
@@ -322,6 +371,43 @@ In mathematics, and more specifically in graph theory, a multigraph (in contrast
 !!!!!!!!!!!!!!!!!IMPORTANT !!!!!!! BFS marks the node as visited right after it enques them!
 
 BFS is normally used with only one source vertex and runs once but DFS may be run many times from diffrent sources and is usually part of another algorithm.
+
+
+Problems that use BFS usually ask to find the fewest number of steps (or the shortest path) needed to reach a certain end point (state) from the starting one. Besides this, certain ways of passing from one point to another are offered, all of them having the same cost of 1 (sometimes it may be equal to another number). Often there is given a N x M table (formed of N lines and M columns) where certain cells are passable and others are impassable, and the target of the problem is to find the shortest time/path needed to reach the end point from the start one. Such tables may represent mazes, maps, cities, and other similar things. These may be considered as classical BFS problems
+
+## Topological sort
+
+```
+void dotopologicalSortIterative(auto& g, deque<string>& r, const string& v, auto& visited)
+{
+  stack<string> s;
+  s.push(v);
+  visited.insert(v);
+  while (!s.empty())
+  {
+    auto c = s.top();
+    auto prev_visited_sz = visited.size();
+    auto it = g.find(c);
+    if (it != end(g))
+    {
+      for (const auto& adj : it->second)
+      {
+        if (visited.find(adj) == end(visited))
+        {
+          s.push(adj);
+          visited.insert(adj);
+        }
+      }
+    }
+
+    if (prev_visited_sz == visited.size())
+    {
+      r.push_front(c);
+      s.pop();
+    }
+  }
+}
+```
 
 ## Dejkstra
 
@@ -595,7 +681,41 @@ procedure bt(c)
     We are given that n <= 6. Typically, problems that ask you to find all of something with low bounds can be solved with backtracking
 
 
-## all permutations
+This technique may be used in many types of problems. Just take a look at the limits (N, M and other main parameters). They serve as the main hint of a backtrack problem. If these are very small and you haven’t found a solution that’s easier to implement – then just don’t waste your time on searching it and implement a straight-forward backtracking solution.
+
+Usually problems of this kind ask you to find (similarly to Brute Force):
+
+Every possible configuration (subset) of items. These configurations should respect some given rules.
+The “best” configuration (subset) that respects some given rules.
+There are at most 6 people.
+
+IMPORTANT! **Note that Recursive solutions got normally space complexity of O(n) as it takes recursion N steps to reach the base case normally!**
+
+
+We are given that n <= 6. Typically, problems that ask you to find all of something with low bounds can be solved with backtracking
+
+## Problem hints
+
+First look at the constraints – there are at most ONLY 6 people! It’s enough for generating all possible permutations, sets etc.
+
+There are different possible ways to pass the people from one side to another and you need to find the best one.
+
+This is of course a problem solved with a backtracking: at the beginning choose any 2 people to pass the bridge first, and after that at each step try to pass any of those that have been left on the start side. From all these passages select the one that needs the smallest amount of time. Note that among persons that have passed over the bridge, the one having the greatest speed should return (it’s better than returning one having a lower speed). This fact makes the code much easier to implement. After having realized these things – just code the solution. There may be others – but you will lose more time to find another than to code this one.
+
+You need to find all possible situations (positions) that satisfy a certain rule (threatens all given pieces).
+
+The limits are very low – only 8 knights are at most given.
+
+It’s a common Brute Force problem’s statement. Note that x and y limits are not relevant, because you need only try all positions that threaten one of the knights. For each of these positions see if the knight placed at that position threatens all others too.
+
+
+
+
+
+
+## Sample problems
+
+### all permutations
 
 ```
 class Solution {

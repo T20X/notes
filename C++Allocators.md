@@ -1,4 +1,8 @@
 
+# GCC initialization /reloc utils
+
+https://github.com/gcc-mirror/gcc/blob/master/libstdc%2B%2B-v3/include/bits/stl_uninitialized.h
+
 # global allocation function
 
 - it is cannot allocate data for static objects, exceptions, thread-local objects
@@ -73,10 +77,10 @@ If the object being deleted has incomplete class type at the point of deletion a
 
 
 
-Weather implementations are using std::free is not specified
-   it is unspecified wheather operator delete(void* ptr) or operator delete(void* ptr, size_t sz) is called, BUT ANY OF THEM MAY BE CALLED!
-      from standart " f a function without a size parameter is defined, the program should also define the corresponding function with a size parameter. If a function with a size parameter is defined, the program shall also define the corresponding version without the size parameter
-      " also "A call to an operator delete with a size parameter may be changed to a call to the corresponding operator delete without a size parameter, without affecting memory allocation"
+IMPORTANT ***Weather implementations are using std::free is not specified
+it is unspecified wheather operator delete(void* ptr) or operator delete(void* ptr, size_t sz) is called, BUT ANY OF THEM MAY BE CALLED!
+from standart " f a function without a size parameter is defined, the program should also define the corresponding function with a size parameter. If a function with a size parameter is defined, the program shall also define the corresponding version without the size parameter
+" also "A call to an operator delete with a size parameter may be changed to a call to the corresponding operator delete without a size parameter, without affecting memory allocation"***
 
 
 
@@ -155,8 +159,8 @@ template <class T> class custom_allocator {
 public:
   typedef T value_type;
 
-  custom_allocator() {}
-  template <class U> custom_allocator(const custom_allocator<U> &u) {}
+  custom_allocator() noexcept {}
+  template <class U> custom_allocator(const custom_allocator<U> &u)  noexcept {}
 
   T *allocate(std::size_t n) {
     return static_cast<T *>(
@@ -167,7 +171,7 @@ public:
   }
 
   friend bool operator==(const custom_allocator &a1,
-                         const custom_allocator &a2) {
+                         const custom_allocator &a2) noexcept {
     return false;
   }
 };
@@ -188,12 +192,13 @@ public:
 
 ## Why comparions operator is required for allocators ?
 
-    [operator==(a1, a2)] returns true only if the storage allocated by the
-        allocator a1 can be deallocated through a2.Establishes reflexive, symmetric,
-    and transitive relationship.Does not throw exceptions.
+[operator==(a1, a2)] returns true only if the storage allocated by the
+    allocator a1 can be deallocated through a2.Establishes reflexive, symmetric,
+and transitive relationship.Does not throw exceptions.
 
-    Although note that still most implemenation also look for is_always_equal member of the allocator in order to determine if the allocator can be reused !Though standart deprecates is_always_equal from C++ 23 in favour of operator==
+Although note that still most implemenation also look for is_always_equal member of the allocator in order to determine if the allocator can be reused !
 
+Member type is_always_equal is deprecated via LWG issue 3170, because it makes custom allocators derived from std::allocator treated as always equal by default. std::allocator_traits<std::allocator<T>>::is_always_equal is not deprecated and its member constant value is true for any T.
 
 
 # operator new
@@ -240,6 +245,16 @@ After calling allocate() and before construction of elements, pointer arithmetic
 ::operator delete does not call destrcutor because type info is lost
 ::operator [] new is meant to implement special array indexing strategy where allocated size won't be exactly  N * sizeof(T)
 bad_alloc can also happen because of heap corruption
+
+# std::realloc
+
+The reallocation is done by either:
+
+a) expanding or contracting the existing area pointed to by ptr, if possible. The contents of the area remain unchanged up to the lesser of the new and old sizes. If the area is expanded, the contents of the new part of the array are undefined.
+b) allocating a new memory block of size new_size bytes, copying memory area with size equal the lesser of the new and the old sizes, and freeing the old block.
+
+
+On success, returns the pointer to the beginning of newly allocated memory. To avoid a memory leak, the returned pointer must be deallocated with free or realloc. The original pointer ptr is invalidated and any access to it is undefined behavior (even if reallocation was in-place).
 
 
 

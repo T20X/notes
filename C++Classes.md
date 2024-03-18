@@ -97,7 +97,7 @@ The constructor is not user-provided (i.e., is implicitly-defined or defaulted o
 - Every direct base of T has a trivial default constructor.
 - Every non-static member of class type (or array thereof) has a trivial default constructor.
 
-A trivial default constructor is a constructor that performs no action. All data types compatible with the C language (POD types) are trivially default-constructible.
+A trivial default constructor is a constructor that performs no action. 
 
 ## Trivially copyable class 
 has at least one eligible copy constructor, move constructor, copy assignment operator, or move assignment operator,

@@ -801,11 +801,19 @@ template<typename T1, typename T2, typename T3>
 
     ```
 
-##  std::mem_fun
+## std::make_tuple
+
+Creates a tuple object, deducing the target type from the types of arguments.
+
+For each Ti in Types..., the corresponding type Vi in VTypes... is std::decay<Ti>::type unless application of std::decay results in std::reference_wrapper<X> for some type X, in which case the deduced type is X&.
+
+
+##  std::mem_fn
 
 Function template std::mem_fn generates wrapper objects for pointers to members, which can store, copy, and invoke a pointer to member. Both references and pointers (including smart pointers) to an object can be used when invoking a std::mem_fn.
 
 
+For instance, std::mem_fun can only deal with member functions that take one or no argument. std::mem_fn is variadic and can deal with members that take any number of arguments
 
 ## void_t
 

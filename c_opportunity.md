@@ -29,11 +29,10 @@
 
 # questions  to Matt
 
-1) Interviews were coding heavy, though I did not get C++ questions. Any particular reason why? Throught the process the interviews could without a doubt implicitly gauge my level of C++ to some extent, but without deeper C++ questions it would be not as precisese.
-2) What are the biggest issues / problems / concerns you are facing now? It could be anything, not necesseraliy in tech stack
-3) How do you see your tech stack evolving in the next years?
-4) Where do see the role brining value for the team?
-5) how is task distribution & discovery done in the team?
+1) What are the biggest issues / problems / concerns you are facing now? It could be anything, not necesseraliy in tech stack
+2) How do you see your tech stack evolving in the next years?
+3) Where do see the role brining value for the team?
+4) what are stakeholders and diffrent actors around ETE team
  
 # what they may ask me
 
