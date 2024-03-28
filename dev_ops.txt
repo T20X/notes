@@ -1,0 +1,15 @@
+# Agile
+
+agile is all about customer feedback rather than giving estimates!
+
+
+# 8 Laws to a Lasting Programming Career
+
+1. Embrace the Imposter
+2. Make Technology Stupid Simple
+3. Buffer and Delay Commitments
+4. Skip the Leveling Grind
+5. Pick Your Battles
+6. Always Be Networking
+7. Know When You're The Code Monkey
+8. Get Out While You Can
