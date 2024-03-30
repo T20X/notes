@@ -139,30 +139,71 @@ To realize the property, distinguish two cases:
 If LCS("ABCDEFG","BCDGK") ends with a "G", then the final "K" cannot be in the LCS, hence LCS("ABCDEFG","BCDGK") = LCS("ABCDEFG","BCDG").
 If LCS("ABCDEFG","BCDGK") does not end with a "G", then the final "G" cannot be in the LCS, hence LCS("ABCDEFG","BCDGK") = LCS("ABCDEF","BCDGK").
 
+#### recursive solution
 
 ```
-class Solution {
-public:
-    int longestCommonSubsequence(string text1, string text2) {
+int longestCommonSubsequence(string text1, string text2) {  
+        vector<vector<int>> dp;
         size_t n = text1.size();
         size_t m = text2.size();
+        dp.resize(n, vector<int>(m,-1));  
+        return solve(0, 0, text1, text2, dp);                 
+     }
+    
+    int solve(int n, int m, string text1, string text2, auto& dp) {
+        if (text1.empty() || text2.empty())
+            return 0;        
+        
+        int result = dp[n][m] ;
+        if (result != -1)
+            return result;
+        
+        //assume first latter in text1 is not part of optimal solution
+        int first_not_included = solve(n+1,m,text1.substr(1,text1.size()-1), text2, dp);
+        int first_included = 0;
+        
+        auto first_char_pos = text2.find_first_of(text1.front());
+        if (first_char_pos != string::npos)
+        {
+            size_t text2_from_pos = first_char_pos + 1;
+            first_included = 1 + solve(
+                n+1,m+text2_from_pos,
+                text1.substr(1,text1.size()-1), 
+                text2.substr(text2_from_pos, text2.size()-text2_from_pos),
+                dp); 
+        } 
+        
+        result = max(first_not_included, first_included);
+        dp[n][m]=result;
+        return result;
+    }
+```
 
-        vector<vector<int>> s(n+1, vector<int>(m+1));
-        for (int i = 0; i <= n; ++i) {
-            for (int j = 0; j <=m; ++j) {
-                if (i == 0 || j == 0) {
-                    continue;
-                } else if (text1[i-1] == text2[j-1]) {
-                    s[i][j] = s[i-1][j-1]+1;
-                } else {
-                    s[i][j] = std::max(s[i-1][j],s[i][j-1]);
+```
+    int longestCommonSubsequence(string text1, string text2) {  
+        size_t n = text1.size();
+        size_t m = text2.size(); 
+        
+        vector<vector<int>> dp;
+        dp.resize(n+1, vector<int>(m+1,0));          
+        for (int i = n - 1; i >= 0; i--)
+        {
+            for (int j = m - 1; j >= 0; j--)
+            {
+                if (text1[i] == text2[j])
+                {
+                    dp[i][j] += dp[i+1][j+1] + 1;                    
+                }
+                else
+                {
+                    dp[i][j]=max(dp[i][j+1], dp[i+1][j]);
                 }
             }
-        }
+        }        
+        
+        return dp[0][0];                 
+     }
 
-        return s[n][m];        
-    }
-};
 
 ```
 

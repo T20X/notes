@@ -71,21 +71,23 @@ bool compare(const L& l, const R& r, int i) {
 
 ## Upon receiving the question
 
-Many candidates jump into coding the moment they hear the question. That is usually a big mistake. Take a moment to repeat the question back at the interviewer and make sure that you understand exactly what they are asking. Repeating back/rephrasing the question will reduce the chances of miscommunication.
+* Many candidates jump into coding the moment they hear the question. That is usually a big mistake. Take a moment to repeat the question back at the interviewer and make sure that you understand exactly what they are asking. Repeating back/rephrasing the question will reduce the chances of miscommunication.
 
-Always seek clarification about the question upon hearing it even if it you think it is clear to you. You might discover something that you have missed out and it also sends a signal to the interviewer that you are a careful person who pays attention to details. Some interviewers deliberately omit important details to see if you ask the right questions.
+* Always seek clarification about the question upon hearing it even if it you think it is clear to you. You might discover something that you have missed out and it also sends a signal to the interviewer that you are a careful person who pays attention to details. Some interviewers deliberately omit important details to see if you ask the right questions.
 
-Some common questions you can ask:
+* Some common questions you can ask:
 
-How big is the size of the input?
-How big is the range of values?
-What kind of values are there? Are there negative numbers? Floating points? Will there be empty inputs?
-Are there duplicates within the input?
-What are some extreme cases of the input?
-Can I destroy the original array/graph/data structure?
-How is the input stored? If you are given a dictionary of words, is it a list of strings or a Trie?
-Try to iterate through few solutions and see if you can bait the interviewer into to confirm if you are on the right track!
-Clarify 100% terminating condition!
+- How big is the size of the input?
+- How big is the range of values?
+- What kind of values are there? Are there negative numbers? Floating points? Will there be empty inputs?
+- Are there duplicates within the input?
+- What are some extreme cases of the input?
+- Can I destroy the original array/graph/data structure?
+- How is the input stored? If you are given a dictionary of words, is it a list of strings or a Trie?
+- Try to iterate through few solutions and see if you can bait the interviewer into to confirm if you are on the right track!
+- Clarify 100% terminating condition!
+
+* IMPORTANT! ***when solving the problem, try taking the notes about what discussed!***
 
 After you have sufficiently clarified the scope and intention of the problem, explain your high-level approach to the interviewer even if it is a naive solution. If you are stuck, consider various approaches, and explain out loud why it will/will not work. Sometimes your interviewer might drop hints and lead you towards the right path.
 

@@ -427,6 +427,44 @@ const int MAX = 100 //complier will avoid generating storage even for const obje
 &MAX//oh now itis address is required so now MAX needs storage
 
 
+### new in C++17
+
+C++17 takes a different approach. Instead of guaranteeing that copies will be elided in these cases, it changes the rules such that the copies were never there in the first place. This is achieved through redefining when temporaries are created.
+
+As noted in the value category descriptions earlier, prvalues exist for purposes of initialization. C++11 creates temporaries eagerly, eventually using them in an initialization and cleaning up copies after the fact. In C++17, the materialization of temporaries is deferred until the initialization is performed.
+
+That’s a better name for this feature. Not guaranteed copy elision. Deferred temporary materialization.
+
+Temporary materialization creates a temporary object from a prvalue, resulting in an xvalue. The most common places it occurs are when binding a reference to or performing member access on a prvalue. If a reference is bound to the prvalue, the materialized temporary’s lifetime is extended to that of the reference (this is unchanged from C++11, but worth repeating). If a prvalue initializes a class type of the same type as the prvalue, then the destination object is initialized directly; no temporary required
+
+In C++17, however, std::string{"a pony"} is the Platonic ideal of “a pony”. It’s not a real object in C++’s object model, it’s some elusive, amorphous idea which can be passed around your program, only being given form when initializing some result object, or materializing a temporary. C++17’s prvalues are purer prvalues
+
+
+A more complex example:
+
+```
+std::string a() {
+    return "a pony";
+}
+
+std::string b() {
+    return a();
+}
+
+int main() {
+    auto x = b();
+}
+```
+
+In the C++11 model, return "a pony"; initializes the temporary return object of a(), which move-constructs the temporary return object of b(), which move-constructs x. All the moves are likely elided by the compiler.
+
+In the C++17 model, return "a pony"; initializes the result object of a(), which is the result object of b(), which is x.
+
+In essence, rather than an initializer creating a series of temporaries which in theory move-construct a chain of return objects, the initializer is teleported to the eventual result object.
+
+
+The “guaranteed copy elision” rules do not guarantee copy elision; instead they purify prvalues such that the copy doesn’t exist in the first place. Next time you hear or read about “guaranteed copy elision”, think instead about deferred temporary materialization
+
 ## xvalue
 
 An xvalue is a glvalue that denotes an object whose resources can be reused (usually because it is near the end of its lifetime).

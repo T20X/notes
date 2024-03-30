@@ -1,0 +1,1 @@
+Using more data typically gives more reliable predictions, but when the situation changes, past data can be misleading
