@@ -333,6 +333,17 @@ class Solution extends SolBase {
 
 ```
 
+
+# Tree
+
+## Text represnations
+
+           [15]
+         /      \
+     [10]         [20]
+    /   \        /   \
+[8]     [12]  [18]    [25]
+
 # sorting 
 
 ## Bucket sort

@@ -18,12 +18,14 @@ basic coding
 - topologic sorting
 - counting sorting
 - connected components in graph
+- djkestra
 - min spam tree
 - selection
 - heap
 - segment tree
 - binary sort, lower bound, upper bound
 - tree walks
+- tree insert
 - lru/lfu
 - longest  maximum subsequence
 - dynamic sets
@@ -33,7 +35,12 @@ basic C++
 
 # coding tips
 
-- you keep missing the following:
+- check array boundaries and loop terminate conditions
+- if stuck, use examples to help you navigate through the challange and ask interviewer to help if you need one
+- always be mindfull of 0, duplicates, int max, int min and overflow use cases!
+- always be carefull of the base case and the very first iteration initialization
+- clarify terminating condition 100%
+- ***you keep missing the following***:
     explicit
     returning from assignment operator
     checking for *this assignment in assignment operator
@@ -108,8 +115,6 @@ Only start coding after you and your interviewer have agreed on an approach and 
 
 ## Edge cases
 
-- always be mindfull of 0, duplicates, int max, int min and overflow use cases!
-- always be carefull of the base case and the very first iteration initialization
-- clarify terminating condition 100%
+
 
 

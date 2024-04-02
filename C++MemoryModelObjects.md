@@ -316,7 +316,7 @@ Aliasing is all about lifetimes. If i place an int into the storage, i may acces
 
   Two or more threads of execution can access separate memory locations without interfering with each other.
   4
-  #
+  
   [Note 3: Thus a bit-field and an adjacent non-bit-field are in separate memory locations, and therefore can be concurrently updated by two threads of execution without interference. The same applies to two bit-fields, if one is declared inside a nested struct declaration and the other is not, or if the two are separated by a zero-length bit-field declaration, or if they are separated by a non-bit-field declaration. It is not safe to concurrently update two bit-fields in the same struct if all fields between them are also bit-fields of nonzero width. — end note]
 }
 
@@ -351,12 +351,15 @@ float do_bad_things(int n) {
   return (*float*)buffer; // #2 //undefined behaviour because the lifetime of int ended and float contains intermediate value! otherwise it is valid since std::byte buffer would create an implicit object and using C-style cast would have been fine
 }
 ```
+## address
 
-# [[no_unique_addresss]]
+ The trick is that you can't take the address of something without a name (an rvalue). But by binding that temporary to a reference, you've given it a name (recall that a reference is just another name for an object) and so you're allowed to take its **address**
+
+## [[no_unique_addresss]]
 
 Two objects with overlapping lifetimes that are not bit-fields may have the same address if one is nested within the other, or if at least one is a subobject of zero size and they are of different types; otherwise, they have distinct addresses and occupy disjoint bytes of storage
 
-# fancy pointer
+## fancy pointer
 
 Fancy pointers
 When the member type pointer is not a raw pointer type, it is commonly referred to as a "fancy pointer". Such pointers were introduced to support segmented memory architectures and are used today to access objects allocated in address spaces that differ from the homogeneous virtual address space that is accessed by raw pointers. An example of a fancy pointer is the mapping address-independent pointer boost::interprocess::offset_ptr, which makes it possible to allocate node-based data structures such as std::set in shared memory and memory mapped files mapped in different addresses in every process. Fancy pointers can be used independently of the allocator that provided them, through the class template std::pointer_traits (since C++11). The function std::to_address can be used to obtain a raw pointer from a fancy pointer. (since C++20)

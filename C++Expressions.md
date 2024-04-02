@@ -43,7 +43,7 @@ Each declarator introduces exactly **one** object, reference, function, or (for 
 
 expression evaluation -> ( side-effects & value) 
 
-An expression is a sequence of operators and operands that specifies a computation. An expression can result in a value and can cause side effects The implementation can regroup operators according to the usual mathematical rules only where the operators really are associative or commutative.
+***An expression is a sequence of operators and operands that specifies a computation***. An expression can result in a value and can cause side effects The implementation can regroup operators according to the usual mathematical rules only where the operators really are associative or commutative.
 Expression evaluation may produce a result (e.g., evaluation of 2 + 2 produces the result 4) and may generate side-effects (e.g. evaluation of std::printf("%d", 4) prints the character '4' on the standard output).
 
 Each C++ expression is characterized by two independent properties: A type and a value category
@@ -146,6 +146,10 @@ void f() {
 [https://eel.is/c++draft/basic#intro.execution-7]
 Evaluation of an expression (or a subexpression) in general includes both value computations (including determining the identity of an object for glvalue evaluation and fetching a value previously assigned to an object for prvalue evaluation) and initiation of side effects
 
+## example
+i
+https://stackoverflow.com/questions/74043978/when-is-an-expression-formally-evaluated
+
 # Sequence points
 
 The C++11 and C++14 versions of the standard do not formally contain 'sequence points'; operations are 'sequenced before' or 'unsequenced' or 'indeterminately sequenced' instead. The net effect is essentially the same, but the terminology is different.
@@ -163,8 +167,8 @@ An expression X is said to be sequenced before an expression Y if every value co
 
 Every value computation and side effect associated with a full-expression is sequenced before every value computation and side effect associated with the next full-expression to be evaluated.37
 
-Except where noted, evaluations of operands of individual operators and of subexpressions of individual expressions are unsequenced.
-[Note 5: In an expression that is evaluated more than once during the execution of a program, unsequenced and indeterminately sequenced evaluations of its subexpressions need not be performed consistently in different evaluations. — end note]
+***WARNING!Except where noted, evaluations of operands of individual operators and of subexpressions of individual expressions are unsequenced***.
+***[Note 5: In an expression that is evaluated more than once during the execution of a program, unsequenced and indeterminately sequenced evaluations of its subexpressions need not be performed consistently in different evaluations. — end note]***
 The value computations of the operands of an operator are sequenced before the value computation of the result of the operator. If a side effect on a memory location ([intro.memory]) is unsequenced relative to either another side effect on the same memory location or a value computation using the value of any object in the same memory location, and they are not potentially concurrent ([intro.multithread]), the behavior is undefined.
 [Note 6: The next subclause imposes similar, but more complex restrictions on potentially concurrent computations. — end note]
 [Example 3: 
@@ -192,7 +196,7 @@ Once an rvalue has been bound to a name, it's an lvalue again, whether it's a wr
 
 A function call is a postfix expression followed by parentheses containing a possibly empty, comma-separated list of initializer-clauses which constitute the arguments to the function
 
-Calling a function through an expression whose function type E is different from the function type F of the called function's definition results in undefined behavior unless the type “pointer to F” can be converted to the type “pointer to E” via a function pointer conversion
+***Calling a function through an expression whose function type E is different from the function type F of the called function's definition results in undefined behavior unless the type “pointer to F” can be converted to the type “pointer to E” via a function pointer conversion***
 
 A function call is an lvalue if the result type is an lvalue reference type or an rvalue reference to function type, an xvalue if the result type is an rvalue reference to object type, and a prvalue otherwise
 
@@ -200,6 +204,8 @@ A function call is an lvalue if the result type is an lvalue reference type or a
 It is implementation-defined whether the lifetime of a parameter ends when the function in which it is defined returns or at the end of the enclosing full-expression. The initialization and destruction of each parameter occurs within the context of the calling function
 
 function parameters are really expressions
+
+A function call results in the initialization of the parameters from the corresponding arguments ([expr.call]/7),
 
 # Refenrece
 
@@ -389,7 +395,28 @@ f(T&& t)
 {
   return g(std::forward<T>(t));
 }
-A function parameter such as T&& t is known as a forwarding reference. It matches arguments of any value category, making t an lvalue reference if the supplied argument was an lvalue or an rvalue reference if the supplied argument was an rvalue. If U is t’s underlying non-reference type (namely std::remove_reference_t<decltype(t)>), then T will be inferred as U& for an lvalue argument and U for an rvalue. (Through reference collapsing, if T is U&, then T&& is also U&.) Regardless of t’s variable decltype, its expression decltype is always an lvalue reference; that’s why you always need to provide an explicit template argument to std::forward.
+A function parameter such as T&& t is known as a forwarding reference. It matches arguments of any value category, making t an lvalue reference if the supplied argument was an lvalue or an rvalue reference if the supplied argument was an rvalue. If U is t’s underlying non-reference type (namely std::remove_reference_t<decltype(t)>), then T will be inferred as U& for an lvalue argument and U for an rvalue. (Through reference collapsing, if T is U&, then T&& is also U&.) 
+
+```
+  template<typename _Tp>
+    _GLIBCXX_NODISCARD
+    constexpr _Tp&&
+    forward(typename std::remove_reference<_Tp>::type& __t) noexcept
+    { return static_cast<_Tp&&>(__t); } //THIS WORKS BECAUSE OF REF COALLAPSING. BASICALLY _Tp would be Tp& if the forwarding refrence is lvalue refrence!
+```
+
+
+```
+  template<typename _Tp>
+    _GLIBCXX_NODISCARD
+    constexpr _Tp&&
+    forward(typename std::remove_reference<_Tp>::type&& __t) noexcept
+    {
+      static_assert(!std::is_lvalue_reference<_Tp>::value,
+	  "std::forward must not be used to convert an rvalue to an lvalue");
+      return static_cast<_Tp&&>(__t);//FOR FORWARDING REFRENCE _Tp would be T&&
+    }
+ ```
 
 Note that in the example, f actually demonstrates an appropriate use of decltype(auto) return type to preserve the value category of g’s result (including prvalue). Note also that except for initializer lists, auto bindings use the same type deduction rules as function templates. Hence, “auto &&x = f()” is another form of forwarding reference.
 
@@ -410,6 +437,8 @@ const T& can be initialized from any value category, but overload resolution wil
 Formal Definition: A glvalue is an expression whose evaluation determines the identity of an object or function.
 
 Informal Definition: A glvalue is an actual object in your program, constructed with a constructor call if its type is not trivially constructible. (The constructor doesn’t have to have returned yet.) The specification says a glvalue’s “evaluation determines the identity of an object, bit field, or function.” This means you can generally take a glvalue’s address (except bitfields). You can also assign to a non-const glvalue unless it is a function or a user-defined class with a deleted or inaccessible operator=.
+
+"informal" definition : lvalue - is an expression which refers to an object
 
 ## prvalue
 
@@ -541,7 +570,6 @@ Example 1:
 
   Whenever a prvalue appears as an operand of an operator that expects a glvalue for that operand, the temporary materialization conversion is applied to convert the expression to an xvalue
 
-"informal" definition : lvalue - is an expression which refers to an object
 
 int n;
 

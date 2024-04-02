@@ -461,9 +461,24 @@ template< class I >
 
 ## requires expression expects "expression refrence"
 
+```
 requires (T a) {
   { a} -> int (not correct, shall be int&)
 }
+
+// Attempt to add integer to arbitrary type TA
+template<typename TA, typename TB> auto
+add(TA a, TB b)
+  requires requires {
+    // ok:
+    { a + b } -> std::same_as<TA>;
+    // incorrect (should be std::same_as<int&>):
+    { b } -> std::same_as<int>;
+  }
+{
+  return a += b;
+}
+```
 
 ## you can requries constraint even for type templated paramters like this!
 
