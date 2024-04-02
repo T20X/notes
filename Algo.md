@@ -60,23 +60,31 @@ left + (right - left) / 2
 
 ```
     int search(vector<int>& nums, int target) {
-        // Set the left and right boundaries
-        int left = 0, right = int(nums.size())-1;        
-        while (left < right) {
-            int mid = (left + right) / 2;
-            if (nums[mid] >= target) {
-                right = mid;                
-            } else  {               
-                left = mid + 1;
+        int lo = 0;
+        int hi = nums.size();
+        while (lo < hi)
+        {            
+            int mid = lo + (hi - lo) / 2;
+            int val = nums[mid];
+            if (val == target) {
+                return mid;
+            } else if (val > target) {
+                hi = mid;
+            } else {
+                lo = mid+1;
             }
-        }
-        
-        if (nums[right] == target) {
-            return right;
-        } else {
+        }        
+     
+        /*if (lo > 0 && nums[lo-1] == target)
+            return lo-1;
+        else
             return -1;
-        }
+            */
+
+        return -1;
     }
+
+    } 
 ```    
 
 
@@ -310,6 +318,20 @@ xxx   xxx
 x x     x//exit is not tracked!
         x
 
+# probability
+
+```
+class Solution extends SolBase {
+    public int rand10() {
+        int rand40 = Integer.MAX_VALUE;
+        while (rand40 >= 40) {
+            rand40 = (rand7() - 1) * 7 + rand7() - 1;//that -1 needed to get 0!
+        }
+        return rand40 % 10 + 1;//+1 needed to make sure we don't get 0
+    }
+}
+
+```
 
 # sorting 
 
@@ -394,6 +416,20 @@ BFS is normally used with only one source vertex and runs once but DFS may be ru
 
 
 Problems that use BFS usually ask to find the fewest number of steps (or the shortest path) needed to reach a certain end point (state) from the starting one. Besides this, certain ways of passing from one point to another are offered, all of them having the same cost of 1 (sometimes it may be equal to another number). Often there is given a N x M table (formed of N lines and M columns) where certain cells are passable and others are impassable, and the target of the problem is to find the shortest time/path needed to reach the end point from the start one. Such tables may represent mazes, maps, cities, and other similar things. These may be considered as classical BFS problems
+
+## Kruskal algo for min spanning tree
+
+- build all vertices as dynamic set
+- sort all edges from shortest to longest
+- keep loopign through the sorted edges and join them in dynamic set!
+
+## Strongly connectec components
+
+### Kosoraju
+
+https://www.topcoder.com/thrive/articles/kosarajus-algorithm-for-strongly-connected-components
+https://www.topcoder.com/thrive/articles/tarjans-algorithm-for-strongly-connected-components
+
 
 ## Topological sort
 

@@ -17,6 +17,8 @@ basic coding
 - bfs
 - topologic sorting
 - counting sorting
+- connected components in graph
+- min spam tree
 - selection
 - heap
 - segment tree
