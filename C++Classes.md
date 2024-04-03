@@ -236,5 +236,8 @@ If no user-declared constructors of any kind are provided for a class type (stru
 
 The order in which the base class subobjects are allocated in the most derived object ([intro.object]) is unspecified.
 
+# virtual base classes
+
+First, and only for the constructor of the most derived class ([intro.object]), virtual base classes are initialized in the order they appear on a depth-first left-to-right traversal of the directed acyclic graph of base classes, where “left-to-right” is the order of appearance of the base classes in the derived class base-specifier-list.
 
 

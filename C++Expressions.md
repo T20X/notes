@@ -137,6 +137,19 @@ void f() {
 }
 ```
 
+## expression types
+
+### assignment
+
+The expression this->x = 10 is a glvalue, so it will be evaluated and its value discarded. Specifically, it is an assignment expression, and [expr.ass]/1 states that
+
+From the standard
+[ In all cases, the assignment is sequenced after the value computation of the right and left operands, and before the value computation of the assignment expression. The right operand is sequenced before the left operand. ]
+
+### postifx expressions
+
+This states that the actual assignment occurs after both the left and right operands have been evaluated (the "value computation"). This implies that this->x is evaluated. It is a class member access expression, and [expr.ref]/1 states that "the postfix expression before the dot or arrow is evaluated". That expression is this, consequently, we conclude that this is evaluated.
+
 ## value computations
 
  value computations (including determining the identity of an object for glvalue evaluation and fetching a value previously assigned to an object for prvalue evaluation)
@@ -146,8 +159,8 @@ void f() {
 [https://eel.is/c++draft/basic#intro.execution-7]
 Evaluation of an expression (or a subexpression) in general includes both value computations (including determining the identity of an object for glvalue evaluation and fetching a value previously assigned to an object for prvalue evaluation) and initiation of side effects
 
-## example
-i
+## detailed explanation of some complext expression details
+
 https://stackoverflow.com/questions/74043978/when-is-an-expression-formally-evaluated
 
 # Sequence points
@@ -395,7 +408,7 @@ f(T&& t)
 {
   return g(std::forward<T>(t));
 }
-A function parameter such as T&& t is known as a forwarding reference. It matches arguments of any value category, making t an lvalue reference if the supplied argument was an lvalue or an rvalue reference if the supplied argument was an rvalue. If U is t’s underlying non-reference type (namely std::remove_reference_t<decltype(t)>), then T will be inferred as U& for an lvalue argument and U for an rvalue. (Through reference collapsing, if T is U&, then T&& is also U&.) 
+A function parameter such as T&& t is known as a forwarding reference. It matches arguments of any value category, making t an lvalue reference if the supplied argument was an lvalue or an rvalue reference if the supplied argument was an rvalue. If U is t’s underlying non-reference type (namely std::remove_reference_t<decltype(t)>), then T will be inferred as U& for an lvalue argument and U for an rvalue. (Through reference collapsing, if T is U&, then T&& is also U&.) Regardless of t’s variable decltype, its expression decltype is always an lvalue reference; that’s why you always need to provide an explicit template argument to std::forward.
 
 ```
   template<typename _Tp>
@@ -414,7 +427,7 @@ A function parameter such as T&& t is known as a forwarding reference. It matche
     {
       static_assert(!std::is_lvalue_reference<_Tp>::value,
 	  "std::forward must not be used to convert an rvalue to an lvalue");
-      return static_cast<_Tp&&>(__t);//FOR FORWARDING REFRENCE _Tp would be T&&
+      return static_cast<_Tp&&>(__t);
     }
  ```
 
