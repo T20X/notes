@@ -334,15 +334,14 @@ class Solution extends SolBase {
 ```
 
 
-# Tree
+# Data Structures
 
-## Text represnations
+## Circular Buffer
 
-           [15]
-         /      \
-     [10]         [20]
-    /   \        /   \
-[8]     [12]  [18]    [25]
+typical implementation would track next read/write idx and would consider buffer empty when either readidx=writeidx or when writeidx is 
+just before read_idx! This means the buffer would store N-1 elements!
+
+## Tree
 
 # sorting 
 
