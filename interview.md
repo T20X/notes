@@ -154,5 +154,16 @@ Only start coding after you and your interviewer have agreed on an approach and 
         5   |___|___|___|___|___|___|
 
 
+## Bars
 
+/*
 
+            |6|_
+            | |5|
+         _  | | |  _    
+        |3|_| | | |3|
+        | |2| | |0| | 
+        |_|_|_|_|_|_|
+        0  1 2 3 4 5
+
+*/
