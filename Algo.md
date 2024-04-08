@@ -39,9 +39,16 @@ Algo
     return a;
 ```
 
-# lcm
+## lcm
 
 lcm(a,b)=a*b/gcd(a,b)
+
+## round down large calculations by mod 100000007
+
+a + b  ->  (a + b) % 1e7 == ( a % 1e7 + b % 1e7) 
+a * b  ->  (a * b) % 1e7 == ( a % 1e7 * b % 1e7) 
+a - b  ->  (a - b) % 1e7 == (r =( a % 1e7 - b % 1e7); if (r < 0) r+= 1e7  
+for division it is much harder and needs Euler teorem
 
 # binary search
 
@@ -383,6 +390,45 @@ cross edge (u,v) is not forward,back and tree edge and neither u neither v are a
 there are no forward and cross edges in undirected graph run by DFS.
 
 rks node as visited before considering other nodes. BFS marks the node as visited only after considering other nodes
+
+### cycle detection
+
+For undirected graphs ,just see if you get the node to be visited again and it is not its parent! (to protect from cases like A-B edge).
+
+For directed graphs you can just compute finished time and the moment you hit a node which was already visited and not finished we got a cycle!
+
+
+### edge classification
+```
+                      [A]
+                  /       \
+                [B]      /
+                /       /
+  (K)(c)----->[C](f)<---
+     (t)     /   \ (t)
+          [M]<-(c) [N]
+
+```
+
+```
+      if (start.find(v) == std::end(start))
+      {
+        // tree edge which was discovered by creating DFS tree
+        r[{u, v}] = EdgeClass::TREE;
+        dfs_classify_visit(v, g, r, time, start, end);
+      }
+      else
+      {
+        if (start[u] < start[v] && end[v] > 0)
+          r[{u, v}] = EdgeClass::FORWARD;
+        else if (start[u] > start[v] && end[v] > 0)
+          r[{u, v}] = EdgeClass::CROSS;
+        else if (start[u] < start[v] && end[v] == 0)
+          r[{u, v}] = EdgeClass::BACK;
+      }
+    }
+
+```
 
 ### Code
 
