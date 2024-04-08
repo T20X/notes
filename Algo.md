@@ -430,6 +430,13 @@ For directed graphs you can just compute finished time and the moment you hit a 
 
 ```
 
+### strongly connected components
+
+(1)just find topological order of them
+(2)inverse the grapha
+(3)run DFS on the nod es from (1) to build SCC
+
+
 ### Code
 
 ```
