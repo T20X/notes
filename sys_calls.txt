@@ -18,6 +18,8 @@ __vdso_time
 VDSO maps memory in shared form! And allows those sys call
 executions to happen in the user space!
 
+VDSO also gives a generic function to make sys calls!
+
 --------------------
 ebfore sys call linux would store stack pointer to TSS(Task Stae Segment - onnly one per CPU!)
 
@@ -56,4 +58,4 @@ RCX and r11 are changed by syscall instruction!
  The following registers should hold its arguments: rdi, rsi, rdx, r10, r8, and r9.
 System call cannot accept more than six argument
 
-Note that it also switches to kernel's stack!
+Note that it also switches to kernel's stack! Kernel RSP is strored in TSS (per each processor in Linux)

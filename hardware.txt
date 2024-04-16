@@ -84,7 +84,7 @@ These observations may indicate that there are two branch prediction methods: a 
 
 The branch misprediction penalty varies a lot. It was measured to 15 - 20 clock cycles.
 
-(10) TSS (Task State Segment) - hardware struct per process!
+(10) TSS (Task State Segment) - hardware struct per processor!
 Linux just uses it per CPU and all the processes share it (including kernel)!
 
 This containns!
@@ -92,6 +92,7 @@ The stack pointer addresses for each privilege level.
 Pointer Addresses for the Interrupt Stack Table (The inner-level stack pointer section above, discusses the need for this).
 Offset Address of the IO permission bitmap
 
+Do note that the TSS is mandatory. The thing that OSs do though is create a single TSS entry(per processor) and everytime they need to switch tasks, they just change out this single TSS. And also the only fields used in the TSS by software task switching is ESP0 and SS0. This is used to get to ring 0 from ring 3 code for interrupts. Without a TSS, there would be no known Ring 0 stack which would of course lead to a GPF and eventually triple fault
 
 The IST mechanism provides up to seven IST pointers in the TSS. The pointers are referenced by an interrupt-gate 
 descriptor in the interrupt-descriptor table (IDT); see Figure 6-7. The gate descriptor contains a 3-bit IST index 

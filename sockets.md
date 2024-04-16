@@ -47,6 +47,9 @@ Thus, the maximum size of an IP datagram is 65,535 byte. They can be devided by 
 
 ### Intresting fields inside IP datagram:
 
+**Protocol**
+UDP,TCP...etc
+
 **Identification** 
 if three packets are sent from host A to host B and each must be fragmented into four fragments:
 * the four fragments of the first packet will share the same Identification field value  
@@ -66,6 +69,23 @@ This field specifies the offset of a particular fragment relative to the beginni
 ## UDP 
 
 ![](images/socket/20230819133718.png)
+
+### how to find mutlicastgroup if subscribed to multiple groups on the same socket!
+
+1) Bind to INADDR_ANY and set the IP_PKTINFO socket option. You then have to use recvmsg() to receive your multicast UDP packets and to scan for the IP_PKTINFO control message. This gives you some side band information of the received UDP packet:
+
+struct in_pktinfo {
+    unsigned int   ipi_ifindex;  /* Interface index */
+    struct in_addr ipi_spec_dst; /* Local address */
+    struct in_addr ipi_addr;     /* Header Destination address */
+};
+Look at ipi_addr: This will be the multicast address of the UDP packet you just received. You can now handle the received packets specific for each multicast stream (multicast address) you are receiving.
+
+
+**BUT NOTE IT WON'T GIVE YOU PORT, ONLY MC ADDRESS IP**
+
+2) note that you can bind a given local socket on subscriber host to a MC group as well! not just local host IP
+
 
 ## TCP 
 
@@ -89,6 +109,16 @@ Large payload not fitting into MSS will be split in many segments
 
 TCP Segmentation offload - These days many NICs can create headers/checksum for a given user data autmatically given a template from kernel! this can save massive amount of CPU time.
 
+
+ **Data Segmentation**: When a large amount of data needs to be transmitted over a TCP connection, the sender divides it into smaller segments. Each segment typically consists of a header containing control information and a payload containing a portion of the original data.
+
+**Header Addition**: The TCP layer adds a header to each segment, which includes information such as the source and destination port numbers, sequence number, acknowledgment number, and control flags (e.g., SYN, ACK, FIN).
+
+**Segmentation Control**: TCP dynamically adjusts the size of the segments based on factors such as network conditions and Maximum Segment Size (MSS) negotiated during the TCP handshake. Segments must be small enough to fit within the Maximum Transmission Unit (MTU) of the underlying network without fragmentation.
+
+ **Transmission**: Once segmented, the TCP segments are handed down to the IP layer for transmission over the network. Each segment is encapsulated within an IP packet.
+
+**Reassembly**: At the receiving end, TCP reassembles the segments into the original data stream based on the sequence numbers and acknowledgment numbers. It ensures that segments arrive in the correct order and retransmits any lost or corrupted segments if necessary.
 
 ### TCP states
 
@@ -177,15 +207,16 @@ B goes to CLOSED state – i.e. is removed from the socket tables
 
 FIN_WAIT timeouts are normally 60 seconds
 
-CLOSE_WAIT - Indicates that the server has received the first FIN signal from the client and the connection is in the process of being closed. This means the socket is waiting for the application to execute close() . A socket can be in CLOSE_WAIT state indefinitely until the application closes
+**CLOSE_WAIT** - Indicates that the server has received the first FIN signal from the client and the connection is in the process of being closed. This means the socket is waiting for the application to execute close() . A socket can be in CLOSE_WAIT state indefinitely until the application closes
 
 This is where the problem starts. The (127.0.0.1:5000, 127.0.0.1:some-port) socket is still in CLOSE_WAIT state, while (127.0.0.1:some-port, 127.0.0.1:5000) has been cleaned up and is ready to be reused. When this happens the result is a total mess. One part of the socket won't be able to advance from the SYN_SENT state, while the other part is stuck in CLOSE_WAIT. The SYN_SENT socket will eventually give up failing with ETIMEDOUT.
 resource: https://blog.cloudflare.com/this-is-strictly-a-violation-of-the-tcp-specification/
 
+**TIME_WAIT**  - normally expires within 120 seconds, so now socket (ip:port) could be re-used! normally not an issue as ports are incremented / randomly allocated, but sometimes it could be so that SO_REUSEADDR is used in order to re-use the socket!
 
 
 ### Intresting fields inside TCP segment
-
+/
 **Sequence number (32 bits)**
 Has a dual role:
 If the SYN flag is set (1), then this is the initial sequence number. The sequence number of the actual first data byte and the acknowledged number in the corresponding ACK are then this sequence number plus 1.
@@ -202,6 +233,9 @@ If one of your segments is lost, you have to retransmit it but maybe with anothe
 The size of the receive window, which specifies the number of window size units[b] that the sender of this segment is currently willing to receive.[c] (See § Flow control and § Window scaling.) 
 
 
+# loopback
+
+A little known fact is that it's not possible to have any packet loss or congestion on the loopback interface. The loopback works magically: when an application sends packets to it, it immediately, still within the send syscall handling, gets delivered to the appropriate target. There is no buffering over loopback. Calling send over loopback triggers iptables, network stack delivery mechanisms and delivers the packet to the appropriate queue of the target application. Assuming the target application has some space in its buffers, packet loss over loopback is not possible
 
 # Transfer rules
 
@@ -293,6 +327,30 @@ The urgent pointer only alters the processing on the remote host and doesn't exp
 
 # Sockets API
 
+## structs
+
+in_addr only got port
+sockaddr_in got port and ip
+
+## bind
+
+on receving host, it can bind to MC IP as well, not just INADDANY! 
+
+```
+    /* construct a multicast address structure */
+    struct sockaddr_in mc_addr;
+    memset(&mc_addr, 0, sizeof(mc_addr));
+    mc_addr.sin_family = AF_INET;
+    mc_addr.sin_addr.s_addr = inet_addr(group);
+    mc_addr.sin_port = htons(19283);
+
+    if (bind(s, (struct sockaddr*) &mc_addr, sizeof(mc_addr)) == -1) {
+        fprintf(stderr, "bind: %d\n", errno);
+        return 1;
+    }
+
+```
+
 ## socket()
 
 ### Intresting options
@@ -312,6 +370,11 @@ could be used for blocking sockeets to control timeouts on send and recv! if you
 
 Setting SO_REUSEADDR on the client side doesn't help the server side unless it also sets SO_REUSEADDR. This  will NOT fix the issue of CLOSE_WAIT where if the the other side gets FIN and does not call close().
 
+**SO_REUSEPORT**
+
+for UDP event datagram distribution
+As with TCP, SO_REUSEPORT allows multiple UDP sockets to be bound to the same port. This facility could, for example, be useful in a DNS server operating over UDP. With SO_REUSEPORT, each thread could use recv() on its own socket to accept datagrams arriving on the port. The traditional approach is that all threads would compete to perform recv() calls on a single shared socket. As with the second of the traditional TCP scenarios described above, this can lead to unbalanced loads across the threads. By contrast, SO_REUSEPORT distributes datagrams evenly across all of the receiving threads..
+***WARNING*** DOES NOT LOOK IT WORKS LIKE THAT!
 
 
 ## accept()
@@ -615,6 +678,15 @@ Send-Q: the number of bytes sent but not acknowledged.
 
 # Best practices
 
+## accepting multiple connections over TCP form multiple threads
+
+The second of the traditional approaches used by multithreaded servers operating on a single port is to have all of the threads (or processes) perform an accept() call on a single listening socket in a simple event loop of the form:
+
+    while (1) {
+        new_fd = accept(...);
+        process_connection(new_fd);
+    }
+The problem with this technique, as Tom pointed out, is that when multiple threads are waiting in the accept() call, wake-ups are not fair, so that, under high load, incoming connections may be distributed across threads in a very unbalanced fashion. At Google, they have seen a factor-of-three difference between the thread accepting the most connections and the thread accepting the fewest connections; that sort of imbalance can lead to underutilization of CPU cores. By contrast, the SO_REUSEPORT implementation distributes connections evenly across all of the threads (or processes) that are blocked in accept() on the same port
 
 ## Closing session 1
 
@@ -638,6 +710,8 @@ TCP discards any data in the send buffer
 TCP sends a RST packet to the peer
 The socket resource are deallocated.
 The socket does not enter TIME-WAIT
+linger 0 ->However, the data transmission can be successful because TCP/IP repeats the send request for a specified period of time
+
 
 
 # Misc

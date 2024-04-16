@@ -31,7 +31,7 @@ system-call. A value in the range between -4095 and -1 indicates an error,
 it is -errno.
 6. Only values of class INTEGER or class MEMORY are passed to the kernel
 
-CC dictates how the stack is used. Contract between caller and callee on x86:
+CC dictates how the stack is used. Contract between caller and callee on x86 for REGULAR FUNCTION CALLS:
 
     * after call instruction:
           o %eip points at first instruction of function

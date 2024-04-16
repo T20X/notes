@@ -1,5 +1,24 @@
 ﻿
+# perfect comparison
 
+```
+bool cmpEq(double a, double b, 
+  double epsilon = 1e-7, double abstol = 1e-12)
+{
+  if (a == b) {
+    return true;
+  }
+  double diff = std::fabs(a - b);
+  if (diff < abstol)
+     return true;
+
+  double reltol = std::max(std::fabs(a), std::fabs(b)) * epsilon;
+  return diff < reltol;
+}
+
+```
+
+This is still not completely safe. If a and b are very large and of opposite signs, then a - b could overflow
 
 # format EIEE
 
@@ -29,10 +48,16 @@ The exponent bits tell you which power of two numbers you are between – [2^{ex
 
 
 Now suppose that the lowest exponent that can be represented is -100. So the smallest number that can be represented in normal form is 1\*10-100. However, if we relax the constraint that the leading bit be a one, then we can actually represent smaller numbers in the same space. Taking a decimal example we could represent 0.1\*10-100. This is called a subnormal number. The purpose of having subnormal numbers is to smooth the gap between the smallest normal number and zero.
+
+### subnormal numbers
 ---------------------
 It is very important to realise that subnormal numbers are represented with less precision than normal numbers. In fact, they are trading reduced precision for their smaller size. Hence calculations that use subnormal numbers are not going to have the same precision as calculations on normal numbers. So an application which does significant computation on subnormal numbers is probably worth investigating to see if rescaling (i.e. multiplying the numbers by some scaling factor) would yield fewer subnormals, and more accurate result
-------------------------------------
+
 https://docs.oracle.com/cd/E19957-01/806-3568/ncgTOC.html
+
+smallest possible non-denormalized value of a double, typically something like 2e-308. For the expression to be true, either a and b have to be equal or either/both denormalized. (For those that are not familiar with denormalized numbers, they are a special case of the set of floating-point numbers that extend the minimum possible value to approx. 5e-324 at the expense of losing precision and slower CPU execution.
+
+The intention here was probably to use std::numeric_limits<double>::epsilon(). Epsilon is the smallest representable number that can be added to 1.0 to make a new value. This means that it represents the limits of numerical precision around the value 1.0. The precision is determined by the bits of the hardware – 53 binary digits for 8-byte doubles which is roughly 16 decimal digits.
 
 # std::round & std::rint
 
