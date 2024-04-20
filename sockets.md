@@ -827,6 +827,15 @@ This has to do with the fact that splice() (on which sendfile() is based) can on
 
 # Best practices
 
+## how to know if you connection to the other end succeeded
+
+There are a few ways to test if a nonblocking connect succeeds.
+
+- call getpeername() first, if it failed with error ENOTCONN, the connection failed. then call getsockopt with SO_ERROR to get the pending error on the socket
+- call read with a length of 0. if the read failed, the connection failed, and the errno for read indicates why the connection failed; read returns 0 if connection succeeds
+- call connect again; if the errno is EISCONN, the connection is already connected and the first connect succeeded
+
+
 ## how to know if other socket sent RST 
 
 look for errno ECONNRESET from recv

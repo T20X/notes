@@ -50,6 +50,16 @@ a * b  ->  (a * b) % 1e7 == ( a % 1e7 * b % 1e7)
 a - b  ->  (a - b) % 1e7 == (r =( a % 1e7 - b % 1e7); if (r < 0) r+= 1e7  
 for division it is much harder and needs Euler teorem
 
+# probability
+
+## double range random generator
+
+double fRand(double fMin, double fMax)
+{
+    double f = (double)rand() / RAND_MAX;
+    return fMin + f * (fMax - fMin);
+}
+
 # binary search
 
 the whole point is to track mid
