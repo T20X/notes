@@ -491,6 +491,63 @@ can be considered as a container for two lists:
   list.  The ready list is dynamically populated by the kernel
   as a result of I/O activity on those file descriptors.
 
+### Events
+
+EPOLLRDHUP (since Linux 2.6.17)
+    Stream socket peer closed connection, or shut down writing
+    half of connection.  (This flag is especially useful for
+    writing simple code to detect peer shutdown when using
+    edge-triggered monitoring.)
+
+EPOLLERR
+      Error condition happened on the associated file
+      descriptor.  This event is also reported for the write end
+      of a pipe when the read end has been closed.
+
+      epoll_wait(2) will always report for this event; it is not
+      necessary to set it in events when calling epoll_ctl().
+
+EPOLLHUP
+      Hang up happened on the associated file descriptor.
+
+      epoll_wait(2) will always wait for this event; it is not
+      necessary to set it in events when calling epoll_ctl().
+
+        Note that when reading from a channel such as a pipe or a
+        stream socket, this event merely indicates that the peer
+        closed its end of the channel.  Subsequent reads from the
+        channel will return 0 (end of file) only after all
+        outstanding data in the channel has been consumed.
+
+### some behaviour
+
+Messages in the socket error queue result in a EPOLLERR message
+Socket errors (such as a RST being received), also result in EPOLLERR
+
+### grace shutdown
+
+About shutdown:
+
+- Doing shutdown(SHUT_WR) sends a FIN and marks the socket with SEND_SHUTDOWN.
+- Doing shutdown(SHUT_RD) sends nothing and marks the socket with RCV_SHUTDOWN.
+- Receiving a FIN marks the socket with RCV_SHUTDOWN.
+
+And about epoll:
+
+- hIf the socket is marked with SEND_SHUTDOWN and RCV_SHUTDOWN, poll will return EPOLLHUP.
+- If the socket is marked with RCV_SHUTDOWN, poll will return EPOLLRDHUP.
+
+So the HUP events can be read as:
+
+- EPOLLRDHUP: you have received FIN or you have called shutdown(SHUT_RD). In any case your reading half-socket is hung, that is, you will read no more data.
+- EPOLLHUP: you have both half-sockets hung. The reading half-socket is just like the previous point, For the sending half-socket you did something like shutdown(SHUT_WR).
+
+**To complete a a graceful shutdown I would do:**
+
+Do shutdown(SHUT_WR) to send a FIN and mark the end of sending data.
+Wait for the peer to do the same by polling until you get a EPOLLRDHUP.
+Now you can close the socket with grace.
+
 ### Level-triggered and edge-triggered
 
   The epoll event distribution interface is able to behave both as
@@ -773,6 +830,13 @@ This has to do with the fact that splice() (on which sendfile() is based) can on
 ## how to know if other socket sent RST 
 
 look for errno ECONNRESET from recv
+
+## how to know how many bytes are available to read on a socket buffer?
+
+```
+int value;
+error = ioctl(sock, FIONREAD, &value);
+```
 
 ## accepting multiple connections over TCP form multiple threads
 

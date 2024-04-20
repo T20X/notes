@@ -77,6 +77,14 @@ bool compare(const L& l, const R& r, int i) {
 
 # problem solving tricks
 
+if stuck refer to examples
+
+# management intreview
+
+- be very clear and short
+- answer their questions, don't move sideways
+- don't give contradicting infromation
+- don't say you enjoy doing someting, just say it is good!
 
 ## Upon receiving the question
 
