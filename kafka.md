@@ -33,6 +33,9 @@ If you sent message with key1 and after it message with the same key1, from one 
 
 **acks=all** , requries all in-sinc replicats to confirm the message before consumers could see it
 
+**queue.buffering.max.kbytes** max number of topic+partion queue size allowed to be fetched, but not yet consumed by the client. Note that default is quite high ! 1GB!
+
+
 # consumer
 
 also support the following consume guarantees:
@@ -49,7 +52,10 @@ also support the following consume guarantees:
 
 Partition rebalances also take place in a background thread, which means you still have to handle the potential for commit failures as the consumer may no longer have the same partition assignment when the commit begins. This is unnecessary if you enable autocommit since commit failures will be ignored silently, which also implies that you have no way to rollback processing.
 
+As long as there is a different group ID, then yes, there is no limitation to using assign or subscribe on the same topic
+
 ## settings
+**queued.max.messages.kbytes** max number of topic+partion queue size allowed to be fetched, but not yet consumed by the client. Note that default is quite high ! 1GB!
 
 **enable.auto.commit**  
 Default: true
@@ -92,3 +98,38 @@ Second, Kafka now supports atomic writes across multiple partitions through the 
 
 
 Firstly, enabling EOS has an effect on throughput, which can be significant. Each producer can only process transactions sequentially, so you might need multiple transactional producers, which can have a knock-on effect on the rest of the application. This is where frameworks can provide useful abstractions over multiple producer instances
+
+![](../notes/images/messaging/kafka_transaction_log.JPG)
+
+
+Firstly, enabling EOS has an effect on throughput, which can be significant. Each producer can only process transactions sequentially, so you might need multiple transactional producers, which can have a knock-on effect on the rest of the application. This is where frameworks can provide useful abstractions over multiple producer instances.o
+
+Most of this latency is on the producer side, where the transactions API is implemented. The consumer is only be able to fetch up to the LSO, but it has to buffer records in memory until the commit marker is observed, so you have increased memory usage.
+
+The performance degradation can be significant when having short transaction commit intervals. Increasing the transaction duration also increases the end-to-end latency and may require some additional tuning, so it’s a matter of tradeoff.
+
+
+**WARNING** The transaction coordinator automatically aborts any ongoing transaction that is not completed within transaction.timeout.ms. This mechanism does not work for hanging transactions because from the coordinator’s point of view the transaction was completed and a transaction marker written (and no longer needs to be timed out). But from the partition leader’s point of view there is a data record for a transaction after the commit/abort marker, which is indistinguishable from the start of a new transaction.
+
+
+```
+kafkaProducer.initTransactions()
+...
+kafkaProducer.beginTransaction()
+messages.forEach { message ->
+    val order = objectMapper.readValue<Order>(message.value())
+
+    if (order.meal == "Pizza") {
+        kafkaProducer.send(ProducerRecord(pizzaIncomeIncreased, order.value))
+    }
+}
+
+val consumedOffsets = getConsumedOffsets(kafkaConsumer)
+kafkaProducer.sendOffsetsToTransaction(consumedOffsets, "kafka-transactions-group") //consumer offset must be added to the transaction!
+kafkaProducer.commitTransaction()
+```
+
+
+## issues
+
+KIP-447 consumer groups could affect transactions been processed twice in case of rebalancing since transaction coordinator did not know anythong about consumer groups

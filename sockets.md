@@ -4,6 +4,7 @@
 In networking, a packet is a small segment of a larger message. Data sent over computer networks*, such as the Internet, is divided into packets. These packets are then recombined by the computer or device that receives them. 
 
 ## Segment
+
 The original TCP RFC is kind of fuzzy with how it uses the term ***segment***.
 
 In some cases, the term "segment" refers to just the current piece of the application data stream that's being transmitted, which excludes the TCP headers. For example, the TCP "Maximum Segment Size" (MSS) is the maximum size of the application data chunk in this message, not counting the TCP headers.
@@ -18,7 +19,7 @@ The IEEE 802.3 / Ethernet link layer refers to a single contiguous physical-laye
 
 So, technically, there is no such thing as a "TCP packet" or an "IP packet". Packets are terms from the layers below IP. TCP has "segments", and IP has "datagrams"
 
-##MSS
+## MSS
 
 More specifically, MSS is the largest [TCP (Transport Control Protocol)](https://www.cloudflare.com/learning/ddos/glossary/tcp-ip/) segment size that a network-connected device can receive. MSS defines "segment" as only the length of the payload, not any attached headers. MSS is measured in bytes.
 
@@ -32,6 +33,8 @@ Essentially, the MSS is equal to MTU minus the size of a TCP header and an IP he
 
 One of the key differences between MTU and MSS is that if a packet exceeds a device's MTU, it is broken up into smaller pieces, or "fragmented." In contrast, if a packet exceeds the MSS, it is dropped and not delivered
 
+ The standard size MTU for Ethernet is 1,500 bytes. This does not include the Ethernet header of 18 or 20 bytes, and is the theoretical maximum amount of data that can be transmitted by the physical link
+
 ## Ethernet packet
 
 ![](images/socket/20230819132643.png)
@@ -42,8 +45,12 @@ One of the key differences between MTU and MSS is that if a packet exceeds a dev
 ## IP datagram
 Thus, the maximum size of an IP datagram is 65,535 byte. They can be devided by the sender / router if it exceedes MTU size. An IP packet consists of a header section and a data section. An IP packet has no data checksum or any other footer after the data section. Typically the link layer encapsulates IP packets in frames with a CRC footer that detects most errors, many transport-layer protocols carried by IP also have their own error checkin  
 
+An IP packet consists of a header section and a data section. An IP packet has no data checksum or any other footer after the data section. Typically the link layer encapsulates IP packets in frames with a CRC footer that detects most errors, many transport-layer protocols carried by IP also have their own error checking
 
 ![](images/socket/20230819125128.png)
+
+
+An IP socket address is defined as a combination of an IP interface address and a 16-bit port number
 
 ### Intresting fields inside IP datagram:
 
@@ -65,6 +72,33 @@ the number of network hops a packet can make before it is discarded
 This field specifies the offset of a particular fragment relative to the beginning of the original unfragmented IP datagram. The fragmentation offset value for the first fragment is always 0. The field is 13 bits wide, so that the offset can be from 0 to 8191 (from (20  –1) to (213 – 1)). Fragments are specified in units of 8 bytes, which is why fragment length must be a multiple of 8.[37] Therefore, the 13-bit field allows a maximum offset of (213 – 1) × 8 = 65,528 bytes, with the header length included (65,528 + 20 = 65,548 bytes), supporting fragmentation of packets exceeding the maximum IP length of 65,535 byte
 
 [IP fragmentation detailed](https://packetpushers.net/ip-fragmentation-in-detail/)
+
+
+### fragmentation
+
+When a router receives a packet, it examines the destination address and determines the outgoing interface to use and that interface's MTU. If the packet size is bigger than the MTU, and the Do not Fragment (DF) bit in the packet's header is set to 0, then the router may fragment the packet.
+
+The router divides the packet into fragments. The maximum size of each fragment is the outgoing MTU minus the IP header size (20 bytes minimum; 60 bytes maximum). The router puts each fragment into its own packet, each fragment packet having the following changes:
+
+The total length field is the fragment size.
+The more fragments (MF) flag is set for all fragments except the last one, which is set to 0.
+The fragment offset field is set, based on the offset of the fragment in the original data payload. This is measured in units of 8-byte blocks.
+The header checksum field is recomputed.
+
+Fragmented packets can only be reassembled when no fragments are lost. Fragment reassembly time exceeded seems to indicate lost fragments. UDP does not track and resend lost packets, so they stay lost.
+
+## Address
+
+IPv4 addresses are divided into unicast, broadcast, and multicast
+addresses.  Unicast addresses specify a single interface of a
+host, broadcast addresses specify all hosts on a network, and
+multicast addresses address all hosts in a multicast group
+
+**INADDR_LOOPBACK** (127.0.0.1)
+      always refers to the local host via the loopback device;
+
+**INADDR_ANY** (0.0.0.0)
+      means any address for socket binding;
 
 ## UDP 
 
@@ -98,6 +132,24 @@ Processes transmit data by calling on the TCP and passing buffers of data as arg
 
 
 ![](images/socket/20230819164936.png)
+
+TCP is built on top of IP (see ip(7)).  The address formats
+  defined by ip(7) apply to TCP.  TCP supports point-to-point
+  communication only; broadcasting and multicasting are not
+  supported.
+
+### TCP Socket
+
+     A newly created TCP socket has no remote or local address and is
+       not fully specified.  To create an outgoing TCP connection use
+       connect(2) to establish a connection to another TCP socket.  To
+       receive new incoming connections, first bind(2) the socket to a
+       local address and port and then call listen(2) to put the socket
+       into the listening state.  After that a new socket for each
+       incoming connection can be accepted using accept(2).  A socket
+       which has had accept(2) or connect(2) successfully called on it
+       is fully specified and may transmit data.  Data cannot be
+       transmitted on listening or not yet connected sockets
 
 ### TCP session
 
@@ -216,7 +268,7 @@ resource: https://blog.cloudflare.com/this-is-strictly-a-violation-of-the-tcp-sp
 
 
 ### Intresting fields inside TCP segment
-/
+
 **Sequence number (32 bits)**
 Has a dual role:
 If the SYN flag is set (1), then this is the initial sequence number. The sequence number of the actual first data byte and the acknowledged number in the corresponding ACK are then this sequence number plus 1.
@@ -231,6 +283,8 @@ If one of your segments is lost, you have to retransmit it but maybe with anothe
 
 **Window size (16 bits)**
 The size of the receive window, which specifies the number of window size units[b] that the sender of this segment is currently willing to receive.[c] (See § Flow control and § Window scaling.) 
+
+# timestamping
 
 
 # loopback
@@ -332,6 +386,10 @@ The urgent pointer only alters the processing on the remote host and doesn't exp
 in_addr only got port
 sockaddr_in got port and ip
 
+## close
+
+A host MAY implement a ‘half-duplex’ TCP close sequence, so that an application that has called CLOSE cannot continue to read data from the connection. If such a host issues a CLOSE call while received data is still pending in TCP, or if new data is received after CLOSE is called, its TCP SHOULD send a RST to show that data was lost
+
 ## bind
 
 on receving host, it can bind to MC IP as well, not just INADDANY! 
@@ -419,7 +477,22 @@ flag set (see socket(7)).
 
 ## epoll()
 
+The central concept of the epoll API is the epoll instance, an
+in-kernel data structure which, from a user-space perspective,
+can be considered as a container for two lists:
+
+•  The interest list (sometimes also called the epoll set): the
+  set of file descriptors that the process has registered an
+  interest in monitoring.
+
+•  The ready list: the set of file descriptors that are "ready"
+  for I/O.  The ready list is a subset of (or, more precisely, a
+  set of references to) the file descriptors in the interest
+  list.  The ready list is dynamically populated by the kernel
+  as a result of I/O activity on those file descriptors.
+
 ### Level-triggered and edge-triggered
+
   The epoll event distribution interface is able to behave both as
   edge-triggered (ET) and as level-triggered (LT).  The difference
   between the two mechanisms can be described as follows.  Suppose
@@ -633,7 +706,7 @@ denial-of-service attacks.  In Linux 2.2, the default value was 180
 
 ## /proc/sys/net/core/somaxconn
 
- kernel parameter in Linux that determines the maximum number of connections that can be queued in the TCP/IP stack backlog per socket
+ kernel parameter in Linux that determines the maximum number of connections that can be queued in the TCP/IP stack backlog per socket - aka accept queue. Note that it is per socket setting.
 
 
 # Linux commands
@@ -676,7 +749,30 @@ For sockets in non-LISTEN state
 Recv-Q: the number of bytes received but not read by the application.
 Send-Q: the number of bytes sent but not acknowledged.
 
+## listening sockets
+
+netstat -tulpn
+
+# Zero copy
+
+## sendfile
+
+sendfile() copies data between one file descriptor and another.
+Because this copying is done within the kernel, sendfile() is
+more efficient than the combination of read(2) and write(2),
+which would require transferring data to and from user space
+
+It should also be noted that the Linux system calls sendfile() and splice() hit a spot in between - these usually manage to deliver the contents of the file to be sent, even if you immediately call close() after they return.
+
+This has to do with the fact that splice() (on which sendfile() is based) can only safely return after all packets have hit the TCP stack since it is zero copy, and can’t very well change its behaviour if you modify a file after the call returns
+
+
+
 # Best practices
+
+## how to know if other socket sent RST 
+
+look for errno ECONNRESET from recv
 
 ## accepting multiple connections over TCP form multiple threads
 
@@ -687,6 +783,39 @@ The second of the traditional approaches used by multithreaded servers operating
         process_connection(new_fd);
     }
 The problem with this technique, as Tom pointed out, is that when multiple threads are waiting in the accept() call, wake-ups are not fair, so that, under high load, incoming connections may be distributed across threads in a very unbalanced fashion. At Google, they have seen a factor-of-three difference between the thread accepting the most connections and the thread accepting the fewest connections; that sort of imbalance can lead to underutilization of CPU cores. By contrast, the SO_REUSEPORT implementation distributes connections evenly across all of the threads (or processes) that are blocked in accept() on the same port
+
+## how to get the amount of unset data on socket?
+
+On Linux: SIOCOUTQ is documented to give the amount of unsent data, but actually gives the sum of (unsent data + sent-but-not-ACK-ed data). A recent patch (Feb 2016) made it possible to get the actual unsent data from the tcpi_notsent_bytes field in the TCP_INFO struct.
+
+## Closing session 0
+
+***VERY IMPORTANT***
+The close() call really does not convey what we are trying to tell the kernel: please close the connection after sending all the data I submitted through write().
+
+Luckily, the system call shutdown() is available, which tells the kernel exactly this. However, it alone is not enough. When shutdown() returns, we still have no indication that everything was received by program B.
+
+What we can do however is issue a shutdown(), which will lead to a FIN packet being sent to program B. Program B in turn will close down its socket, and we can detect this from program A: a subsequent read() will return 0.
+
+
+Program A now becomes:
+
+```
+    sock = socket(AF_INET, SOCK_STREAM, 0);  
+    connect(sock, &remote, sizeof(remote));
+    write(sock, buffer, 1000000);             // returns 1000000
+    shutdown(sock, SHUT_WR);
+    for(;;) {
+        res=read(sock, buffer, 4000);
+        if(res < 0) {
+            perror("reading");
+            exit(1);
+        }
+        if(!res)
+            break;
+    }
+    close(sock);
+```
 
 ## Closing session 1
 
@@ -712,6 +841,38 @@ The socket resource are deallocated.
 The socket does not enter TIME-WAIT
 linger 0 ->However, the data transmission can be successful because TCP/IP repeats the send request for a specified period of time
 
+
+By default, close returns immediately, but if there is any data still remaining in the socket send buffer, the system will try to deliver the data to the peer.
+
+The SO_LINGER socket option can change this default. This option requires the following structure to be passed (as the *optval argument) between the user process and the kernel. It is defined by including <sys/socket.h>.
+
+struct linger {
+  int   l_onoff;        /* 0=off, nonzero=on */
+  int   l_linger;       /* linger time, POSIX specifies units as seconds */
+};
+Calling setsockopt leads to one of the following three scenarios, depending on the values of the two structure members:
+
+ If l_onoff is 0, the option is turned off. The value of l_linger is ignored and the previously discussed TCP default applies: close returns immediately.
+
+If l_onoff is nonzero and l_linger is zero, TCP aborts the connection when it is closed.
+In this case, TCP discards any data still remaining in the socket send buffer and sends an RST to the peer, not the normal four-packet connection termination sequence (Section 2.6). See example.
+This scenario avoids TCP's TIME_WAIT state, but leaves open the possibility of another incarnation of this connection being created within 2MSL seconds (Section 2.7) and having old duplicate segments from the just-terminated connection being incorrectly delivered to the new incarnation.
+Occasional USENET postings advocate the use of this feature just to avoid the TIME_WAIT state and to be able to restart a listening server even if connections are still in use with the server's well-known port. This should NOT be done and could lead to data corruption, as detailed in RFC 1337. Instead, the SO_REUSEADDR socket option should always be used in the server before the call to bind. We should make use of the TIME_WAIT state to let old duplicate segments expire in the network rather than trying to avoid it.
+There are certain circumstances which warrant using this feature to send an abortive close. One example is an RS-232 terminal server, which might hang forever in CLOSE_WAIT trying to deliver data to a stuck terminal port, but would properly reset the stuck port if it got an RST to discard the pending data.
+
+If l_onoff is nonzero and l_linger is nonzero, then the kernel will linger when the socket is closed.
+In this scenario, if there is any data still remaining in the socket send buffer, the process is put to sleep until either:
+All the data is sent and acknowledged by the peer TCP, or
+The linger time expires.
+If the socket has been set to nonblocking, it will not wait for the close to complete, even if the linger time is nonzero. When using this feature of the SO_LINGER option, it is important for the application to check the return value from close, because if the linger time expires before the remaining data is sent and acknowledged, close returns EWOULDBLOCK and any remaining data in the send buffer is discarded.
+Given the above three scenarios, consider the situations when a close on a socket returns. Assume that the client writes data to the socket and then calls close.
+
+
+**shutdown  SHUT_RD**	No more receives can be issued on the socket; process can still send on socket; socket receive buffer discarded; any further data received is discarded by TCP; no effect on socket send buffer.
+**shutdown SHUT_WR**	No more sends can be issued on socket; process can still receive on socket; contents of socket send buffer sent to other end, followed by normal TCP connection termination (FIN); no effect on socket receive buffer.
+**close, l_onoff = 0 (default)**	No more receives or sends can be issued on socket; contents of socket send buffer sent to other end. If descriptor reference count becomes 0: normal TCP connection termination (FIN) sent following data in send buffer and socket receive buffer discarded.
+**close, l_onoff = 1, l_linger = 0**	No more receives or sends can be issued on socket. If descriptor reference count becomes 0: RST sent to other end; connection state set to CLOSED (no TIME_WAIT state); socket send buffer and socket receive buffer discarded.
+**close, l_onoff = 1, l_linger != 0**	No more receives or sends can be issued on socket; contents of socket send buffer sent to other end. If descriptor reference count becomes 0: normal TCP connection termination (FIN) sent following data in send buffer; socket receive buffer discarded; and if linger time expires before connection CLOSED, close returns EWOULDBLOCK.
 
 
 # Misc
