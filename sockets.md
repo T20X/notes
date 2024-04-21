@@ -123,6 +123,8 @@ Look at ipi_addr: This will be the multicast address of the UDP packet you just 
 
 ## TCP 
 
+SUPER IMPORTANT! ***The TCP protocol offers a byte-stream service, with no notion of message boundaries***
+
 Transmission Control Protocol accepts data from a data stream, divides it into chunks, and adds a TCP header creating a TCP segment. The TCP segment is then encapsulated into an Internet Protocol (IP) datagram, and exchanged with peers.[7]
 
 The term TCP packet appears in both informal and formal usage, whereas in more precise terminology segment refers to the TCP protocol data unit (PDU), datagram[8]: 5–6  to the IP PDU, and frame to the data link layer PDU:
@@ -157,6 +159,8 @@ The only way to identify a TCP connection is by a unique 4-tuple (client-ip, src
 
 ### TCP Segmentation
 
+SUPER IMPORTANT! ***The TCP protocol offers a byte-stream service, with no notion of message boundaries***
+
 Large payload not fitting into MSS will be split in many segments 
 
 TCP Segmentation offload - These days many NICs can create headers/checksum for a given user data autmatically given a template from kernel! this can save massive amount of CPU time.
@@ -171,6 +175,22 @@ TCP Segmentation offload - These days many NICs can create headers/checksum for 
  **Transmission**: Once segmented, the TCP segments are handed down to the IP layer for transmission over the network. Each segment is encapsulated within an IP packet.
 
 **Reassembly**: At the receiving end, TCP reassembles the segments into the original data stream based on the sequence numbers and acknowledgment numbers. It ensures that segments arrive in the correct order and retransmits any lost or corrupted segments if necessary.
+
+### TCP checksum
+
+To assure correctness a checksum field is included; see § Checksum computation for details. The TCP checksum is a weak check by modern standards and is normally paired with a CRC integrity check at layer 2, below both TCP and IP, such as is used in PPP or the Ethernet frame. However, introduction of errors in packets between CRC-protected hops is common and the 16-bit TCP checksum catches most of these
+
+## TCP retransmission
+
+### RTO timeout
+
+When a sender transmits a segment, it initializes a timer with a conservative estimate of the arrival time of the acknowledgment. The segment is retransmitted if the timer expires, with a new timeout threshold of twice the previous value, resulting in exponential backoff behavior
+
+### SACK
+
+selective acknowledgment (SACK) option, defined in 1996 in RFC 2018, which allows the receiver to acknowledge discontinuous blocks of packets that were received correctly, in addition to the sequence number immediately following the last sequence number of the last contiguous byte received successively, as in the basic TCP acknowledgmen
+
+SACKs come with TCP packet **Options** field which has variable length (Variable 0–320 bits, in units of 32 bits)
 
 ### TCP states
 
@@ -286,6 +306,27 @@ The size of the receive window, which specifies the number of window size units[
 
 # timestamping
 
+**SO_TIMESTAMPING**
+  Generates timestamps on reception in nano resolution, transmission or both. Supports
+  multiple timestamp sources, including hardware. Supports generating
+  timestamps for stream sockets
+
+Supports multiple types of timestamp requests. As a result, this
+socket option takes a bitmap of flags, not a boolean. In
+
+```
+  err = setsockopt(fd, SOL_SOCKET, SO_TIMESTAMPING, &val, sizeof(val));
+```
+
+val is an integer with any of the following bits set. Setting other
+bit returns EINVAL and does not change the current state.
+
+The socket option configures timestamp generation for individual
+sk_buffs (1.3.1), timestamp reporting to the socket's error
+queue (1.3.2) and options (1.3.3). Timestamp generation can also
+be enabled for individual sendmsg calls using cmsg (1.3.4).  
+
+https://www.kernel.org/doc/Documentation/networking/timestamping.txt
 
 # loopback
 
