@@ -543,6 +543,7 @@ void* memcpy( void* dest, const void* src, std::size_t count );
      WARNING !!!! *If the objects are potentially-overlapping or not TriviallyCopyable, the behavior of memcpy is not specified and may be undefined.*
 
 IMPORTANT **note that it may not copy padding bits! as that is is unspecified!**
+IMPORTANT **source and destination may not OVERLAP**
 
 
 int32_t x_representation;

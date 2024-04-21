@@ -55,7 +55,7 @@ An IP socket address is defined as a combination of an IP interface address and 
 ### Intresting fields inside IP datagram:
 
 **Protocol**
-UDP,TCP...etc
+DESCRIBES PROTOCOL TO BE USED IN THE NEXT LEVEL! TCP...etc
 
 **Identification** 
 if three packets are sent from host A to host B and each must be fragmented into four fragments:
@@ -328,6 +328,26 @@ be enabled for individual sendmsg calls using cmsg (1.3.4).
 
 https://www.kernel.org/doc/Documentation/networking/timestamping.txt
 
+# Kernel
+
+## skbuff
+
+## Recevign packet
+
+## Packet sending 
+
+       qdisc is short for 'queueing discipline' and it is elementary to
+       understanding traffic control. Whenever the kernel needs to send
+       a packet to an interface, it is enqueued to the qdisc configured
+       for that interface. Immediately afterwards, the kernel tries to
+       get as many packets as possible from the qdisc, for giving them
+       to the network adaptor driver.
+
+       A simple QDISC is the 'pfifo' one, which does no processing at
+       all and is a pure First In, First Out queue. It does however
+       store traffic when the network interface can't handle it
+       momentarily.
+
 # loopback
 
 A little known fact is that it's not possible to have any packet loss or congestion on the loopback interface. The loopback works magically: when an application sends packets to it, it immediately, still within the send syscall handling, gets delivered to the appropriate target. There is no buffering over loopback. Calling send over loopback triggers iptables, network stack delivery mechanisms and delivers the packet to the appropriate queue of the target application. Assuming the target application has some space in its buffers, packet loss over loopback is not possible
@@ -475,6 +495,36 @@ for UDP event datagram distribution
 As with TCP, SO_REUSEPORT allows multiple UDP sockets to be bound to the same port. This facility could, for example, be useful in a DNS server operating over UDP. With SO_REUSEPORT, each thread could use recv() on its own socket to accept datagrams arriving on the port. The traditional approach is that all threads would compete to perform recv() calls on a single shared socket. As with the second of the traditional TCP scenarios described above, this can lead to unbalanced loads across the threads. By contrast, SO_REUSEPORT distributes datagrams evenly across all of the receiving threads..
 ***WARNING*** DOES NOT LOOK IT WORKS LIKE THAT!
 
+**SO_INCOMING_CPU** (gettable since Linux 3.19, settable since Linux
+4.4)
+      Sets or gets the CPU affinity of a socket.  Expects an
+      integer flag.
+
+          int cpu = 1;
+          setsockopt(fd, SOL_SOCKET, SO_INCOMING_CPU, &cpu,
+                      sizeof(cpu));
+
+      Because all of the packets for a single stream (i.e., all
+      packets for the same 4-tuple) arrive on the single RX
+      queue that is associated with a particular CPU, the
+      typical use case is to employ one listening process per RX
+      queue, with the incoming flow being handled by a listener
+      on the same CPU that is handling the RX queue.  This
+      provides optimal NUMA behavior and keeps CPU caches hot.
+
+**SO_INCOMING_NAPI_ID** (gettable since Linux 4.12)
+      Returns a system-level unique ID called NAPI ID that is
+      associated with a RX queue on which the last packet
+      associated with that socket is received.
+
+      This can be used by an application to split the incoming
+      flows among worker threads based on the RX queue on which
+      the packets associated with the flows are received.  It
+      allows each worker thread to be associated with a NIC HW
+      receive queue and service all the connection requests
+      received on that RX queue.  This mapping between an app
+      thread and a HW NIC queue streamlines the flow of data
+      from the NIC to the application.
 
 ## accept()
 
@@ -772,6 +822,14 @@ The code which calls write (or other blocking operations) has to be aware of EIN
 ## netdev_max_backlog 
 
 2000 default per CPU queue to sore data from NIC and push it to sockets
+
+## netdev_max_budget 
+
+300 default max number of packets processed by NAPI poll function
+
+## netdev_max_usecs
+
+max number of microseconds NAPI poll in one go!
 
 ## tcp_mem [low,pressure,limit] 
 

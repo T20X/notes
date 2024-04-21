@@ -58,6 +58,7 @@ In the following contexts, the type bool is expected and the implicit conversion
 - the predicate in a static_assert declaration;
 - the expression in a noexcept specifier;
 - the expression in an explicit specifier; (since C++20)
+- void*
 
 One early solution for this can be seen in std::basic_ios, which initially defines operator void*, so that the code such as if (std::cin) {...} compiles because void* is convertible to bool, but int n = std::cout; does not compile because void* is not convertible to int. This still allows nonsense code such as delete std::cout; to compile.
 
@@ -139,6 +140,7 @@ Whenever a glvalue appears as an operand of an operator that requires a prvalue 
 Whenever a prvalue appears as an operand of an operator that expects a glvalue for that operand, the temporary materialization conversion is applied to convert the expression to an xvalue.
 
 # primitive types
+
 
 # void*
 

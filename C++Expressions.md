@@ -846,6 +846,16 @@ pointer to array, again not the same as pointer to the first element:
 Because the comittee wants to make clear that an array is a low level concept an not a first class object: you cannot return an array nor assign to it for example. Pointer-interconvertibility is meant to be a concept between objects of same level: only standard layout classes or unions
 
 
+## void*
+
+ in case of a void * the compiler can't make any assumptions what void * + 5 should mean. So before you use a void * it kind of forces you to specify how you want to use it.
+
+You can only perform pointer arithmetics on pointers into an array. And if you have a pointer into an array, you know the type of the array, and can use the equivalent pointer typ
+
+void is an incomplete type, and you can't do arithmetic on pointers to incomplete types. The compiler fundamentally needs to know the size of the objects involved when doing pointer arithmetic, but sizeof cannot be used on incomplete types. Some compilers treat void pointer arithmetic the same as char pointer arithmetic — i.e. they pretend that sizeof (void) == 1 — but only as an extension to the standard C language
+
+you are confusing "size of a pointer" with "size of the data type being pointed at". the pointer size itself has nothing to do with pointer arithmetic, only the size of the type being pointed
+
 # Accessing data
 
 If a program attempts to access the stored value of an object through a glvalue whose type is not similar to one of the following types the behavior is undefined:55
