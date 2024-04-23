@@ -770,6 +770,12 @@ struct conjunction<B1, Bn...>
 
 Determines the common type among all types T..., that is the type all T... can be implicitly converted to. If such a type exists (as determined according to the rules below), the member type names that type. Otherwise, there is no member type
 
+## std::decltype
+
+Inspects the declared type of an entity or the type and value category of an expression
+
+If expression is a prvalue other than a (possibly parenthesized) immediate invocation(since C++20), a temporary object is not materialized from that prvalue: such prvalue has no result object.
+
 ## decay
 
 (1) remove reference
@@ -1575,6 +1581,18 @@ Also note that lookup for non-dependent names is done in the first phase, wherea
 ##  evaluations without side-effects
 
 decltype,sizeof,declval,alingof don't evaluate expression which means sife-effects may not leak if the overload candidates d gets removed by SFINAE!
+
+in C++20 return value is materialized for immediate invocations  like this:
+```
+  int p3;
+  decltype(
+    [&p3]()
+    {
+      p3 = 34;
+      Foo f2;
+      return Foo() /*will create an object of Foo()!*/;
+    }()) f;
+```
 
 # f(...)
 

@@ -122,8 +122,8 @@ constant expression
 8) The side effect (modification of the left argument) of the built-in assignment operator and of all built-in compound assignment operators is sequenced after the value computation (but not the side effects) of both left and right arguments, and is sequenced before the value computation of the assignment expression (that is, before returning the reference to the modified object)
 9) Every value computation and side effect of the first (left) argument of the built-in comma operator , is sequenced before every value computation and side effect of the second (right) argument.
 10) In list-initialization, every value computation and side effect of a given initializer clause is sequenced before every value computation and side effect associated with any initializer clause that follows it in the brace-enclosed comma-separated list of initalizers.
-11) A function call that is not sequenced before or sequenced after another function call is indeterminately sequenced (the program must behave as if the CPU instructions that constitute different function calls were not interleaved, even if the functions were inlined).
-The rule 11 has one exception: a function calls made by a standard library algorithm executing under std::par_unseq execution policy are unsequenced and may be arbitrarily interleaved.	(since C++17)
+11) ***A function call that is not sequenced before or sequenced after another function call is indeterminately sequenced (the program must behave as if the CPU instructions that constitute different function calls were not interleaved, even if the functions were inlined).
+The rule 11 has one exception: a function calls made by a standard library algorithm executing under std::par_unseq execution policy are unsequenced and may be arbitrarily interleaved.	(since C++17)***
 12) The call to the allocation function (operator new) is indeterminately sequenced with respect to (until C++17)sequenced before (since C++17) the evaluation of the constructor arguments in a new-expression
 13) When returning from a function, copy-initialization of the temporary that is the result of evaluating the function call is sequenced-before the destruction of all temporaries at the end of the operand of the return statement, which, in turn, is sequenced-before the destruction of local variables of the block enclosing the return statement.
 (since C++14)
@@ -181,10 +181,10 @@ ordering then even if thread 2's RMW is later in modification order than
 thread 1's, then the compiler/processor/cache is not required to ensure
 visibility of the store to X from thread 1 to the load in thread 2.
 
-However, relaxed RMW ops can form part of a "release sequence" --- a
+!!!IMPORTANT!!!**However, relaxed RMW ops can form part of a "release sequence" --- a
 store release followed by a series of RMW ops from random threads,
 followed by a load acquire of the last value written is still a
-release-acquire pairing.
+release-acquire pairing**
 
 
 ## "inter-thread happens before" 

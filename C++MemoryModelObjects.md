@@ -494,6 +494,13 @@ This proposal provides a standard library solution, with an optional customizati
       new (&arr) A;
       *p = 0; //UB now in C++20 because while y and p are not transparently replacable, that is not the case for arr and A as both p and y are technically subobjects and in that case complete objects must be transparently replaceble as well!
 
+
+# ITANIUM ABI
+
+## object layout
+
+We ignore tail padding for PODs because the standard before the resolution of CWG issue 43 did not allow us to use it for anything else and because it sometimes permits faster copying of the type.
+
 # Helpfull utilities
 
 ##  addressof
@@ -554,7 +561,7 @@ Implementations now generally outlaw using reinterpret_cast to violate strict al
 Permitting aliasing via unions would wreck performance, as you would never know when two objects of completely different types might alias. The C union visibilrwise be modified by the user, so the compiler can, with this constraint on memcpy, make assumptions about them (e.g. that thity rule is highly controversial even within the C community; see e.g. https://gcc.gnu.org/bugzilla/show_bug.cgi?id=65892
 
 
-static_cast<Base&>(d) obtains a potentially overlapping subobject, because every base subobject is a potentially overlapping subobject. It's then not permitted to use raw memory access to the underlying representation, as memcpy. The concept of "potentially overlapping subobject" is not with reference to another object. It's an absolute concept
+static_cast<Base&>(d) obtains a potentially overlapping subobject, because every base subobject is a potentially overlapping subobject. It's then not permitted to use raw memory access to the underlying representation, as memcpy. The concept of "potentially overlapping subobject" is not with reference to another object. It's an absolute concept. The padding bytes aren't part of the value representation of the independent target object, so its value can't be affected. However, the padding bytes in the independent target object can not otherwise be modified by the user, so the compiler can, with this constraint on memcpy, make assumptions about them (e.g. that they are always zero if the object doesn't have an indeterminate value). If you drop this constraint then such assumptions won't hold anymore.
 
 Before the standard did allow copying of POD bases through memcpy , and to not break ABI right now compliers still don't re-use padding bits for PODs.
 
@@ -583,6 +590,8 @@ the standard is very strict about as basically it renders the following code inv
 
 
   he padding bytes aren't part of the value representation of the independent target object, so its value can't be affected. However, the padding bytes in the independent target object can not otherwise be modified by the user, so the compiler can, with this constraint on memcpy, make assumptions about them (e.g. that they are always zero if the object doesn't have an indeterminate value). If you drop this constraint then such assumptions won't hold anymore
+
+  memcpy() simply copies bytes from one memory block to another memory block. If the destination block overlaps with the source block, this results in undefined behavior. You would need to use memmove() instead, which has well-defined behavior for copying overlapping memory blocks.
   
 
 # implicit objects creation
