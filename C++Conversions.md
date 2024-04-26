@@ -141,6 +141,13 @@ Whenever a prvalue appears as an operand of an operator that expects a glvalue f
 
 # primitive types
 
+# nullptr
+
+Additive operators [expr.add]
+
+7 If the value 0 is added to or subtracted from a pointer value, the result compares equal to the original pointer value. If two pointers point to the same object or both point one past the end of the same array or both are null, and the two pointers are subtracted, the result compares equal to the value 0 converted to the type std::ptrdiff_t
+
+nullptr - nullptr == 0 !
 
 # void*
 
@@ -221,7 +228,7 @@ The result of the expression reinterpret_cast<T>(v) is the result of converting 
 # static_cast 
 
 MAJOR:
- - allows explicit constructors to be called! 
+ - **allows explicit constructors to be called!**
 
 struct D : B {};
 

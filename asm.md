@@ -74,7 +74,16 @@ test - performs bitwise comparison
                              120 
 
 
-16-byte stack alignment is mandatory!
+64 bit stack alignment is mandatory
+
+
+## Stack alignment
+
+"Stack alignment" just means the address of the stack (SP or ESP) is a multiple of the machine word size (so always divisible by 8 for 64-bit mode, 4 for 32-bit, 2 for 16-bit). Generally this means you assume your BIOS / bootloader / OS / runtime initializes it that way, and you only change ESP by multiples of the word size. Writing 64-bit software and want to push/pop a single byte on the stack? To keep the stack aligned, you should change ESP by 8 (the number of bytes in 64 bits). You don't have to do anything with the extra 7 bytes, but you need to allocate them to maintain the invariant that ESP is always a multiple of 8.
+
+Why is this a thing? It's because CPU / cache / memory generally talk to each other only about aligned addresses (this allows less address pins and hashmap pressure issues because low bits are always zero). But it complicates implementation of what the hardware should do when software asks for an un-aligned read/write (you'll need to split it into two when it crosses the alignment boundary). Some CPU's handle this by making unaligned memory access an error.
+
+What about x86? Unaligned memory access is allowed on x86, but it's slower. Which means it's better for software to avoid it where possible [1]. So low-level libraries, OS's, compilers, etc. are all written to keep ESP aligned. And it's also advised for any hand-written assembly code.
 
 
 # MATH

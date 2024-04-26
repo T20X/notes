@@ -25,6 +25,7 @@ speculative execution goes awry and must be rolled back and retried
 frequently read but rarely updated is present in all CPUs’ caches. This optimization
 allows the read-mostly data to be accessed exceedingly efficientl
 
+
 --------------
 
 The processor always (even today) starts in real mode. To enter protected mode one has to create GDT and set up gdtr;

@@ -142,18 +142,6 @@ If there are two side effects that modify the same variable, and neither is sequ
 
 If there is a side effect that modifies a variable, and a value computation that reads that variable, and neither is sequenced-before the other, the code has undefined behaviour.
 
-## release operation
-
- Informally, performing a release operation on A forces prior side effects on *other*(exactly not specified on which ones) memory locations to become visible to other threads that later perform a consume or an acquire operation on A. “Relaxed” atomic operations are not synchronization operations even though, like synchronization operations, they cannot contribute to data races.
-
-An atomic operation A that performs a release operation on an atomic object M synchronizes with an atomic operation B that performs an acquire operation on M and ***IMPORTANT------->takes its value from any side effect in the release sequence headed by A.***
-
-Note that above does not limit to just one acquire operation!
-
-that the querent might be thinking that a release store only has enough synchronization "mojo" to sync with one reader, and that reader would use up its ability to sync with anything else. If so, it might help to understand that's not how it works. In real implementations, a release operation in a writer orders access to coherent shared cache/memory wrt. earlier loads/stores in that thread. Acquire is similar for the read side, just ordering this CPU core's access to coherent shared state
-
-In ISO C++ there is not much of a guarantee of a coherent shared state existing, other than the coherency guarantees on single objects. ISO C++ only defines things in terms of syncs-with guaranteeing visibility, so if nobody's looking then a release store can in theory be optimized away or relaxed by the as-if rule. But in practice compilers don't try to prove that an atomic object has no acquire-or-stronger reader
-
 
 ## Side effects
 
@@ -165,15 +153,15 @@ Reading an object designated by a volatile glvalue ([basic.lval]), modifying an 
 An atomic operation A that performs a release operation on an atomic object M synchronizes with an atomic operation B that performs an acquire operation on M and takes its value from any side effect in the release sequence headed by A. (**note that is runtime propperty not something to do with statements, in other words statement to release and acquire don't guarantee it would happen all the time**)
 (**very important about releases sequence, not that while the side effect above can be taken from a releae sequence fundamentally acquire is still synchronizing with the very first release in the release sequence**)
 
-All memory writes (including non-atomic and relaxed atomic) that happened-before the atomic store from the point of view of thread A, become visible side-effects in thread B. That is, once the atomic load is completed, thread B is guaranteed to see everything thread A wrote to memory. This promise only holds if B actually returns the value that A stored, or a value from later in the release sequence.
+All memory writes (including non-atomic and relaxed atomic) that happened-before the atomic store from the point of view of thread A, become visible side-effects in thread B. That is, once the atomic load is completed, thread B is guaranteed to see everything thread A wrote to memory. This promise only holds if  actually returns the value that A stored, or a value from later in the release sequence.
 
+**SUPPPPER IMPORTANT*** **But note that also means that syncrhonize with does not allow "reads" to pass release operatoin** as those reads would be sequenced before release operation and hence happen before operation which performs acquire!!!!!!!!!!!!!!!!!!!
+ 
 **But don’t fall into the trap of thinking that synchronizes-with is a relationship between statements in your source code. It isn’t! It’s a relationship between operations which occur at runtime, based on those statements**
 
 The happens-before relationship is about what is guaranteed wrt
 to *other* memory locations.
 
-Thread 1: store to X, RMW on Y.
-Thread 2: RMW on Y, load from X.
 
 If thread 1's RMW on Y does not have (at least) "release" ordering
 and/or the thread 2's RMW on Y does not have (at least) "acquire"
@@ -231,6 +219,8 @@ This shows that happens-before is not transitive in C++11. **IMPORTANT----------
 The implementation shall ensure that no program execution demonstrates a cycle in the “happens before” relation
 
 
+
+
 ## "Modification order"
 
 All modifications to a particular atomic object M occur in some particular total order, called the modification order of M.
@@ -246,7 +236,7 @@ The modification order for an object is the order a thread would see if it was s
 **different threads may observe modifications to different atomic objects in different orders**
 So if atomic object 1 has the totally ordered sequence of modifications A B C, and atomic object 2 has the totally ordered sequence D E F, then all threads will see A before C and D before F, but threads may disagree whether A comes before D. Therefore, the set of all modifications {A B D C E F} has no total order.
 
-But all threads that agree that B comes before E will also agree that A comes before F. Partial orders still give some guarantee
+**But all threads that agree that B comes before E will also agree that A comes before F. Partial orders still give some guarantee**
 
 ## "release sequence"
 
@@ -276,6 +266,66 @@ The value of a non-atomic scalar object or bit-field M, as determined by evaluat
 
 The value of an atomic object M, as determined by evaluation B, shall be the value stored by some side effect A that modifies M, where B does not happen before A.
 [Note 14: The set of such side effects is also restricted by the rest of the rules described here, and in particular, by the coherence requirements below. — end note]
+
+## release operation
+
+ Informally, performing a release operation on A forces prior side effects on *other*(exactly not specified on which ones) memory locations to become visible to other threads that later perform a consume or an acquire operation on A. “Relaxed” atomic operations are not synchronization operations even though, like synchronization operations, they cannot contribute to data races.
+
+An atomic operation A that performs a release operation on an atomic object M synchronizes with an atomic operation B that performs an acquire operation on M and ***IMPORTANT------->takes its value from any side effect in the release sequence headed by A.***
+
+Note that above does not limit to just one acquire operation!
+
+that the querent might be thinking that a release store only has enough synchronization "mojo" to sync with one reader, and that reader would use up its ability to sync with anything else. If so, it might help to understand that's not how it works. In real implementations, a release operation in a writer orders access to coherent shared cache/memory wrt. earlier loads/stores in that thread. Acquire is similar for the read side, just ordering this CPU core's access to coherent shared state
+
+In ISO C++ there is not much of a guarantee of a coherent shared state existing, other than the coherency guarantees on single objects. ISO C++ only defines things in terms of syncs-with guaranteeing visibility, so if nobody's looking then a release store can in theory be optimized away or relaxed by the as-if rule. But in practice compilers don't try to prove that an atomic object has no acquire-or-stronger reader
+
+
+## Coherence
+
+**non-atomic**
+The value of a non-atomic scalar object or bit-field M, as determined by evaluation B (**read**/**calc**), shall be the value stored by the *visible side effect* (**write**) A.
+[Note 12: If there is ambiguity about which side effect to a non-atomic object or bit-field is visible, then the behavior is either unspecified or undefined. — end note]
+[Note 13: This states that operations on ordinary objects are not visibly reordered. This is not actually detectable without data races, but it is necessary to ensure that data races, as defined below, and with suitable restrictions on the use of atomics, correspond to data races in a simple interleaved (sequentially consistent) execution. — end note]
+
+
+**atomic**
+The value of an atomic object M, as determined by evaluation B(**read**/**calc**), shall be the value stored by some side effect(**write**) A that modifies M, where B does not happen before A.
+[Note 14: The set of such side effects is also restricted by the rest of the rules described here, and in particular, by the coherence requirements below. — end note]
+
+
+all modifications to any particular atomic variable occur in a total order that is specific to this one atomic variable
+
+
+**NOTE THAT TOTAL ORDER DOES NOT FORM HAPPENS BEFORE RELATIONSHIPS! as the fact that the value was modified does not mean that it was read!**
+
+***[Note 19: The four preceding coherence requirements effectively disallow compiler reordering of atomic operations to a single object, even if both operations are relaxed loads. This effectively makes the cache coherence guarantee provided by most hardware available to C++ atomic operations. — end note]***
+0
+### write-write
+
+If an operation A that modifies an atomic object M happens before an operation B that modifies M, then A shall be earlier than B in the modification order of M.
+[Note 15: This requirement is known as write-write coherence. — end note]
+
+### read-read
+
+If a value computation(**read**/**calc**) A of an atomic object M happens before a value computation B(**read**/**calc**) of M, and A takes its value from a side effect X on M, then the value computed by B shall either be the value stored by X or the value stored by a side effect Y on M, where Y follows X in the modification order of M.
+[Note 16: This requirement is known as read-read coherence. — end note]
+
+### read-write
+
+If a value computation A of an atomic object M happens before an operation B that modifies M, then A shall take its value from a side effect X on M, where X precedes B in the modification order of M.
+[Note 17: This requirement is known as read-write coherence. — end note]
+18
+
+### write-read
+
+If a side effect X on an atomic object M happens before a value computation B of M, then the evaluation B shall take its value from X or from a side effect Y that follows X in the modification order of M.
+[Note 18: This requirement is known as write-read coherence. — end note]
+
+
+[Note 19: The four preceding coherence requirements effectively disallow compiler reordering of atomic operations to a single object, even if both operations are relaxed loads. This effectively makes the cache coherence guarantee provided by most hardware available to C++ atomic operations. — end note]
+0
+
+[Note 20: The value observed by a load of an atomic depends on the “happens before” relation, which depends on the values observed by loads of atomics. The intended reading is that there must exist an association of atomic loads with modifications they observe that, together with suitably chosen modification orders and the “happens before” relation derived as described above, satisfy the resulting constraints as imposed here. — end note]
 
 
 ## "strongly happens before"
@@ -346,50 +396,6 @@ y.store(r2, memory_order::relaxed);
 
 this recommendation discourages producing r1 == r2 == 42, since the store of 42 to y is only possible if the store to x stores 42, which circularly depends on the store to y storing 42. Note that without this restriction, such an execution is possible. — end note]
 
-## Coherence
-
-**non-atomic**
-The value of a non-atomic scalar object or bit-field M, as determined by evaluation B (**read**/**calc**), shall be the value stored by the *visible side effect* (**write**) A.
-[Note 12: If there is ambiguity about which side effect to a non-atomic object or bit-field is visible, then the behavior is either unspecified or undefined. — end note]
-[Note 13: This states that operations on ordinary objects are not visibly reordered. This is not actually detectable without data races, but it is necessary to ensure that data races, as defined below, and with suitable restrictions on the use of atomics, correspond to data races in a simple interleaved (sequentially consistent) execution. — end note]
-
-
-**atomic**
-The value of an atomic object M, as determined by evaluation B(**read**/**calc**), shall be the value stored by some side effect(**write**) A that modifies M, where B does not happen before A.
-[Note 14: The set of such side effects is also restricted by the rest of the rules described here, and in particular, by the coherence requirements below. — end note]
-
-
-all modifications to any particular atomic variable occur in a total order that is specific to this one atomic variable
-
-
-**NOTE THAT TOTAL ORDER DOES NOT FORM HAPPENS BEFORE RELATIONSHIPS! as the fact that the value was modified does not mean that it was read!**
-
-### write-write
-
-If an operation A that modifies an atomic object M happens before an operation B that modifies M, then A shall be earlier than B in the modification order of M.
-[Note 15: This requirement is known as write-write coherence. — end note]
-
-### read-read
-
-If a value computation(**read**/**calc**) A of an atomic object M happens before a value computation B(**read**/**calc**) of M, and A takes its value from a side effect X on M, then the value computed by B shall either be the value stored by X or the value stored by a side effect Y on M, where Y follows X in the modification order of M.
-[Note 16: This requirement is known as read-read coherence. — end note]
-
-### read-write
-
-If a value computation A of an atomic object M happens before an operation B that modifies M, then A shall take its value from a side effect X on M, where X precedes B in the modification order of M.
-[Note 17: This requirement is known as read-write coherence. — end note]
-18
-
-### write-read
-
-If a side effect X on an atomic object M happens before a value computation B of M, then the evaluation B shall take its value from X or from a side effect Y that follows X in the modification order of M.
-[Note 18: This requirement is known as write-read coherence. — end note]
-
-
-[Note 19: The four preceding coherence requirements effectively disallow compiler reordering of atomic operations to a single object, even if both operations are relaxed loads. This effectively makes the cache coherence guarantee provided by most hardware available to C++ atomic operations. — end note]
-0
-
-[Note 20: The value observed by a load of an atomic depends on the “happens before” relation, which depends on the values observed by loads of atomics. The intended reading is that there must exist an association of atomic loads with modifications they observe that, together with suitably chosen modification orders and the “happens before” relation derived as described above, satisfy the resulting constraints as imposed here. — end note]
 
 ## std::atomic_flag
 std::atomic_flag is an atomic boolean type. Unlike all specializations of std::atomic, it is guaranteed to be lock-free. Unlike std::atomic<bool>, std::atomic_flag does not provide load or store operations.
@@ -461,6 +467,7 @@ seq_cst evaluations additionally can't be reordered relative to each other
 So, where difference between acq_rel and seq_cst makes sense? Consider
 following example:
 
+```
 atomic<int> x; // = 0
 atomic<int> y; // = 0
 
@@ -471,6 +478,7 @@ R1 = y.load(memory_order_acq_rel);
 // thread 2
 y.store(1, memory_order_acq_rel);
 R2 = x.load(memory_order_acq_rel);
+```
 
 In the above example the output R1 == R2 == 0 is possible. However, if
 you will replace acq_rel with seq_cst the result will be impossible,
@@ -484,6 +492,7 @@ Consider following example:
 
 Initially X==Y==0
 
+```
 // thread 1
 X.exchange(1, memory_order_acq_rel);
 
@@ -497,6 +506,7 @@ R2 = Y.load(memory_order_acquire);
 // thread 4
 R3 = Y.load(memory_order_acquire);
 R4 = X.load(memory_order_acquire);
+```
 
 Here, output R1==1, R2==0, R3==1, R4==0 is possible (which basically
 means that thread 3 and 4 see stores in different order(**although NOT true on x86**)).
@@ -521,32 +531,46 @@ A synchronization operation without an associated memory location is a fence and
 
 Establishes memory synchronization ordering of non-atomic and relaxed atomic accesses, as instructed by order, without an associated atomic operation. Note however, that at least one atomic operation is required to set up the synchronization, as described below.
 
-Fence-atomic synchronization
+**Fence-atomic synchronization**
 A release fence F in thread A synchronizes-with atomic acquire operation Y in thread B, if
-
 there exists an atomic store X (with any memory order),
 Y reads the value written by X (or the value would be written by release sequence headed by X if X were a release operation),
 F is sequenced-before X in thread A.
 In this case, all non-atomic and relaxed atomic stores that are sequenced-before F in thread A will happen-before all non-atomic and relaxed atomic loads from the same locations made in thread B after Y.
 
-Atomic-fence synchronization
-An atomic release operation X in thread A synchronizes-with an acquire fence F in thread B, if
+[writes]  happens before                          A.load(aquire) 
+-------SF-------------   (synchronize with)      
+A.store(1,releaxed)                                  [reads]
+
+
+**Atomic-fence synchronization**
+An atomic release operation X in thread A synchronizes-with an acquire fence AF in thread B, if
 
 there exists an atomic read Y (with any memory order),
 Y reads the value written by X (or by the release sequence headed by X),
 Y is sequenced-before F in thread B.
 In this case, all non-atomic and relaxed atomic stores that are sequenced-before X in thread A will happen-before all non-atomic and relaxed atomic loads from the same locations made in thread B after F.
 
-Fence-fence synchronization
+[writes]  happens before                          X.load(releaxed) 
+                         (synchronize with)     -------AF------------- 
+X.store(1,release)                                  [reads]
+
+
+**Fence-fence synchronization**
 A release fence FA in thread A synchronizes-with an acquire fence FB in thread B, if
 
 there exists an atomic object M,
 there exists an atomic write X (with any memory order) that modifies M in thread A,
-FA is sequenced-before X in thread A,
+SF is sequenced-before X in thread A,
 there exists an atomic read Y (with any memory order) in thread B,
 Y reads the value written by X (or the value would be written by release sequence headed by X if X were a release operation),
-Y is sequenced-before FB in thread B.
-In this case, all non-atomic and relaxed atomic stores that are sequenced-before FA in thread A will happen-before all non-atomic and relaxed atomic loads from the same locations made in thread B after FB.
+Y is sequenced-before AF in thread B.
+In this case, all non-atomic and relaxed atomic stores that are sequenced-before SF in thread A will happen-before all non-atomic and relaxed atomic loads from the same locations made in thread B after AF.
+
+
+[writes]  happens before                          A.load(releaxed) 
+-------SF-------------   (synchronize with)     -------AF------------- 
+A.store(1,releaxed)                                  [reads]
 
 ### release fence
 
@@ -629,13 +653,13 @@ compilers optimize code as if atomics were also volatiless
 
 importantly, volatile does not guarantee that memory operations won’t tear, meaning that a volatile load may observe partial writes and volatile stores may be observed in parts. Realistically, compilers will only tear when the hardware doesn’t have an instruction which can perform the entire memory operation atomically. That being said, the Standard technically allows an implementation which touched each target byte exactly once, one after the other, in an unspecified order that could change on each execution.
 
-The order of volatile operations cannot change relative to other volatile operations, but may change relative to non-volatile operations.
+**The order of volatile operations cannot change relative to other volatile operations, but may change relative to non-volatile operations.**
 
 That being said, volatile doesn’t imply any observable ordering in terms of the C++ memory model
 
 http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p1152r0.html
 
-Accesses (reads and writes) to volatile objects occur strictly according to the semantics of the expressions in which they occur. In particular, they are not reordered with respect to other volatile accesses on the same thread
+**Accesses (reads and writes) to volatile objects occur strictly according to the semantics of the expressions in which they occur. In particular, they are not reordered with respect to other volatile accesses on the same thread**
 
 # Store buffer re-ordering
 
@@ -722,6 +746,49 @@ Intel Guaranteed atomic operations
 
 ![](../images/atomic/guaranteed_atomic_operations.JPG)
 
+## Fences
+
+**MFENCE** prevents any later loads or stores from becoming globally observable before any earlier loads or stores. It drains the store buffer before later loads1 can execute.
+
+mfence isn’t the only instruction which acts as a full memory barrier on x86/64. On these processors, any locked instruction, such as xchg, also acts as a full memory barrier – provided you don’t use SSE instructions or write-combined memory, which this sample doesn’t
+
+**LFENCE** blocks instruction dispatch (Intel's terminology) until all earlier instructions retire. This is currently implemented by draining the ROB (ReOrder Buffer) before later instructions can issue into the back-end. basically earlier reads cannot re-order with reads.
+
+**SFENCE** only orders stores against other stores, i.e. prevents NT stores from committing from the store buffer ahead of SFENCE itself. But otherwise SFENCE is just like a plain store that moves through the store buffer. Think of it like putting a divider on a grocery-store checkout conveyor belt that stops NT stores from getting grabbed early. It does not necessarily force the store buffer to be drained before it retires from the ROB, so putting LFENCE after it doesn't add up to MFENCE.
+
+A "serializing instruction" like CPUID (and IRET, etc) drains everything (ROB, store buffer) before later instructions can issue into the back-end, and discards the front-end. MFENCE + LFENCE would also do the back-end part, but true serializing instructions also discard fetched machine code, so can work for cross-modifying code. (e.g. a load sees a flag, you run cpuid or the new serialize, then jump to a buffer where another thread stored code before a release-store on the flag. Code-fetch is guaranteed to get the new instructions. Unlike data loads, code-fetch doesn't respect x86's usual LoadLoad ordering rule.)
+
+
+The main reason why SFENCE + LFENCE is not equal to MFENCE is because SFENCE + LFENCE doesn't block StoreLoad reordering, so it's not sufficient for sequential consistency. Only mfence (or a locked operation, or a real serializing instruction like cpuid) will do that.
+
+
+LFENCE forces earlier instructions to "complete locally" (i.e. retire from the out-of-order part of the core), but for a store or SFENCE that just means putting data or a marker in the memory-order buffer, not flushing it so the store becomes globally visible. i.e. SFENCE "completion" (retirement from the ROB) doesn't include flushing the store buffer
+
+
+The real concern is StoreLoad reordering between a store and a load, not between a store and barriers, so you should look at a case with a store, then a barrier, then a load. Here is some assembly on x86.
+
+mov  [var1], eax
+sfence
+lfence
+mov   eax, [var2]
+can become globally visible (i.e. commit to L1d cache) in this order:
+
+lfence
+mov   eax, [var2]     ; load stays after LFENCE
+mov  [var1], eax      ; store becomes globally visible before SFENCE
+sfence                ; can reorder with LFENCE
+
+
+block the front end until the ROB and store buffer are drained, hiding all effects of pipelining. That's what "serializing" means as a technical term in x86 manuals.
+
+
+
+# Peterson Sync algo
+
+Basically it is a fair exclusive locking algo which requires Load not come before earlier Stores!
+
+The main idea is whenever another thread is instrested in the critical section, you let it have a chance to grab, but likewise the other 
+thread would do the same
 
 # Spink Lock
 
