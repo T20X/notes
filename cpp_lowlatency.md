@@ -1,3 +1,6 @@
+# PCI latency
+
+fastest latency is around 20-40ns
 
 # things which may DEGRADADE performance at micro level
 
@@ -255,4 +258,15 @@ gcc employs when compiling switch statements, including:
 Compressing multiple case labels into a bitset.
 Transforming the switch statement into a jump table.
 Transforming the switch statement into a binary decision tree
+
+
+# strict aliasign
+
+linux kernel disables it ! that what Torvalds said:
+
+In x86, I doubt _any_ amount of alias analysis makes a huge difference (as long as the compiler at least doesn't think that local variable spills can alias with anything else). Not enough registers, and generally pretty aggressively OoO (with alias analysis in hardware) makes for a much less sensitive platform
+
+#  gperf
+
+GNU gperf is a perfect hash function generator. For a given list of strings, it produces a hash function and hash table, in form of C or C++ code, for looking up a value depending on the input string. The hash function is perfect, which means that the hash table has no collisions, and the hash table lookup needs a single string comparison only
 

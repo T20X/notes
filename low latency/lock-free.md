@@ -525,11 +525,20 @@ The downside of this is that "happens before" now has a rather strange meaning, 
 
 ## Fences
 
+**In the language of C++11, only a store can be a release operation, and only a load can be an acquire operation. (See §29.3.1 of working draft N3337.) A memory fence is neither a load nor a store, so obviously, it can’t be an acquire or release operation**
+
+An **acquire fence** prevents the memory reordering of any read which precedes it in program order with any read or write which follows it in program order.
+
+A **release** fence prevents the memory reordering of any read or write which precedes it in program order with any write which follows it in program order.
+
+
 A synchronization operation without an associated memory location is a fence and can be either an acquire fence, a release fence, or both an acquire and release fence
 
 **IMPORTANT ----> note that they are opposite to atomic variable fences!**
 
 Establishes memory synchronization ordering of non-atomic and relaxed atomic accesses, as instructed by order, without an associated atomic operation. Note however, that at least one atomic operation is required to set up the synchronization, as described below.
+
+**!!!!WARNING!!!!** technically in C++ standard fences do require other atomic for them to establish synchronize-with relationship, even relaxed would work!
 
 **Fence-atomic synchronization**
 A release fence F in thread A synchronizes-with atomic acquire operation Y in thread B, if
@@ -955,6 +964,10 @@ Pause prevents speculative execution, eliminating the branch misprediction penal
 
 The notification state isn't "sticky" - notify_all will not wake threads that aren't currently waiting on the condition variable!
 the state, even atomic must be protected by the mutex!
+
+# thread local
+
+it is static, be carefull with them they are per class, not per ojbect!
 
 # std::counting_semaphore
 

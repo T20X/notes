@@ -240,4 +240,12 @@ The order in which the base class subobjects are allocated in the most derived o
 
 First, and only for the constructor of the most derived class ([intro.object]), virtual base classes are initialized in the order they appear on a depth-first left-to-right traversal of the directed acyclic graph of base classes, where “left-to-right” is the order of appearance of the base classes in the derived class base-specifier-list.
 
+# copy constructors are not inhereted
+
+CWG issue 2356: Base class copy and move constructors should not be inherited.
+
+[over.match.funcs]/p9 now says:
+
+A constructor inherited from class type C ([class.inhctor.init]) that has a first parameter of type “reference to cv1 P” (including such a constructor instantiated from a template) is excluded from the set of candidate functions when constructing an object of type cv2 D if the argument list has exactly one argument and C is reference-related to P and P is reference-related to D.
+
 

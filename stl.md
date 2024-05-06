@@ -41,6 +41,9 @@ it cannot contain const objects either
 
 std::deque / std::list - would work!
 
+
+vector::emplace_back requires an element to be moveable or copyable!
+
 # containers
 
 ## unordered_map
