@@ -270,3 +270,96 @@ In x86, I doubt _any_ amount of alias analysis makes a huge difference (as long 
 
 GNU gperf is a perfect hash function generator. For a given list of strings, it produces a hash function and hash table, in form of C or C++ code, for looking up a value depending on the input string. The hash function is perfect, which means that the hash table has no collisions, and the hash table lookup needs a single string comparison only
 
+# SSO string
+
+```
+// gcc
+struct string
+{
+    char* ptr;
+    size_t size;
+    union {
+        size_t capacity;
+        char buf[16];
+    };
+
+    bool is_large() { return ptr != buf; }
+    auto data() { return ptr; }
+    auto size() { return size; }
+    auto capacity() { return is_large() ? capacity : 15; }
+};
+```
+
+```
+struct SmallString
+{
+    // When flag == 0, the entire structure
+    // is a null-terminated string (SSO).  Otherwise 'big' points
+    // to the string data, and 'sz' is its size.
+    
+    char const *c_str() const {
+        return flag == 0
+            ? reinterpret_cast<char const *>(&big)
+            : big;
+    }
+
+    size_t size() const {
+        return flag == 0 ? strlen(c_str()) : sz;
+    }
+
+    char *big;
+    uint32_t sz;
+    char pad[3];
+    char flag;
+};
+
+char const *Get_c_str(SmallString const &str) {
+    return str.c_str();
+}
+
+size_t Get_size(SmallString const &str) {
+    return str.size();
+}
+```
+
+## GCC / CLANG strict aliasing
+
+Allow the compiler to assume the strictest aliasing rules applicable to the language being compiled. For C (and C++), this activates optimizations based on the type of expressions. In particular, an object of one type is assumed never to reside at the same address as an object of a different type, unless the types are almost the same. For example, an unsigned int can alias an int, but not a void* or a double. A character type may alias any other type.
+
+Pay special attention to code like this:
+
+```
+union a_union {
+  int i;
+  double d;
+};
+
+int f() {
+  union a_union t;
+  t.d = 3.0;
+  return t.i;
+}
+```
+
+The practice of reading from a different union member than the one most recently written to (called “type-punning”) is common. Even with -fstrict-aliasing, type-punning is allowed, provided the memory is accessed through the union type. So, the code above works as expected. See Structures, Unions, Enumerations, and Bit-Fields. However, this code might not:
+
+```
+int f() {
+  union a_union t;
+  int* ip;
+  t.d = 3.0;
+  ip = &t.i;
+  return *ip;
+}
+```
+
+Similarly, access by taking the address, casting the resulting pointer and dereferencing the result has undefined behavior, even if the cast uses a union type, e.g.:
+
+```
+int f() {
+  double d = 3.0;
+  return ((union a_union *) &d)->i;
+}
+```
+
+The -fstrict-aliasing option is enabled at levels -O2, -O3, -Os.

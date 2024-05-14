@@ -4,6 +4,25 @@ Current issues
 At present placement new is not clear on wheather the storages bits been carried over!
 
 
+```
+  #include <new>
+
+  int main() {
+    unsigned char buf[sizeof(int)] = {};
+    int *ip = new (buf) int;
+    return *ip; // 0 or undefined?
+  }
+```
+
+Should the preceding initializsation of the buffer carry over to the value of *ip? According to 6.7.4 [basic.indet] paragraph 1,
+
+**When storage for an object with automatic or dynamic storage duration is obtained, the object has an indeterminate value, and if no initialization is performed for the object, that object retains an indeterminate value until that value is replaced (7.6.19 [expr.ass]).**
+
+In this case, no new storage is being obtained for the int object created by the new-expression. Note that placement new does not obtain the storage! So that it mean that the whole point about above does not apply? 
+
+
+
+
 https://www.open-std.org/jtc1/sc22/wg21/docs/cwg_active.html#1027
 
 
@@ -80,6 +99,9 @@ If a program invokes a defaulted copy/move constructor or copy/move assignment o
 
 [Note 10: Unlike in C, C++ has no accesses of class type. — end note]   ####################### basically works only on scalars!!!!!!!!!!!!!!
 
+When a pointer to an object is converted to a pointer to a character type, the result points to
+the lowest addressed byte of the object. Successive increments of the result, up to the size of the object,
+yield pointers to the remaining bytes of the object
 
 [defns.access]: [..] [Note 1: Only objects of scalar type can be accessed. Reads of scalar objects are described in [conv.lval] and modifications of scalar objects are describred in [expr.ass], [expr.post.incr], and [expr.pre.incr]. Attempts to read or modify an object of class type typically invoke a constructor or assignment operator; such invocations do not themselves constitute accesses, although they may involve accesses of scalar subobjects. — end note]
 
@@ -421,7 +443,7 @@ This proposal provides a standard library solution, with an optional customizati
       launder(reinterpret_­cast<T*>(new (p) byte[n * sizeof(T)])) 
       Which basically implies that the idea is to make the syntax (T*)malloc(...) and (T*)(::operator new(... ) ) (and similar cases) valid for subsequent pointer arithmeti
       Although correct format should be -> launder(reinterpret_­cast<T(*)[n]>(new (p) byte[n * sizeof(T)])) - coorect way to get array out of allocation! 
-      becuase launder requires the object to start its lifetime
+      becuase launder requires the object to be within its lifetime
 
       The only case that left, where we still need to use std::launder tool is when we know there is a pointer of one type, and you know that under its address there, in fact, lives object of a different type
 
@@ -518,6 +540,14 @@ The expression std::addressof(e) is a constant subexpression, if e is an lvalue 
 The pointer_traits class template provides the standardized way to access certain properties of pointer-like types (fancy pointers, such as boost::interprocess::offset_ptr). The standard template std::allocator_traits relies on pointer_traits to determine the defaults for various typedefs required by Allocator.
 
 https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/p0653r2.html
+
+## std::calloc
+
+void* calloc( std::size_t num, std::size_t size );
+
+Allocates memory for an array of num objects of size size, initializes it to all bits zero (implicitly creating objects in the destination area)
+
+Initialization to all bits zero does not guarantee that a floating-point or a pointer would be initialized to 0.0 and the null pointer value, respectively (although that is true on all common platforms)
 
 ## construct_at
 

@@ -1,4 +1,9 @@
-﻿# Misc
+﻿# how compliers implement templates
+
+solved the template instantiation problem by adding the code equivalent of common blocks to their linker; the compiler emits template instances in each translation unit that uses them, and the linker collapses them together. The advantage of this model is that the linker only has to consider the object files themselves; there is no external complexity to worry about. The disadvantage is that compilation time is increased because the template code is being compiled repeatedly. Code written for this model tends to include definitions of all templates in the header file, since they must be seen to be instantiated.
+
+
+# Misc
 
 extern templates can really save a lot of compilation time
 
@@ -797,37 +802,6 @@ std::remove_reference<decltype(declval<DeclvalStruct>())>::type
 
 std::identity is a function object type whose operator() returns its argument unchanged
 
-## std::tuple_element
-
-Provides compile-time indexed access to the types of the elements of a tuple-like type.
-
-template<typename T1, typename T2, typename T3>
-struct Triple
-{
-    T1 t1;
-    T2 t2;
-    T3 t3;
-};
- 
-// A specialization of std::tuple_element for program-defined type Triple:
-template<std::size_t I, typename T1, typename T2, typename T3>
-    struct std::tuple_element<I, Triple<T1, T2, T3>>
-    { static_assert(false, "Invalid index"); }; 
-template<typename T1, typename T2, typename T3>
-    struct std::tuple_element<0, Triple<T1, T2, T3>> { using type = T1; };
-template<typename T1, typename T2, typename T3>
-    struct std::tuple_element<1, Triple<T1, T2, T3>> { using type = T2; };
-template<typename T1, typename T2, typename T3>
-    struct std::tuple_element<2, Triple<T1, T2, T3>> { using type = T3; };
-
-    ```
-
-## std::make_tuple
-
-Creates a tuple object, deducing the target type from the types of arguments.
-
-For each Ti in Types..., the corresponding type Vi in VTypes... is std::decay<Ti>::type unless application of std::decay results in std::reference_wrapper<X> for some type X, in which case the deduced type is X&.
-
 
 ##  std::mem_fn
 
@@ -882,6 +856,84 @@ int main()
 ```
 
 In the following cases, the types, templates, and non-type values that are used to compose P do not participate in template argument deduction, but instead use the template arguments that were either deduced elsewhere or explicitly specified. If a template parameter is used only in non-deduced contexts and is not explicitly specified, template argument deduction fails.
+
+## tuple
+
+### std::tuple_element
+
+Provides compile-time indexed access to the types of the elements of a tuple-like type.
+
+```
+template<typename T1, typename T2, typename T3>
+struct Triple
+{
+    T1 t1;
+    T2 t2;
+    T3 t3;
+};
+ 
+// A specialization of std::tuple_element for program-defined type Triple:
+template<std::size_t I, typename T1, typename T2, typename T3>
+    struct std::tuple_element<I, Triple<T1, T2, T3>>
+    { static_assert(false, "Invalid index"); }; 
+template<typename T1, typename T2, typename T3>
+    struct std::tuple_element<0, Triple<T1, T2, T3>> { using type = T1; };
+template<typename T1, typename T2, typename T3>
+    struct std::tuple_element<1, Triple<T1, T2, T3>> { using type = T2; };
+template<typename T1, typename T2, typename T3>
+    struct std::tuple_element<2, Triple<T1, T2, T3>> { using type = T3; };
+```
+### tuple protocol
+
+```
+#include <cstring>
+#include <cstdint>
+#include <iostream>
+
+struct MyClass {
+  int a;
+};
+
+template <const size_t I>
+struct MyContainer {   
+
+  static constexpr auto SZ = I; 
+  MyClass array[I];
+};
+
+namespace std {
+    template<size_t I>
+    struct tuple_size< MyContainer<I>>
+        : std::integral_constant<std::size_t, I> { };
+
+    template<std::size_t I, size_t N>
+    struct tuple_element<I, MyContainer<N>>
+    {
+        using type = MyClass;    
+    };
+}
+
+//get is now customization point but **unqualifivied**
+template<size_t I, size_t N> MyClass get(const MyContainer<N> &c) { return c.array[I]; }
+//}
+
+int main()
+{
+    MyContainer<2> c;
+    c.array[0].a = 100;
+    c.array[1].a = 200;
+    auto [k,v] = c;
+    std::cout << "k=" << k.a <<  " v=" << v.a << "\n";
+    return 0;
+}
+```
+
+### std::make_tuple
+
+Creates a tuple object, deducing the target type from the types of arguments.
+
+For each Ti in Types..., the corresponding type Vi in VTypes... is std::decay<Ti>::type unless application of std::decay results in std::reference_wrapper<X> for some type X, in which case the deduced type is X&.
+
 
 
 ## std::index_sequence
