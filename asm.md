@@ -116,7 +116,17 @@ Note that the main about about subtraction in binary is to borrow 1s from the le
 
 
 
-## Carry Flag
+## Flags
+
+Carry Flag (CF) - this flag is set to 1 when there is an unsigned overflow. For example when you add bytes 255 + 1 (result is not in range 0...255). When there is no overflow this flag is set to 0.
+
+Zero Flag (ZF) - set to 1 when result is zero. For none zero result this flag is set to 0.
+
+Sign Flag (SF) - set to 1 when result is negative. When result is positive it is set to 0. Actually this flag take the value of the most significant bit.
+
+Overflow Flag (OF) - set to 1 when there is a signed overflow. For example, when you add bytes 100 + 50 (result is not in range -128...127).
+
+### Carry Flag
 
 https://teaching.idallen.com/dat2343/10f/notes/040_overflow.txt
 
@@ -137,10 +147,9 @@ Otherwise, the carry flag is turned off (zero).
  * 1000 - 0001 = 0111 (carry flag is turned off [zero])
 
 In unsigned arithmetic, watch the carry flag to detect errors.
-In signed arithmetic, the carry flag tells you nothing interesting.
+In signed arithmetic, the carry flag tells you nothing interesting and you need to watch overflow flag (OF).
 
-## Overflow Flag
-
+### Overflow Flag
 
 The rules for turning on the overflow flag in binary/integer math are two:
 

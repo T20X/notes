@@ -22,6 +22,55 @@ void sample(Fred x, Fred& y, Fred* z, FredMemFn func)
 
 note that they cannot be converted to void*
 
+```
+template <class... Args>
+struct type_list
+{
+};
+template <class FuncSig>
+struct extractor
+{
+};
+template <class R, class... Args>
+struct extractor<R(Args...)>
+{
+  using return_type = R;
+  using argument_list = type_list<Args...>;
+};
+
+template <class S, class C>
+struct Functor<S C::*>
+{
+  using FuncPtr = S C::*;
+  template <class... Args>
+  // using ResultType = decltype((std::declval<C>().*std::declval<FuncPtr>())(std::declval<Args>()...));
+  using ResultType = decltype((std::declval<C>().*std::declval<FuncPtr>())(std::declval<Args>()...));
+
+  template <class... Args>
+  using ResultType2 = decltype(std::declval<S>()(std::declval<Args>()...));
+
+  void print() { std::cout << "\n Class Func Ptr \n"; };
+  template <class... Args>
+  void call(C& c, FuncPtr f, Args... args)
+  {
+    static_assert(std::is_same_v<FuncPtr, int (C::*)(Args...)>);
+    //--------------------------------------------------------------->
+    static_assert(std::is_same_v<typename extractor<S>::return_type, int>);
+    //<---------------------------------------------------------------
+    static_assert(std::is_same_v<ResultType<Args...>, int>);
+    static_assert(std::is_same_v<ResultType2<Args...>, int>);
+    (c.*f)(std::forward<Args>(args)...);
+    wow(typename extractor<S>::argument_list{});
+  }
+
+  template <class... Args>
+  void wow(type_list<Args...> in)
+  {
+    std::cout << "\n WOWWWOOWOWWOW extract argument list worked \n";
+  }
+};
+```
+
  # union
  
  A union is a special class type that can hold only one of its non - static data members at a time

@@ -181,7 +181,7 @@ struct myarray {
 
 ## vptr and table
 
-Each class gets VPTR created for it. Note that when object is initially created its own VPTR is set rather than the one of the most derived. note that an extra vptr for any class which is deviated in the hiaricy is created as it would not be able to re-use the very first vptr since itis members may be diffrent !
+Each class gets VPTR created for it. **NON-LINEARLY REPRESENTED CLASSES WOULD GET THEIR VPTR ADJUSTED ACCORDINLY** Note that when object is initially created its own VPTR is set rather than the one of the most derived. note that an extra vptr for any class which is deviated in the hiaricy is created as it would not be able to re-use the very first vptr since itis members may be diffrent !
 
 Extra data in VPTR:
 - offset to virtual base classes if any present

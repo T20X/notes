@@ -1,3 +1,9 @@
+# [16/05/24]
+
+- concepts are evaluated to true / false
+- requires clause returns return type which is substituted into another concept as the first template parameter!
+- Signature C::* and R (C::*)(Args...) are both class member pointers!
+
 # [4/01/24]
 - stl containers store allocators by value, including when doing copying / moving
 - concept requires clause expect expression type!(value category) { a } -> int& (int won't match)

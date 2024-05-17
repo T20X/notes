@@ -256,11 +256,11 @@ A value of a pointer type that is a pointer to or past the end of an object repr
       [Example 1:
       struct A { int i; };
       struct B { int j; };
-      struct D : A, B {};
+      struct D : A, /*----> */ B {};
       void f() {
         D d;
         static_cast<B&>(d).j;             // OK, object expression designates the B subobject of d
-        reinterpret_cast<B&>(d).j;        // undefined behavior
+        reinterpret_cast<B&>(d).j;        // undefined behavior, as the pointer would still point to the object of D rather than B!
       }
       — end example]
 
@@ -314,16 +314,7 @@ A value of a pointer type that is a pointer to or past the end of an object repr
       You access it as float and after that as double for example. But that is not allowed. That is a strict aliasing violation. You may only access the objects through a typed pointer if an object of that type is currently alive at this address. And to make sure that things are alive, you need to construct them (even if the constructor is no-op)
 
 
-      A null pointer constant is an integer literal ([lex.icon]) with value zero or a prvalue of type std​::​nullptr_t. A null pointer constant can be converted to a pointer type; the result is the null pointer value of that type ([basic.compound]) and is distinguishable from every other value of object pointer or function pointer type. Such a conversion is called a null pointer conversion. Two null pointer values of the same type shall compare equal. The conversion of a null pointer constant to a pointer to cv-qualified type is a single conversion, and not the sequence of a pointer conversion followed by a qualification conversion ([conv.qual]). A null pointer constant of integral type can be converted to a prvalue of type std​::​nullptr_t.
-      [Note 1: The resulting prvalue is not a null pointer value. — end note]
-      2
-      #
-      <----- IMPORTANT, this how static_cast works from T* to void* which basiscally does not change the pointer value ---->>>>>
-      A prvalue of type “pointer to cv T”, where T is an object type, can be converted to a prvalue of type “pointer to cv void”. The pointer value ([basic.compound]) is unchanged by this conversion.
-      3
-      #
       A prvalue of type “pointer to cv D”, where D is a complete class type, can be converted to a prvalue of type “pointer to cv B”, where B is a base class ([class.derived]) of D. If B is an inaccessible ([class.access]) or ambiguous ([class.member.lookup]) base class of D, a program that necessitates this conversion is ill-formed. The result of the conversion is a pointer to the base class subobject of the derived class object. The null pointer value is converted to the null pointer value of the destination type.
-at, i may no longer use the int pointer to access the int (because there is no int ali
 
 
 --------------------- 
@@ -368,7 +359,7 @@ float pun(int n) {
 float do_bad_things(int n) {
   alignof(int) alignof(float)
   unsigned  char buffer[max(sizeof(int), sizeof(float))];
-  *(int*)buffer = n;      // #1
+  *(int*)buffer = n;      // #1, NOTE THIS NOT UB BECAUSE CHAR BUFFER CREATES OBJECTS IMPLICITLY AND POINTER CONVERSION CAN PROVIDE THE SUITABLE POINTER TO SUCH OBJECT!
   new (buffer) std::byte[sizeof(buffer)];
   return (*float*)buffer; // #2 //undefined behaviour because the lifetime of int ended and float contains intermediate value! otherwise it is valid since std::byte buffer would create an implicit object and using C-style cast would have been fine
 }
@@ -586,7 +577,6 @@ IMPORTANT **source and destination may not OVERLAP**
 int32_t x_representation;
 std::memcpy(&x_representation, &x, sizeof(x));
  
-Implementations now generally outlaw using reinterpret_cast to violate strict aliasing, but allow representation casting to be done via unions.  But even that is an extension, and according to a strict reading of the standard it is UB.  I think that this is exactly the kind of thing that should have "implementation-defined" behavior rather than be UB.  The difference is that usually implementation-defined behavior has bounds to how wild implementations can go, for example: "the resulting value is implementation-defined" vs. "is UB".  It puts boundaries on how non-portable this code is.
 
 Permitting aliasing via unions would wreck performance, as you would never know when two objects of completely different types might alias. The C union visibilrwise be modified by the user, so the compiler can, with this constraint on memcpy, make assumptions about them (e.g. that thity rule is highly controversial even within the C community; see e.g. https://gcc.gnu.org/bugzilla/show_bug.cgi?id=65892
 
@@ -629,6 +619,10 @@ the standard is very strict about as basically it renders the following code inv
 # construction
 
 An object whose initialization has completed is deemed to be constructed, even if the object is of non-class type or no constructor of the object's class is invoked for the initialization. [Note 9: Such an object might have been value-initialized or initialized by aggregate initialization ([dcl.init.aggr]) or by an inherited constructor ([class.inhctor.init]). — end note]
+
+# padding
+
+there is no padding at the begining for struct objects!
 
 # non trival types
 
@@ -676,7 +670,7 @@ struct s{
 ```
       int i = 42;
       alignas(int) unsigned char buffer[sizeof(int)];
-      void* newJ = std::memcpy(buffer, &i, sizeof(int)); //remeber that mempcy would create an implicty object so that newJ would point to it!
+      void* newJ = std::memcpy(buffer, &i, sizeof(int)); //remeber that mempcy would create an implicty object so that newJ would point to it! NOW CONVERTING *BUFFER* TO POINTER OF INT WON'T WORK ANYMORE AND YOU'D NEED TO USE LAUNDER!!!!
       int* j = std::launder(reinterpret_cast<int*>(buffer)); #1 ok
       int * j  = reintepret_cast<int*>(newJ); //#2 ok
       reintepret_cast<int*>(buffer) = 30; //#3 UB as buffer points to char[];
@@ -821,7 +815,7 @@ If a complete object is created ([expr.new]) in storage associated with another 
 
 An object of trivially copyable or standard-layout type ([basic.types.general]) shall occupy contiguous bytes of storage
 
-Unless an object is a bit-field or a subobject of zero size, the address of that object is the address of the first byte it occupies. Two objects with overlapping lifetimes that are not bit-fields may have the same address if one is nested within the other, or if at least one is a subobject of zero size and they are of different types; otherwise, they have distinct addresses and occupy disjoint bytes of storage.22
+**Unless an object is a bit-field or a subobject of zero size, the address of that object is the address of the first byte it occupies. Two objects with overlapping lifetimes that are not bit-fields may have the same address if one is nested within the other, or if at least one is a subobject of zero size and they are of different types; otherwise, they have distinct addresses and occupy disjoint bytes of storage**.22
 [Example 2:
 static const char test1 = 'x';
 static const char test2 = 'x';
@@ -1008,11 +1002,11 @@ struct D2 : B { void f(); };
 void B::mutate() {
   new (this) D2;    // reuses storage � ends the lifetime of *this
   f();  //not ok, object stroage was reused by another *type*(D2)!
-    However this is well defined! (new (this) D2)->f() 
+    However this is well defined! (new (this) D2)->f() e that referred to the original object, or the name of the original object will automatically refer to the new object and, once the lifetime of the new object has started, can be used to manipulate the new object, if the original object is transparently replaceable (see below) by the new object. An object is transparently replaceable by an object
 }
 B* b = new D1;
 
-If, after the lifetime of an object has ended and before the storage which the object occupied is reused or released, a new object is created at the storage location which the original object occupied, a pointer that pointed to the original object, a reference that referred to the original object, or the name of the original object will automatically refer to the new object and, once the lifetime of the new object has started, can be used to manipulate the new object, if the original object is transparently replaceable (see below) by the new object. An object is transparently replaceable by an object 
+If, after the lifetime of an object has ended and before the storage which the object occupied is reused or released, a new object is created at the storage location which the original object occupied, a pointer that pointed to the original object, a referenc 
 
 (8.1) the storage that occupies exactly overlays the storage that 
  occupied, and

@@ -249,6 +249,12 @@ In this particular case ordering of values doesn’t change if we remove other v
 
 Similarly, for a linked list backed by a vector, we can perform a compact operation to get rid of the gaps and make the memory access more data cache-friendly, after we have performed a sufficient number of element removal.
 
+### intrusive linekd lists
+
+https://attractivechaos.wordpress.com/2020/01/19/an-intrusive-circular-doubly-linked-list/
+
+the main idea it to store *next and *prev pointers along with user data so that the user controls the allocations and not the linked list!
+
 # how things work
 
 ## switch statements

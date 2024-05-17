@@ -265,6 +265,96 @@ T = bool (my_string::*)() const
 WARNING! T = decltype(my_string::empty) <--- that is not possible!
 WARNING! T = decltype(my_string::empty2) <--- that is possible!
 
+## specialization exmaples
+
+```
+template <class Sig>
+struct Functor
+{
+  void print() { std::cout << "\n default \n"; }
+};
+
+template <class R, class... Args>
+struct Functor<R(Args...)>
+{
+  void print() { std::cout << "\n Func \n"; };
+};
+
+template <class R, class... Args>
+struct Functor<R (*)(Args...)>
+{
+  void print() { std::cout << "\n Func Ptr \n"; };
+};
+
+template <class... Args>
+struct type_list
+{
+};
+template <class FuncSig>
+struct extractor
+{
+};
+template <class R, class... Args>
+struct extractor<R(Args...)>
+{
+  using return_type = R;
+  using argument_list = type_list<Args...>;
+};
+
+template <class S, class C>
+struct Functor<S C::*>
+{
+  using FuncPtr = S C::*;
+  template <class... Args>
+  // using ResultType = decltype((std::declval<C>().*std::declval<FuncPtr>())(std::declval<Args>()...));
+  using ResultType = decltype((std::declval<C>().*std::declval<FuncPtr>())(std::declval<Args>()...));
+
+  template <class... Args>
+  using ResultType2 = decltype(std::declval<S>()(std::declval<Args>()...));
+
+  void print() { std::cout << "\n Class Func Ptr \n"; };
+  template <class... Args>
+  void call(C& c, FuncPtr f, Args... args)
+  {
+    static_assert(std::is_same_v<FuncPtr, int (C::*)(Args...)>);
+    //--------------------------------------------------------------->
+    static_assert(std::is_same_v<typename extractor<S>::return_type, int>);
+    //<---------------------------------------------------------------
+    static_assert(std::is_same_v<ResultType<Args...>, int>);
+    static_assert(std::is_same_v<ResultType2<Args...>, int>);
+    (c.*f)(std::forward<Args>(args)...);
+    wow(typename extractor<S>::argument_list{});
+  }
+
+  template <class... Args>
+  void wow(type_list<Args...> in)
+  {
+    std::cout << "\n WOWWWOOWOWWOW extract argument list worked \n";
+  }
+};
+template <class T>
+struct give_me_your_type_name;
+
+template <auto val>
+struct FunctorVal
+{
+  void print() { std::cout << "\n FunctorVal default \n"; };
+};
+
+template <class R, class... Args, R (*ptr)(Args...)>
+struct FunctorVal<ptr>
+{
+  void print() { std::cout << "\n Functor Val ptr \n"; };
+};
+
+template <class R, class C, class... Args, R (C::*mem_p)(Args...)>
+struct FunctorVal<mem_p>
+{
+  void print() { std::cout << "\n Class member Val ptr \n"; };
+  void call(C& c, Args... args) { (c.*mem_p)(std::forward<Args>(args)...); }
+};
+```
+
 ## Fetching member function signature
 
 ```
@@ -379,6 +469,13 @@ In C++14 you can also use auto sum(T a, Args... args) in order to get sum of mix
 
 # Concepts
 
+**Concepts can be named in an id-expression. The value of the id-expression is true if the constraint expression is satisfied, and false otherwise.**
+For example
+```
+  static_assert(std::same_as<int, int>);
+```
+
+**MAIN THING ABOUT CONCEPTS IS THAT THEY ALLOW CONCEPT CHAINING**
 
 * Non-formal definition -> Concept allows us to control the instantiation of templates by testing syntactic conditions, but testing syntactic conditions. SFINAE on steroids
 
@@ -441,7 +538,7 @@ concept token = requires(T t)
 {
   {
     t.accept('a')
-    } -> std::same_as<AcceptResult>;
+    } -> std::same_as<AcceptResult>; //NOTE THAT VERIFICATION MUST BE CONCEPT AS WELL!
 };
 ```
 * Concep can be just defined as simple exprssions as well
@@ -486,6 +583,17 @@ add(TA a, TB b)
 ```
 
 ## you can requries constraint even for type templated paramters like this!
+```
+template <class T>
+concept string_a = requires(T v)
+{
+  requires(std::is_convertible_v<T, std::string> || requires { std::string().append(1, v); });
+};
+```
+
+```
+
+
 
 ```
 template<typename E>
@@ -527,6 +635,24 @@ requires Addable<T> // requires-clause, not requires-expression
     T add(T a, T b) {
   return a + b;
 }
+```
+
+## many mixes inside requires expresison clause
+
+```
+template <class T, class C>
+concept is_realy_int = requires(C p)
+{
+  requires std::is_same_v<decltype(p.m), int>;
+  {
+    p.valid()
+    } -> std::same_as<void>;
+  {p.m};
+  {
+    std::is_same_v<int, std::remove_reference_t<T>>
+    } -> std::same_as<const bool&>;
+};
+
 ```
 
 ## requires requires

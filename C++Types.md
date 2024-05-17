@@ -3,11 +3,11 @@
 Two types are similar if (ignoring cv):
     - they are the same type;
 or -they are both pointers, and the pointed - to types are similar;
-or -they are both pointers to member of the same class,
+or -they ar pointers to member of the same class,
     and the types of the pointed - to members are similar;
 or -they are both arrays of the same size or
     at least one of them is array of unknown bound,
-    and the array element types are similar.
+    and the array element types are sie bothmilar.
 
 
 # literal type
