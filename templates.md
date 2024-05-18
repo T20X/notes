@@ -560,8 +560,195 @@ template< class I >
         };
 ```
 
+## why concepts?
 
-## requires expression expects "expression refrence"
+because they can be part of templates! otherwise you can do something like this
+
+```
+template <class T>
+constexpr bool  v2 = requires (T v)
+{  
+   typename S<T>::type;
+   {v+=v};
+};
+```
+but you CANNOT DO THIS
+void (v2 auto p) {}!
+
+# requires 
+
+## some theoretical details
+
+this example illustrate the diffrent betwen requires clause and requires expression!
+```
+template<typename T>
+    requires (requires {S<T>{};}/*retursn true/false*/)
+void f(T);   // #1
+```
+
+THEY DO RESPECT IMMEDIATE CONTEXT RULES! THIS WOULD BE HARD ERROR FOR EXAMPLE
+
+```
+template<typename T> struct other {};
+template<> struct other<int> {};
+template<typename T> struct S {};
+
+template <>
+struct S<int>
+{
+    using type = typename other<int>::type; 
+    constexpr operator bool() const { return true; }
+};
+
+template<typename T>
+    requires (requires {typename S<T>::type;})
+void f(T) { std::cout << "\n concept triggered \n";}
+void f(int){}
+
+f(2)
+```
+
+### clause
+
+requires ... expects constexpr true/false ...
+
+**Requires clauses**
+The keyword requires is used to introduce a requires-clause, which specifies constraints on template arguments or on a function declaration.
+
+template<typename T>
+void f(T&&) requires Eq<T>; // can appear as the last element of a function declarator
+ 
+template<typename T> requires Addable<T> // or right after a template parameter list
+T add(T a, T b) { return a + b; }
+In this case, the keyword requires must be followed by some constant expression (so it's possible to write requires true), but the intent is that a named concept (as in the example above) or a conjunction/disjunction of named concepts or a requires expression is used.
+
+### expressions 
+
+**it returns constexpr bool!**
+
+requires { ....} -> evalates to true / false
+requires ( parameter-list ﻿(optional) ) { requirement-seq }	
+
+requirement-seq	-	sequence of requirements, each requirement is one of the following:
+          simple requirement
+          type requirement
+          compound requirement
+          nested requirement
+
+## simple requirenment 
+
+A simple requirement is an arbitrary expression statement that does not start with the keyword requires. It asserts that the expression is valid. The expression is an unevaluated operand; only language correctness is checked.
+
+```
+template<typename T>
+concept Addable = requires (T a, T b)
+{
+    a + b; // "the expression “a + b” is a valid expression that will compile"
+};
+ 
+template<class T, class U = T>
+concept Swappable = requires(T&& t, U&& u)
+{
+    swap(std::forward<T>(t), std::forward<U>(u));
+    swap(std::forward<U>(u), std::forward<T>(t));
+};
+```
+
+
+## type requirenment 
+
+A type requirement is the keyword typename followed by a type name, optionally qualified. The requirement is that the named type is valid: this can be used to verify that a certain named nested type exists, or that a class template specialization names a type, or that an alias template specialization names a type. A type requirement naming a class template specialization does not require the type to be complete.
+
+```
+template<typename T>
+using Ref = T&;
+ 
+template<typename T>
+concept C = requires
+{
+    typename T::inner; // required nested member name
+    typename S<T>;     // required class template specialization
+    typename Ref<T>;   // required alias template substitution
+};
+```
+## compound requirenment
+
+Compound requirements
+A compound requirement has the form
+
+{ expression } noexcept(optional) return-type-requirement ﻿(optional) ;		
+return-type-requirement	-	-> type-constraint
+and asserts properties of the named expression. Substitution and semantic constraint checking proceeds in the following order:
+
+1) Template arguments (if any) are substituted into expression;
+2) If noexcept is used, expression must not be potentially throwing;
+3) If return-type-requirement is present, then:
+  a) Template arguments are substituted into the return-type-requirement ﻿;
+  b) decltype((expression)) must satisfy the constraint imposed by the type-constraint. Otherwise, the enclosing requires-expression is false.
+
+```
+template<typename T>
+concept C2 = requires(T x)
+{
+    // the expression *x must be valid
+    // AND the type T::inner must be valid
+    // AND the result of *x must be convertible to T::inner
+    {*x} -> std::convertible_to<typename T::inner>;
+ 
+    // the expression x + 1 must be valid
+    // AND std::same_as<decltype((x + 1)), int> must be satisfied
+    // i.e., (x + 1) must be a prvalue of type int
+    {x + 1} -> std::same_as<int>;
+ 
+    // the expression x * 1 must be valid
+    // AND its result must be convertible to T
+    {x * 1} -> std::convertible_to<T>;
+};
+```
+## nested requirements
+
+A nested requirement has the form
+
+**requires constraint-expression ;**		
+It can be used to specify additional constraints in terms of local parameters. The constraint-expression must be satisfied by the substituted template arguments, if any. Substitution of template arguments into a nested requirement causes substitution into the constraint-expression only to the extent needed to determine whether the constraint-expression is satisfied.
+
+```
+template<class T>
+concept Semiregular = DefaultConstructible<T> &&
+    CopyConstructible<T> && CopyAssignable<T> && Destructible<T> &&
+requires(T a, std::size_t n)
+{  
+    requires Same<T*, decltype(&a)>; // nested: "Same<...> evaluates to true"
+    { a.~T() } noexcept; // compound: "a.~T()" is a valid expression that doesn't throw
+    requires Same<T*, decltype(new T)>; // nested: "Same<...> evaluates to true"
+    requires Same<T*, decltype(new T[n])>; // nested
+    { delete new T }; // compound
+    { delete new T[n] }; // compound
+};
+```
+
+Basicaly the idea is for it to return true/false like **requires clause**
+v4 for example would always be false!
+
+```
+    constexpr bool  v4 = requires {  
+        requires std::is_same_v<int,int>; 
+        requires !std::is_same_v<int,int>;
+        };
+
+```
+## examples
+
+### requires can generate boolean constexpr variables
+
+But note they would be hard error if they fail to be instantiated
+```
+constexpr bool r = requires { requires is_negatable2<non_negatable>; };
+constexpr bool r2 = requires { requires (is_negatable2<non_negatable>;) };
+constexpr bool  v = requires {  typename S<int>::type; };
+```
+
+### requires expression expects "expression refrence"
 
 ```
 requires (T a) {
@@ -581,8 +768,18 @@ add(TA a, TB b)
   return a += b;
 }
 ```
+### Concepts can constraint template parameters 
 
-## you can requries constraint even for type templated paramters like this!
+```
+template<class T, class U>
+concept Derived = std::is_base_of<U, T>::value;
+ 
+template<Derived<Base> T>
+void f(T); // T is constrained by Derived<T, Base>
+```
+
+### basically it is mixing  of everything!
+
 ```
 template <class T>
 concept string_a = requires(T v)
@@ -591,9 +788,7 @@ concept string_a = requires(T v)
 };
 ```
 
-```
-
-
+### you can requries constraint even for type templated paramters like this! 
 
 ```
 template<typename E>
@@ -605,7 +800,7 @@ struct is_scoped_enum : std::bool_constant<requires
 {};
 ```
 
-## to be used with expressions (combined with SFINAE)
+### to be used with expressions (combined with SFINAE)
 
 ```
     template <class F>
@@ -614,7 +809,7 @@ struct is_scoped_enum : std::bool_constant<requires
                                  void()))>) {
 ```                                  
 
-## inside if constexpr
+### inside if constexpr
 
 ```
 template<class T>
@@ -627,7 +822,7 @@ constexpr auto to_address(const T& p) noexcept
 }
 ```
 
-## requires
+### requires
 
 ```
 template <typename T>
@@ -637,7 +832,7 @@ requires Addable<T> // requires-clause, not requires-expression
 }
 ```
 
-## many mixes inside requires expresison clause
+### many mixes inside requires expresison clause
 
 ```
 template <class T, class C>
@@ -655,7 +850,7 @@ concept is_realy_int = requires(C p)
 
 ```
 
-## requires requires
+### requires requires
 
 infamous `requires requires`. First `requires` is requires-clause,
 second one is requires-expression. Useful if you don't want to introduce
@@ -668,56 +863,8 @@ class Foo {
 }
 ```
 
-## constraint 
 
- constraint is a sequence of logical operations and operands that specifies requirements on template arguments. They can appear within requires-expressions (see below) and directly as bodies of concepts.
-There are three types of constraints:
-
-1) conjunctions
-2) disjunctions
-3) atomic constraints
-
-The keyword requires is used to introduce a requires-clause, which specifies constraints on template arguments or on a function declaration
-template<class T>
-void g(T) requires is_purrable<T>(); // error, is_purrable<T>() is not a primary expression
-template <class T> void h(T) requires(is_purrable<T>()); // OK
-
-The keyword requires is also used to begin a requires - expression,
-which is a prvalue expression of type bool that describes the constraints on
-some template arguments.Such an expression is true if the constraints are satisfied,and false otherwise
-
-```
- template <typename T>
-    concept Addable = requires(T x) {
-  x + x;
-}; // requires-expression
-```
-
-template <typename T>
-requires Addable<T> // requires-clause, not requires-expression
-    T add(T a, T b) {
-  return a + b;
-}
-
-template <typename T>
-requires requires(T x) { x + x; } // ad-hoc constraint, note keyword used twice
-T add(T a, T b) { return a + b; }
-
-Concepts works really well with lambdas !template <class T>
-concept Number = std::is_integer<T>::value;
-auto f = [](Number n)
-
-    // infamous `requires requires`. First `requires` is requires-clause,
-    // second one is requires-expression. Useful if you don't want to introduce
-    // new concept.
-    template <typename T>
-requires requires(T a, T b) { a + b; }
-auto f4(T x)
-
-
-
- For parameter packs, MyConcept... Ts requires MyConcept to be true for each element of the pack, not for the whole pack at once, e.g. requires<T1> && requires<T2> && ... && requires<TLast>.
-
+## details of impelemntation 
 
  Contstrains can be used for function overload basically, but one thing is important to note
  
@@ -1262,6 +1409,8 @@ the whole point about enable if is that if the first paramter would evaluate to 
 ### immediate context
 
 Only the failures in the types and expressions in the immediate context of the function type or its template parameter types or its explicit specifier (since C++20) are SFINAE errors.
+
+SFINAE only applies in the so-called immediate context of a function. The immediate context is basically the template declaration (including the template parameter list, the function return type, and the function parameter list)
 
 If the evaluation of a substituted type/expression causes a side-effect such as instantiation of some template specialization, generation of an implicitly-defined member function, etc, errors in those side-effects are treated as hard errors. For example subsitutung T in typename T::type to some class A<O> may trigger instantiation of class A<O>, but it may fail...Hence it would be a hard error!
 
