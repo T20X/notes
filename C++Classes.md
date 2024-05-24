@@ -3,13 +3,18 @@
 
 # pointers to member functions
 
+**they can take 16 bytes are not simply pointers hence you cannot cast them to void, Note it is trivally copyable as well!**
+
+
+  static_assert(std::is_trivially_copyable_v<decltype(&Foo::f)>);
+
   class Fred { /*...*/ };
 typedef  int (Fred::*FredMemFn)(int i, double d);  // use a typedef!!! please!!!
 void sample(Fred x, Fred& y, Fred* z, FredMemFn func)
 {
-  x.*func(42, 3.14);
-  y.*func(42, 3.14);
-  z->*func(42, 3.14);
+  (x.*func)(42, 3.14);
+  (y.*func)(42, 3.14);
+  (z->*func)(42, 3.14);
 }
 BUT please consider using a std::invoke or macro instead:
 

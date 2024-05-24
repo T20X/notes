@@ -965,6 +965,10 @@ Pause prevents speculative execution, eliminating the branch misprediction penal
 The notification state isn't "sticky" - notify_all will not wake threads that aren't currently waiting on the condition variable!
 the state, even atomic must be protected by the mutex!
 
+# hazard pointers
+
+https://www.drdobbs.com/lock-free-data-structures-with-hazard-po/184401890
+
 # thread local
 
 it is static, be carefull with them they are per class, not per ojbect!

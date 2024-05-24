@@ -174,7 +174,8 @@ A value of a pointer type that is a pointer to or past the end of an object repr
 
       IMPORTANT ->>>> pointers point to OBJECTS not to ADDRESSES, but they do represent addresses which matters for COMPARISONS!
 
-      ------------>pointer comparison<----
+### pointer comparison<---
+
   If at least one of the operands is a pointer, pointer conversions, function pointer conversions, ***and qualification conversions are performed on both operands to bring them to their composite pointer type***. Comparing pointers is defined as follows:
   (3.1)If one pointer represents the address of a complete object, and another pointer represents the address one past the last element of a different complete object,70 the result of the comparison is unspecified.
   (3.2)Otherwise, if the pointers are both null, both point to the same function, or both represent the same address, they compare equal.

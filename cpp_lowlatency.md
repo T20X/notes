@@ -64,6 +64,19 @@ batching prefetch and access
 
 instead we can run prefetch for X+n batch, then we start access data for X1 and so on  by alternating prefetch and access
 
+## when iterating through vector just swap last element with first one
+
+```
+  while (i != rlist.end()) {
+         // Aha!
+         delete *i;
+         if (&*i != &rlist.back()) {
+            *i = rlist.back();
+         }
+      rlist.pop_back();
+  }
+```
+
 ## fast modulo
 
 modulo could be done like x & (b - 1)

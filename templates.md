@@ -1366,6 +1366,33 @@ template<>
 
 ```
 
+### renamer 
+
+```
+template<class A, template<class...> class B> struct mp_rename_impl;
+
+template<template<class...> class A, class... T, template<class...> class B>
+    struct mp_rename_impl<A<T...>, B>
+{
+    using type = B<T...>;
+};
+
+template<class A, template<class...> class B>
+    using mp_rename = typename mp_rename_impl<A, B>::type;
+```
+
+(This pattern of a template alias forwarding to a class template doing the actual work is common; class templates can be specialized, whereas template aliases cannot.)
+
+C++20 to rename it!
+
+```
+template <class From, template <class...> class To>
+using renamed_type = typename decltype([]<template <class...> class F, class... T>(jt<F<T...>>)
+                                       { return jt<To<T...>>(); }(jt<From>()))::type;
+
+```
+
+
 ###  template tempplate class specalization
 
 template<class L> struct mp_size_impl;
