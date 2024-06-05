@@ -433,7 +433,7 @@ For directed graphs you can just compute finished time and the moment you hit a 
           r[{u, v}] = EdgeClass::FORWARD;
         else if (start[u] > start[v] && end[v] > 0)
           r[{u, v}] = EdgeClass::CROSS;
-        else if (start[u] < start[v] && end[v] == 0)
+        else if (start[u] > start[v] && end[v] == 0)
           r[{u, v}] = EdgeClass::BACK;
       }
     }
