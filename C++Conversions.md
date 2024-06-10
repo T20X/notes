@@ -196,6 +196,7 @@ If a standard-layout class object has any non-static data members, its address i
 
 
      IMPORTANT POINTS: 
+      - it really works for pointer-to-pointer / refrence-to-refrence conversions! IT DOES NOT WORK FOR VALUE CONVERSIONS! YOU CANNOT CONVERT CHART TO SIZE_T FOR EXAMPLE
       - 0,NULL CANNOT be converted to the null pointer of the target type . For that static_cast / implicit convertions must be used!
       - you can convert nullptr to integer type, but nothing can be converted to std::nullptr_t
       - The null pointer constant NULL or integer zero is not guaranteed to yield the null pointer value of the target type; static_cast or implicit conversion should be used for this purpose.
