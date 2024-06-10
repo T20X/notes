@@ -77,7 +77,14 @@ Value-preserving promotions and promotions that preserve signedness normally pro
 
 - The left operand of >> or >>=
 
-    These operators treat signed and unsigned quantities differently when performing a shift operation. For signed quantities, shifting a quantity right causes the sign bit to be propagated into the vacated bit positions. For unsigned quantities, the vacated bit positions are zero-filled.
+    These operators treat signed and unsigned quantities differently when performing a shift operation. For signed quantities, shifting a quantity right causes the sign bit to be propagated into the vacated bit positions. Right-shift on signed integral types is an arithmetic right shift, which performs sign-extension.
+For example,
+sint32 word = (10000000 00000000 00000000 00000000);
+word >>= 16;
+will cause this
+(11111111 11111111 10000000 00000000)  
+   For unsigned quantities, the vacated bit positions are zero-filled. Like this
+  (00000000 00000000 10000000 00000000)  
 
 ### signed to unsgined 
 
