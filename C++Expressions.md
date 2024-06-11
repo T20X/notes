@@ -220,6 +220,9 @@ function parameters are really expressions
 
 A function call results in the initialization of the parameters from the corresponding arguments ([expr.call]/7),
 
+When returning from a function, copy-initialization of the temporary that is the result of evaluating the function call is sequenced before the destruction of all temporaries at the end of the operand of the return statement, which, in turn, is sequenced before the destruction of local variables of the block enclosing the return statement
+
+
 # Refenrece
 
 references are not objects
@@ -850,7 +853,7 @@ Because the comittee wants to make clear that an array is a low level concept an
 
  in case of a void * the compiler can't make any assumptions what void * + 5 should mean. So before you use a void * it kind of forces you to specify how you want to use it.
 
-You can only perform pointer arithmetics on pointers into an array. And if you have a pointer into an array, you know the type of the array, and can use the equivalent pointer typ
+***You can only perform pointer arithmetics on pointers into an array***. And if you have a pointer into an array, you know the type of the array, and can use the equivalent pointer typ
 
 void is an incomplete type, and you can't do arithmetic on pointers to incomplete types. The compiler fundamentally needs to know the size of the objects involved when doing pointer arithmetic, but sizeof cannot be used on incomplete types. Some compilers treat void pointer arithmetic the same as char pointer arithmetic — i.e. they pretend that sizeof (void) == 1 — but only as an extension to the standard C language
 
