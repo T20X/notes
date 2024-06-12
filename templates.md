@@ -747,6 +747,7 @@ constexpr bool r = requires { requires is_negatable2<non_negatable>; };
 constexpr bool r2 = requires { requires (is_negatable2<non_negatable>;) };
 constexpr bool  v = requires {  typename S<int>::type; };
 constexpr bool v2 = requires {requires !std::is_same_v<float,float>; } // false!
+constexpr bool v3 = requires {requires std::is_same_v<float,float>;  {foo().valid()}; foo().valid(); } // true!
     
 
 ```
